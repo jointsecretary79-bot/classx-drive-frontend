@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Login System</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #error-msg { color: red; font-size: 14px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Access Question Papers Only For REGISTERED Teacher</h2>
+    <p>Please enter your credentials to view the Drive folder.</p>
+    
+    <input type="text" id="username" placeholder="Enter Username">
+    <input type="password" id="password" placeholder="Enter Password">
+    <button onclick="checkLogin()">Login & Open Drive</button>
+    
+    <p id="error-msg">Invalid username or password.</p>
+</div>
+
+<script>
+    // Add your custom usernames and passwords here
+    const allowedUsers = {
+        "teacher1": "prashanthkumarbs13@gmail.com",
+        "student_user": "pras3944"
+    };
+
+    function checkLogin() {
+        const userInp = document.getElementById("username").value;
+        const passInp = document.getElementById("password").value;
+        const errorMsg = document.getElementById("error-msg");
+
+        // Verify credentials
+        if (allowedUsers[userInp] && allowedUsers[userInp] === passInp) {
+            alert("Login successful! Opening Google Drive...");
+            
+            // Redirects directly to your Google Drive link
+            window.location.href = "https://drive.google.com/drive/folders/1GeGmTewX26xP-AyQLKJmUpPyXnf92f-D"; 
+        } else {
+            errorMsg.style.display = "block";
+        }
+    }
+</script>
+
+</body>
+</html>

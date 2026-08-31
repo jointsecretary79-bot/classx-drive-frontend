@@ -16,7 +16,7 @@
 <body>
 
 <div class="login-card">
-    <h2>Access Question Papers Only For REGISTERED Teacher</h2>
+    <h2>Access Question Papers</h2>
     <p>Please enter your credentials to view the Drive folder.</p>
     
     <input type="text" id="username" placeholder="Enter Username">
@@ -27,10 +27,9 @@
 </div>
 
 <script>
-    // Add your custom usernames and passwords here
+    // This is where your custom username and password are saved
     const allowedUsers = {
-        "teacher1": "prashanthkumarbs13@gmail.com",
-        "student_user": "pras3944"
+        "prashanthkumarbs13@gmail.com": "pras3966"
     };
 
     function checkLogin() {
@@ -43,7 +42,7 @@
             alert("Login successful! Opening Google Drive...");
             
             // Redirects directly to your Google Drive link
-            window.location.href = "https://drive.google.com/drive/folders/1GeGmTewX26xP-AyQLKJmUpPyXnf92f-D"; 
+            window.location.href = "https://google.com"; 
         } else {
             errorMsg.style.display = "block";
         }

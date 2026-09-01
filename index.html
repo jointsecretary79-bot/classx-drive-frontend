@@ -191,9 +191,79 @@
     box-shadow:0 8px 18px rgba(0,0,0,0.35); border:none;
   }
   .fab svg{ width:24px; height:24px; }
+
+  /* ---- new: appbar right cluster (clock + teacher login) ---- */
+  .appbar-right{ display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+  .live-clock{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.04em;
+    color:#dfe4f0; font-variant-numeric:tabular-nums;
+  }
+  .appbar-clock-row{ display:flex; align-items:center; gap:8px; }
+  .appbar-clock-row .divider-dot{ color:#4f5d80; font-size:10px; }
+  .teacher-link{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.04em;
+    color:var(--marigold); background:none; border:none; padding:0 0 1px;
+    border-bottom:1px solid var(--marigold); cursor:pointer; white-space:nowrap;
+  }
+
+  /* ---- new: welcome / login modal ---- */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:200; background:rgba(12,23,48,0.85);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .modal-overlay.hidden{ display:none; }
+  .modal-card{
+    position:relative; width:100%; max-width:360px; background:var(--paper-card);
+    border:1px dashed var(--line); border-radius:var(--radius); padding:22px 20px 20px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  }
+  .modal-card .tag{
+    position:absolute; top:-10px; left:16px; background:var(--maroon); color:#fff;
+    font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.06em;
+    padding:4px 8px; transform:rotate(-2deg);
+  }
+  .modal-card h4{ font-family:'Fraunces', serif; font-size:18px; color:var(--ink); margin:8px 0 8px; }
+  .modal-card p{ color:var(--text-soft); font-size:13px; margin:0 0 14px; }
+  .modal-card .file-link{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink);
+    text-decoration:none; border-bottom:1px solid var(--marigold); padding-bottom:2px;
+    display:inline-block; margin-bottom:16px;
+  }
+  .modal-actions{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .modal-actions .btn{ width:100%; justify-content:center; }
+
+  /* ---- new: persistent site info / credit footer (shown on every tab) ---- */
+  .site-footer-info .stub h4{ font-size:14px; }
+  .site-footer-info p strong{ color:var(--ink); }
 </style>
 </head>
 <body>
+
+<!-- ===== Welcome / read-first popup ===== -->
+<div class="modal-overlay" id="welcome-modal">
+  <div class="modal-card">
+    <span class="tag">READ FIRST</span>
+    <h4>Before you explore the site</h4>
+    <p>Please read the <strong>How to Use the Drive</strong> guide first — it explains navigation and the daily‑update habit.</p>
+    <a class="file-link" href="https://docs.google.com/document/d/1u1IlmVu4hQStFuoVk_FPZZ60jGk3mjmt0EbQgXmU9X0/edit?tab=t.0" target="_blank" rel="noopener">Open the guide ↗</a>
+    <div class="modal-actions">
+      <button class="btn btn-solid" id="welcome-ok-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Teacher Login popup (triggered from the app bar) ===== -->
+<div class="modal-overlay hidden" id="teacher-modal">
+  <div class="modal-card">
+    <span class="tag">ONLY FOR REGISTERED TEACHER ACCESS</span>
+    <h4>Teacher Login</h4>
+    <p>Continue to the teacher portal to sign in and manage Drive materials.</p>
+    <div class="modal-actions">
+      <a class="btn btn-solid" href="https://jointsecretary79-bot.github.io/classx-drive-frontend/Teacher%20Login.html" style="text-decoration:none;">Go to Teacher Login →</a>
+      <button class="btn" id="teacher-modal-close">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <div class="app-shell">
 
@@ -205,7 +275,14 @@
       </svg>
       <h1>Class X Drive</h1>
     </div>
-    <span class="screen-tag" id="screen-tag">Home</span>
+    <div class="appbar-right">
+      <div class="appbar-clock-row">
+        <span class="live-clock" id="live-clock">--:--:--</span>
+        <span class="divider-dot">·</span>
+        <button class="teacher-link" id="teacher-popup-trigger" type="button">Teacher Login</button>
+      </div>
+      <span class="screen-tag" id="screen-tag">Home</span>
+    </div>
   </div>
 
   <div class="screens">
@@ -236,7 +313,7 @@
           <span>14 AUG — Guidelines posted for using Gemini inside the Drive</span>
           <span>DRIVE LOG — CBSE circulars &amp; upload status updated</span>
           <span>NOTICE — Read the guidelines before browsing materials</span>
-          <spam>31 AUG 2026-the launch of Class X Drive, a new web app interface designed to make accessing your Google Drive study materials simple, organized, and seamless.</spam>
+          <span>31 AUG 2026 — the launch of Class X Drive, a new web app interface designed to make accessing your Google Drive study materials simple, organized, and seamless.</span>
         </div>
       </div>
 
@@ -381,8 +458,25 @@
           <p>Browse the raw folder structure directly in Google Drive.</p>
           <a class="btn" href="https://drive.google.com/drive/folders/1qt84cRtq7s1yl3cHw06Qv_HhXoM3jg6c" target="_blank" rel="noopener">Open Drive →</a>
         </div>
+
+        <div class="stub">
+          <span class="mono-label">Teacher access</span>
+          <h4>Teacher Login</h4>
+          <p>Staff portal for uploading and managing materials.</p>
+          <a class="btn" href="https://jointsecretary79-bot.github.io/classx-drive-frontend/Teacher%20Login.html">Go to Teacher Login →</a>
+        </div>
       </div>
     </section>
+
+    <!-- ===== persistent site-info / credit footer — shown at the bottom of every tab ===== -->
+    <div class="pad site-footer-info">
+      <div class="section-label" style="margin-top:8px;"><span class="num">✦</span><h3>Site info</h3></div>
+      <div class="stub">
+        <span class="mono-label">Last updated</span>
+        <h4 id="last-updated-text">—</h4>
+        <p>Maintained &amp; monitored by <strong>Harshit, Smit, Pawani</strong> and team.</p>
+      </div>
+    </div>
 
   </div>
 
@@ -433,6 +527,34 @@
       screenTag.textContent = labels[target];
       scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  });
+
+  // ---- live clock (top of app bar) ----
+  function updateClock() {
+    const el = document.getElementById('live-clock');
+    if (!el) return;
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ---- last-updated / credit line (bottom of every tab) ----
+  document.getElementById('last-updated-text').textContent = '31 Aug 2026 · 11:45 PM IST';
+
+  // ---- welcome / read-first popup ----
+  const welcomeModal = document.getElementById('welcome-modal');
+  document.getElementById('welcome-ok-btn').addEventListener('click', () => {
+    welcomeModal.classList.add('hidden');
+  });
+
+  // ---- teacher login popup (opened from the app bar, beside the clock) ----
+  const teacherModal = document.getElementById('teacher-modal');
+  document.getElementById('teacher-popup-trigger').addEventListener('click', () => {
+    teacherModal.classList.remove('hidden');
+  });
+  document.getElementById('teacher-modal-close').addEventListener('click', () => {
+    teacherModal.classList.add('hidden');
   });
 
   // ---- push notifications ----

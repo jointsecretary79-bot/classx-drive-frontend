@@ -24,7 +24,7 @@
     --text-soft:#5a6178;
     --line:#c9cedb;
     --radius:2px;
-    --bar-h:60px;
+    --bar-h:76px;
     --nav-h:74px;
   }
   *{box-sizing:border-box;}
@@ -63,12 +63,12 @@
     position:sticky; top:0; z-index:20; height:var(--bar-h);
     background:var(--ink); color:#fff;
     display:flex; align-items:center; justify-content:space-between;
-    padding:0 18px; border-bottom:3px solid var(--marigold); flex-shrink:0;
+    padding:0 18px; border-bottom:6px solid var(--marigold); flex-shrink:0;
   }
   .appbar .brand{ display:flex; align-items:center; gap:10px; }
   .appbar .brand svg{ width:26px; height:26px; }
   .brics-logo-link{ display:flex; align-items:center; flex-shrink:0; }
-  .brics-logo-link img{ height:28px; width:auto; display:block; border-radius:2px; }
+  .brics-logo-link img{ height:46px; width:auto; display:block; border-radius:2px; background:#fff; padding:2px; }
   .appbar h1{ color:#fff; font-size:16px; font-weight:600; letter-spacing:0.01em; }
   .appbar .screen-tag{
     font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.1em;
@@ -296,7 +296,7 @@
       </svg>
       <h1>Class X Drive</h1>
       <a class="brics-logo-link" href="https://www.brics2026.gov.in/" target="_blank" rel="noopener" aria-label="BRICS 2026 India — official website">
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEis1T9ks6GXJUdv89XfPjHzvmGZ_Yi2N3-b8IORHpMk2PgUWKHDHMuYRuR8miDRNiWUrmmNUFVkids9WnSqBpd3-SyPDqXdW1dZjjASZagh_wncVtWSy8MyqwUT9JDjRzuTGU3mshq9R1MPhLDsjfxDGlUUAZeoLezcfRFG4yttY4o0q7VB974g4chyphenhyphends7t/s16000/bricks_summit_logo_2026.jpg" alt="BRICS 2026 India logo">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEis1T9ks6GXJUdv89XfPjHzvmGZ_Yi2N3-b8IORHpMk2PgUWKHDHMuYRuR8miDRNiWUrmmNUFVkids9WnSqBpd3-SyPDqXdW1dZjjASZagh_wncVtWSy8MyqwUT9JDjRzuTGU3mshq9R1MPhLDsjfxDGlUUAZeoLezcfRFG4yttY4o0q7VB974g4c--ds7t/s16000/bricks_summit_logo_2026.jpg" alt="BRICS 2026 India logo">
       </a>
     </div>
     <div class="appbar-right">
@@ -424,22 +424,24 @@
     <section class="screen" data-screen="scriptures">
       <div class="pad">
         <div class="section-label"><span class="num">04</span><h3>Scriptures &amp; knowledge</h3></div>
-        <p style="color:var(--text-soft); font-size:13px; margin:0 0 14px;">Free, full‑text readings of the great Indian epics and scriptures — for whenever you want a break that's still worth your time.</p>
+        <p style="color:var(--text-soft); font-size:13px; margin:0 0 14px;">Bharat Scriptures & Wisdom Hub</p>
 
         <div class="resource-list">
-          <a class="resource-row" href="https://www.gitasupersite.iitk.ac.in/" target="_blank" rel="noopener">
+          <a class="resource-row" href="https://www.gitasupersite.in/" target="_blank" rel="noopener">
             <span class="rdate mono">GITA</span>
-            <span style="flex:1"><span class="rtitle">Bhagavad Gita</span><span class="rnote">IIT Kanpur Gita Supersite — Sanskrit text, transliteration &amp; multiple translations.</span></span>
+            <span style="flex:1"><span class="rtitle">Bhagavad Gita</span><span class="rnote"> Gita Supersite — Sanskrit text, transliteration &amp; translations in 11 languages.</span></span>
             <span class="rarrow">→</span>
           </a>
-          <a class="resource-row" href="https://www.ramcharitmanas.iitk.ac.in/" target="_blank" rel="noopener">
-            <span class="rdate mono">RCM</span>
-            <span style="flex:1"><span class="rtitle">Ramcharitmanas</span><span class="rnote">Tulsidas's Awadhi epic, hosted by IIT Kanpur — full text with translation.</span></span>
-            <span class="rarrow">→</span>
+         
           </a>
-          <a class="resource-row" href="https://www.valmikiramayan.net/" target="_blank" rel="noopener">
+          <a class="resource-row" href="https://www.wisdomlib.org/hinduism/book/the-ramayana-of-valmiki" target="_blank" rel="noopener">
             <span class="rdate mono">RMYN</span>
-            <span style="flex:1"><span class="rtitle">Valmiki Ramayana</span><span class="rnote">Verse‑by‑verse Sanskrit original with English translation.</span></span>
+            <span style="flex:1"><span class="rtitle">Valmiki Ramayana</span><span class="rnote">Full English prose translation (Hari Prasad Shastri), all 7 kandas.</span></span>
+            <span class="rarrow">→</span>
+          </a>
+          <a class="resource-row" href="https://sacred-texts.com/hin/maha/index.htm" target="_blank" rel="noopener">
+            <span class="rdate mono">MBH</span>
+            <span style="flex:1"><span class="rtitle">Mahabharata</span><span class="rnote">Complete Ganguli English translation, all 18 books — Internet Sacred Text Archive.</span></span>
             <span class="rarrow">→</span>
           </a>
           <a class="resource-row" href="https://www.bharatrajya.com/year/1493" target="_blank" rel="noopener">
@@ -450,8 +452,7 @@
         </div>
 
         <div class="chip-row">
-          <a class="chip" href="https://www.holy-bhagavad-gita.org/" target="_blank" rel="noopener">Gita (audio+text) ↗</a>
-          <a class="chip" href="https://www.wisdomlib.org/hinduism/book/the-ramayana-of-valmiki" target="_blank" rel="noopener">Ramayana (Shastri ed.) ↗</a>
+          <a class="chip" href="https://www.holy-bhagavad-gita.org/" target="_blank" rel="noopener">Gita — audio + commentary ↗</a>
         </div>
       </div>
     </section>
@@ -460,14 +461,9 @@
       <div class="pad">
         <div class="section-label"><span class="num">05</span><h3>Daily updates log</h3></div>
         <div class="resource-list">
-          <a class="resource-row" href="#" target="_blank" rel="noopener">
-            <span class="rdate mono">TODO </span>
-            <span style="flex:1"><span class="rtitle">CBSE exam circular </span><span class="rnote">PASTE LINK — see note from Claude</span></span>
-            <span class="rarrow">→</span>
-          </a>
-          <a class="resource-row" href="#" target="_blank" rel="noopener">
-            <span class="rdate mono">TODO </span>
-            <span style="flex:1"><span class="rtitle">Circulars folder (Drive) </span><span class="rnote">PASTE LINK — see note from Claude</span></span>
+           <a class="resource-row" href="https://docs.google.com/document/d/1dkCw3YpoeiUTytuioySRNZ13-im4WwrWHiGpn2_zQF0/edit?usp=sharing" target="_blank" rel="noopener">
+            <span class="rdate mono">11 SEP </span>
+            <span style="flex:1"><span class="rtitle"> Bharat Scriptures & Knowledge Resources</span><span class="rnote">READ</span></span>
             <span class="rarrow">→</span>
           </a>
           <a class="resource-row" href="https://drive.google.com/file/d/1P85aGe15ccDC5im2cM28Y62hlGFTXq5T/view?usp=sharing" target="_blank" rel="noopener">
@@ -516,16 +512,6 @@
               <span style="flex:1"><span class="rtitle">Prior Intimation of Submission of List of Candidates (LOC) for Class X/XII Examination-2026-27 </span><span class="rnote">CBSE LASTEST UPDATE</span></span>
               <span class="rarrow">→</span>
             </a>
-            <a class="resource-row" href="#" target="_blank" rel="noopener">
-              <span class="rdate mono">TODO </span>
-              <span style="flex:1"><span class="rtitle">CBSE exam circular </span><span class="rnote">PASTE LINK — see note from Claude</span></span>
-              <span class="rarrow">→</span>
-            </a>
-            <a class="resource-row" href="#" target="_blank" rel="noopener">
-              <span class="rdate mono">TODO </span>
-              <span style="flex:1"><span class="rtitle">Circulars folder (Drive) </span><span class="rnote">PASTE LINK — see note from Claude</span></span>
-              <span class="rarrow">→</span>
-            </a>
           </div>
         </details>
 
@@ -536,6 +522,11 @@
             <span class="fchev">⌄</span>
           </summary>
           <div class="folder-body">
+            <a class="resource-row" href="https://docs.google.com/document/d/1dkCw3YpoeiUTytuioySRNZ13-im4WwrWHiGpn2_zQF0/edit?usp=sharing" target="_blank" rel="noopener">
+            <span class="rdate mono">11 SEP </span>
+            <span style="flex:1"><span class="rtitle"> Bharat Scriptures & Knowledge Resources</span><span class="rnote">READ</span></span>
+            <span class="rarrow">→</span>
+          </a>
             <a class="resource-row" href="https://docs.google.com/document/d/1wdCxXfgC8d-p6uVR-mPy4kR6wOpSBd8CzAGsTEJnhqA/edit?usp=sharing" target="_blank" rel="noopener">
               <span class="rdate mono">1 SEP </span>
               <span style="flex:1"><span class="rtitle">TEACHER LOGIN FOR REGISTERED TEACHERS </span><span class="rnote">TEACHER LOGIN</span></span>
@@ -684,7 +675,7 @@
   setInterval(updateClock, 1000);
 
   // ---- last-updated / credit line (bottom of every tab) ----
-  document.getElementById('last-updated-text').textContent = '10 SEP 2026 · 7:02 PM IST';
+  document.getElementById('last-updated-text').textContent = '11 SEP 2026 · 11:07 AM IST';
 
   // ---- welcome / read-first popup ----
   const welcomeModal = document.getElementById('welcome-modal');

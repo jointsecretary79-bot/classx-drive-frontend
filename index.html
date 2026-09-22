@@ -100,7 +100,8 @@
   .hero h2{ color:#fff; font-size:26px; line-height:1.1; max-width:14ch; }
   .hero p{ margin-top:10px; color:#c7cee2; font-size:13.5px; max-width:34ch; position:relative; z-index:1; }
   .seal{ flex-shrink:0; width:72px; height:72px; transform:rotate(-9deg); }
-  .ticker{ background:var(--marigold); color:var(--ink); overflow:hidden; white-space:nowrap; }
+  .ticker{ background:var(--marigold); color:var(--ink); overflow:hidden; white-space:nowrap; border-top:1px solid rgba(20,38,69,0.15); }
+  .ticker + .ticker{ border-top:1px solid rgba(20,38,69,0.35); }
   .ticker-track{ display:inline-flex; align-items:center; padding:8px 0; animation:scroll-left 26s linear infinite; }
   .ticker-track span{
     font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600;
@@ -333,12 +334,16 @@
         </div>
       </div>
 
-      <div class="ticker" role="marquee" aria-label="Daily updates ticker">
+      <div class="ticker" role="marquee" aria-label="Update ticker 1">
         <div class="ticker-track">
-          < class="flash-alert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
-          <span class="flash-aspanlert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
-            < class="flash-alert">22 SEP Registration For Class X Board Exam-CHECK IN UPDATE SECTION</span>
-          <span class="flash-aspanlert">22 SEP Registration For Class X Board Exam-CHECK IN UPDATE SECTION</span>
+          <span class="flash-alert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
+          <span class="flash-alert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
+        </div>
+      </div>
+      <div class="ticker" role="marquee" aria-label="Update ticker 2">
+        <div class="ticker-track">
+          <span class="flash-alert">22 SEP — Registration for Class X Board Exam — check Updates section</span>
+          <span class="flash-alert">22 SEP — Registration for Class X Board Exam — check Updates section</span>
         </div>
       </div>
 
@@ -416,15 +421,6 @@
           <span class="rarrow">→</span>
         </a>
 
-        <a class="resource-row" href="https://drive.google.com/drive/folders/1lfK3Fp8GeagJSfSFX_Eh2A9xGxYi30jd" target="_blank" rel="noopener">
-          <span class="rdate mono">FOLDER</span>
-          <span style="flex:1">
-            <span class="rtitle">All subjects — sample papers</span>
-            <span class="rnote">Past‑year papers, including IT 402.</span>
-          </span>
-          <span class="rarrow">→</span>
-        </a>
-
         <div class="chip-row">
           <a class="chip" href="https://cbseacademic.nic.in/sqp_archive.html" target="_blank" rel="noopener">CBSE archive ↗</a>
           <a class="chip" href="https://cbseacademic.nic.in/skill-education-sqp_archive.html" target="_blank" rel="noopener">IT 402 archive ↗</a>
@@ -442,8 +438,6 @@
             <span class="rdate mono">GITA</span>
             <span style="flex:1"><span class="rtitle">Bhagavad Gita</span><span class="rnote"> Gita Supersite — Sanskrit text, transliteration &amp; translations in 11 languages.</span></span>
             <span class="rarrow">→</span>
-          </a>
-         
           </a>
           <a class="resource-row" href="https://www.wisdomlib.org/hinduism/book/the-ramayana-of-valmiki" target="_blank" rel="noopener">
             <span class="rdate mono">RMYN</span>
@@ -800,4 +794,4 @@ Examinations- 2026-27- reg
 </script>
 
 </body>
-</html>
+  </html>

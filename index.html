@@ -81,6 +81,11 @@
   .screen{ display:none; animation:fade-in 0.25s ease; }
   .screen.active{ display:block; }
   @keyframes fade-in{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0);} }
+  @keyframes flash-red{ 0%,100%{ color:#c0392b; opacity:1; } 50%{ color:#c0392b; opacity:0.35; } }
+  .flash-alert{ animation:flash-red 1.1s ease-in-out infinite; font-weight:700; }
+  @media (prefers-reduced-motion: reduce){
+    .flash-alert{ animation:none; color:#c0392b; }
+  }
   .pad{ padding:20px 18px 8px; }
   .hero{ background:var(--ink); color:#eef1f6; padding:26px 18px 30px; position:relative; overflow:hidden; }
   .hero::before{
@@ -98,7 +103,7 @@
   .ticker{ background:var(--marigold); color:var(--ink); overflow:hidden; white-space:nowrap; }
   .ticker-track{ display:inline-flex; align-items:center; padding:8px 0; animation:scroll-left 26s linear infinite; }
   .ticker-track span{
-    font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:600;
+    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600;
     padding:0 20px; border-right:1px solid rgba(20,38,69,0.35);
   }
   @keyframes scroll-left{ 0%{ transform:translateX(0);} 100%{ transform:translateX(-50%);} }
@@ -327,11 +332,11 @@
           </svg>
         </div>
       </div>
-<span>Sample Question Papers for Classes X & XII for the current Academic Session
-2026- 27 – reg.</span>
+
       <div class="ticker" role="marquee" aria-label="Daily updates ticker">
         <div class="ticker-track">
-          =
+          <span class="flash-alert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
+          <span class="flash-alert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
         </div>
       </div>
 
@@ -396,22 +401,29 @@
       </div>
     </section>
 
-    <section class="screen" data-screen="SAMPLE PAPERs">
+    <section class="screen" data-screen="papers">
       <div class="pad">
         <div class="section-label"><span class="num">03</span><h3>Sample papers</h3></div>
+
+        <a class="resource-row" href="https://drive.google.com/file/d/1LD2uNzqnK_IML-53gP5hDl0aUZ56PmOg/view?usp=sharing" target="_blank" rel="noopener">
+          <span class="rdate mono">NEW</span>
+          <span style="flex:1">
+            <span class="rtitle flash-alert">Sample Paper 2026‑27</span>
+            <span class="rnote">Classes X &amp; XII — current academic session.</span>
+          </span>
+          <span class="rarrow">→</span>
+        </a>
 
         <a class="resource-row" href="https://drive.google.com/drive/folders/1lfK3Fp8GeagJSfSFX_Eh2A9xGxYi30jd" target="_blank" rel="noopener">
           <span class="rdate mono">FOLDER</span>
           <span style="flex:1">
             <span class="rtitle">All subjects — sample papers</span>
             <span class="rnote">Past‑year papers, including IT 402.</span>
-        
           </span>
           <span class="rarrow">→</span>
         </a>
 
         <div class="chip-row">
-          <a class="chip" href="https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html" target="_blank" rel="noopener">2026-27 SAMPLE PAPER ↗</a>
           <a class="chip" href="https://cbseacademic.nic.in/sqp_archive.html" target="_blank" rel="noopener">CBSE archive ↗</a>
           <a class="chip" href="https://cbseacademic.nic.in/skill-education-sqp_archive.html" target="_blank" rel="noopener">IT 402 archive ↗</a>
         </div>
@@ -460,8 +472,8 @@
         <div class="resource-list">
            <a class="resource-row" href="https://drive.google.com/file/d/1LD2uNzqnK_IML-53gP5hDl0aUZ56PmOg/view?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">22 SEP </span>
-            <span style="flex:1"><span class="rtitle"> Sample Question Papers for Classes X & XII for the current Academic Session
-2026- 27 – reg.</span><span class="rnote">SAMPLE PAPER 2026-27</span></span>
+            <span style="flex:1"><span class="rtitle flash-alert"> Sample Question Papers for Classes X & XII for the current Academic Session
+2026- 27 – reg.</span><span class="rnote flash-alert">SAMPLE PAPER 2026-27</span></span>
             <span class="rarrow">→</span>
           </a>
            <a class="resource-row" href="https://docs.google.com/document/d/1dkCw3YpoeiUTytuioySRNZ13-im4WwrWHiGpn2_zQF0/edit?usp=sharing" target="_blank" rel="noopener">
@@ -512,8 +524,8 @@
           <div class="folder-body">
             <a class="resource-row" href="https://drive.google.com/file/d/1LD2uNzqnK_IML-53gP5hDl0aUZ56PmOg/view?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">22 SEP </span>
-            <span style="flex:1"><span class="rtitle"> Sample Question Papers for Classes X & XII for the current Academic Session
-2026- 27 – reg.</span><span class="rnote">SAMPLE PAPER 2026-27</span></span>
+            <span style="flex:1"><span class="rtitle flash-alert"> Sample Question Papers for Classes X & XII for the current Academic Session
+2026- 27 – reg.</span><span class="rnote flash-alert">SAMPLE PAPER 2026-27</span></span>
             <span class="rarrow">→</span>
           </a>
             <a class="resource-row" href="https://drive.google.com/file/d/1P85aGe15ccDC5im2cM28Y62hlGFTXq5T/view?usp=sharing" target="_blank" rel="noopener">

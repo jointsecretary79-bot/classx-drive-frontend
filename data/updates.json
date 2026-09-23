@@ -20,11 +20,11 @@
         "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1790164896306-2-Class_10th_rise_observation_.pdf"
       }
     ],
-    "showInTicker": true,
+    "showInTicker": false,
     "showInList": true,
     "flash": true,
-    "folderCbse": true,
-    "folderApp": true,
+    "folderCbse": false,
+    "folderApp": false,
     "ts": 1790164899251
   }
 ]

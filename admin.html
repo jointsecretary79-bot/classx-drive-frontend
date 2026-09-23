@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+              <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -101,9 +101,9 @@
     <label for="uUrl">Link (optional — leave blank if attaching a file below)</label>
     <input id="uUrl" placeholder="https://drive.google.com/..." />
 
-    <label for="uFile">Attach a file or folder (optional)</label>
-    <input id="uFile" type="file" multiple />
-    <p class="hint">Selecting multiple files uploads each one into the repo's "uploads" folder, stamped with today's date and time. The update's link will point to the first file, unless you set a link above.</p>
+    <label for="uFile">Attach photo(s) and/or a PDF (optional)</label>
+    <input id="uFile" type="file" multiple accept="image/*,.pdf" />
+    <p class="hint">Select as many files as you like. On the app, photos show as a tappable, zoomable gallery; PDFs show as a separate "Open PDF" button — they never get mixed up. All files are stamped with today's date and time. If you don't set a link above, the update's link points to the first file.</p>
 
     <div class="checkrow">
       <input id="uTicker" type="checkbox" checked />
@@ -117,10 +117,18 @@
       <input id="uShowList" type="checkbox" checked />
       <label for="uShowList">Show in the Daily updates log list</label>
     </div>
+    <div class="checkrow">
+      <input id="uFolderCbse" type="checkbox" />
+      <label for="uFolderCbse">Also file under "CBSE latest official" folder</label>
+    </div>
+    <div class="checkrow">
+      <input id="uFolderApp" type="checkbox" />
+      <label for="uFolderApp">Also file under "App / website updates" folder</label>
+    </div>
 
     <button id="postUpdate">Post update</button>
     <div id="uStatus"></div>
-    <p class="hint">Tip: an update needs at least one of "ticker" or "list" checked, or it won't be visible anywhere.</p>
+    <p class="hint">Tip: an update needs at least one of "ticker" or "list" checked, or it won't be visible anywhere. Everything here — including which folders it's filed under — can be changed later in "Manage posted updates" below, without deleting and re-posting.</p>
   </div>
 
   <div class="card">
@@ -285,6 +293,8 @@
     const showInTicker = gh('uTicker').checked;
     const flash = gh('uFlash').checked;
     const showInList = gh('uShowList').checked;
+    const folderCbse = gh('uFolderCbse').checked;
+    const folderApp = gh('uFolderApp').checked;
     const status = gh('uStatus');
 
     if (!token || !repoFull || !date || !title) {
@@ -303,18 +313,20 @@
 
     gh('postUpdate').disabled = true;
     try {
-      // 1. Upload any attached files into /uploads
+      // 1. Upload every attached file into /uploads, keeping track of ALL of them —
+      //    not just the first — so images can render as a gallery and PDFs stay separate.
+      const uploadedFiles = [];
       if (files && files.length) {
         status.textContent = `Uploading ${files.length} file(s)…`;
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           const b64 = await fileToBase64(file);
           const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-          const path = `uploads/${Date.now()}-${safeName}`;
+          const path = `uploads/${Date.now()}-${i}-${safeName}`;
           await ghPutFile(owner, repo, path, branch, token, b64, `Upload ${file.name} via admin portal`);
-          if (!url) {
-            url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
-          }
+          const fileUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+          uploadedFiles.push({ name: file.name, url: fileUrl });
+          if (!url) url = fileUrl;
         }
       }
 
@@ -331,7 +343,12 @@
 
       // 3. Prepend the new entry and write it back
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      entries.unshift({ id, date, time, title, note, url, showInTicker, showInList, flash, ts: Date.now() });
+      entries.unshift({
+        id, date, time, title, note, url,
+        files: uploadedFiles,
+        showInTicker, showInList, flash, folderCbse, folderApp,
+        ts: Date.now(),
+      });
       status.textContent = 'Saving update…';
       const newContent = b64EncodeUnicode(JSON.stringify(entries, null, 2));
       await ghPutFile(owner, repo, 'data/updates.json', branch, token, newContent, `Post update: ${title}`, sha);
@@ -344,6 +361,8 @@
       gh('uTicker').checked = true;
       gh('uFlash').checked = false;
       gh('uShowList').checked = true;
+      gh('uFolderCbse').checked = false;
+      gh('uFolderApp').checked = false;
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
     } finally {
@@ -389,15 +408,32 @@
 
   // ============ Manage posted updates ============
   function renderEntryRow(entry, index, owner, repo, branch, token, sha) {
+    const esc = (s) => String(s || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const files = Array.isArray(entry.files) ? entry.files : [];
+    const filesHtml = files.length
+      ? `<div class="li-sub">Attached: ${files.map(f => esc(f.name)).join(', ')} — <span class="hint" style="display:inline;">to swap a file, delete this entry and post it again with the new file(s)</span></div>`
+      : '';
+
     const div = document.createElement('div');
     div.className = 'list-item';
     div.innerHTML = `
-      <div class="li-title">${(entry.title || '(untitled)').replace(/</g, '&lt;')}</div>
-      <div class="li-sub">${(entry.date || '')}${entry.time ? ', ' + entry.time : ''} — ${(entry.note || '')}</div>
+      <div class="row2">
+        <div><label>Date</label><input class="e-date" value="${esc(entry.date)}"></div>
+        <div><label>Time</label><input class="e-time" value="${esc(entry.time)}"></div>
+      </div>
+      <label>Title</label>
+      <input class="e-title" value="${esc(entry.title)}">
+      <label>Note / tag</label>
+      <input class="e-note" value="${esc(entry.note)}">
+      <label>Link</label>
+      <input class="e-url" value="${esc(entry.url)}">
+      ${filesHtml}
       <div class="li-checks">
         <label><input type="checkbox" class="e-ticker" ${entry.showInTicker !== false && entry.ticker !== false ? 'checked' : ''}> Show in ticker</label>
         <label><input type="checkbox" class="e-flash" ${entry.flash ? 'checked' : ''}> Flash red</label>
         <label><input type="checkbox" class="e-list" ${entry.showInList !== false ? 'checked' : ''}> Show in list</label>
+        <label><input type="checkbox" class="e-cbse" ${entry.folderCbse ? 'checked' : ''}> CBSE folder</label>
+        <label><input type="checkbox" class="e-app" ${entry.folderApp ? 'checked' : ''}> App folder</label>
       </div>
       <div class="li-actions">
         <button class="small-btn e-save">Save changes</button>
@@ -413,11 +449,18 @@
         const fresh = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
         const entries = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, '')));
         const target = entries.find(e => e.id === entry.id) || entries[index];
+        target.date = div.querySelector('.e-date').value.trim();
+        target.time = div.querySelector('.e-time').value.trim();
+        target.title = div.querySelector('.e-title').value.trim();
+        target.note = div.querySelector('.e-note').value.trim();
+        target.url = div.querySelector('.e-url').value.trim();
         target.showInTicker = div.querySelector('.e-ticker').checked;
         target.flash = div.querySelector('.e-flash').checked;
         target.showInList = div.querySelector('.e-list').checked;
+        target.folderCbse = div.querySelector('.e-cbse').checked;
+        target.folderApp = div.querySelector('.e-app').checked;
         const content = b64EncodeUnicode(JSON.stringify(entries, null, 2));
-        await ghPutFile(owner, repo, 'data/updates.json', branch, token, content, `Edit update: ${entry.title}`, fresh.sha);
+        await ghPutFile(owner, repo, 'data/updates.json', branch, token, content, `Edit update: ${target.title}`, fresh.sha);
         statusEl.textContent = 'Saved.';
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
@@ -425,7 +468,7 @@
     });
 
     div.querySelector('.e-delete').addEventListener('click', async () => {
-      if (!confirm(`Delete "${entry.title}" entirely? This removes it from both the ticker and the list.`)) return;
+      if (!confirm(`Delete "${entry.title}" entirely? This removes it from the ticker, the list and any folders.`)) return;
       const statusEl = div.querySelector('.e-status');
       statusEl.textContent = 'Deleting…';
       try {
@@ -655,4 +698,4 @@
   });
 </script>
 </body>
-  </html>
+      </html>

@@ -10,7 +10,7 @@
   h1{ font-size:20px; margin:0 0 6px; }
   p.sub{ color:#aeb6cc; font-size:13px; margin:0 0 22px; }
   label{ display:block; font-size:12px; color:#c7cee2; margin:14px 0 6px; }
-  input, textarea, select{ width:100%; padding:10px 12px; border-radius:4px; border:1px solid #28406b; background:#0c1730; color:#fff; font-family:inherit; font-size:14px; }
+  input, textarea{ width:100%; padding:10px 12px; border-radius:4px; border:1px solid #28406b; background:#0c1730; color:#fff; font-family:inherit; font-size:14px; }
   textarea{ min-height:70px; resize:vertical; }
   button{ margin-top:20px; width:100%; padding:12px; background:#E7A23C; color:#142645; border:none; border-radius:4px; font-weight:700; font-size:14px; cursor:pointer; }
   button:disabled{ opacity:0.6; cursor:not-allowed; }
@@ -24,11 +24,20 @@
   details.ghsettings summary{ cursor:pointer; padding:10px 0; font-size:13px; color:#c7cee2; }
   .hint{ font-size:11px; color:#8b93ab; margin-top:4px; line-height:1.5; }
 
-  .update-row{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #28406b; }
-  .update-row .u-text{ flex:1; min-width:0; }
-  .update-row .u-title{ font-size:13px; font-weight:600; }
-  .update-row .u-meta{ font-size:11px; color:#8b93ab; }
-  .update-row button{ margin:0; width:auto; padding:6px 12px; background:#8B2E2E; color:#fff; font-size:12px; }
+  .row2{ display:flex; gap:10px; }
+  .row2 > div{ flex:1; }
+  select{ width:100%; padding:10px 12px; border-radius:4px; border:1px solid #28406b; background:#0c1730; color:#fff; font-family:inherit; font-size:14px; }
+  .small-btn{ margin-top:0; width:auto; padding:6px 12px; font-size:12px; background:#28406b; color:#eef1f6; border:none; border-radius:4px; font-weight:600; cursor:pointer; }
+  .small-btn.danger{ background:#8B2E2E; color:#fff; }
+  .load-btn{ margin-top:0; width:auto; padding:9px 14px; font-size:13px; background:#28406b; color:#eef1f6; }
+  .list-item{ border:1px solid #28406b; border-radius:4px; padding:12px; margin-top:10px; }
+  .list-item .li-title{ font-size:13.5px; font-weight:700; color:#fff; }
+  .list-item .li-sub{ font-size:11.5px; color:#8b93ab; margin-top:2px; }
+  .li-checks{ display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; }
+  .li-checks label{ display:flex; align-items:center; gap:6px; margin:0; font-size:12px; color:#eef1f6; }
+  .li-checks input{ width:auto; }
+  .li-actions{ display:flex; gap:8px; margin-top:10px; }
+  .empty-note{ font-size:12.5px; color:#8b93ab; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -72,8 +81,16 @@
       <input id="ghBranch" placeholder="main" />
     </details>
 
-    <label for="uDate">Date</label>
-    <input id="uDate" placeholder="e.g. 23 SEP" />
+    <div class="row2">
+      <div>
+        <label for="uDate">Date</label>
+        <input id="uDate" placeholder="e.g. 23 SEP" />
+      </div>
+      <div>
+        <label for="uTime">Time</label>
+        <input id="uTime" placeholder="e.g. 5:31 PM" />
+      </div>
+    </div>
 
     <label for="uTitle">Title</label>
     <input id="uTitle" placeholder="e.g. New Science notes uploaded" />
@@ -81,36 +98,89 @@
     <label for="uNote">Note / tag</label>
     <input id="uNote" placeholder="e.g. SCIENCE CH.4 NOTES" />
 
-    <label for="uCategory">Where should this appear?</label>
-    <select id="uCategory">
-      <option value="">— Choose —</option>
-      <option value="cbse">CBSE latest official (CBSE circulars)</option>
-      <option value="app">App / website updates</option>
-      <option value="none">Just the Daily updates log (no folder)</option>
-    </select>
-
     <label for="uUrl">Link (optional — leave blank if attaching a file below)</label>
     <input id="uUrl" placeholder="https://drive.google.com/..." />
 
     <label for="uFile">Attach a file or folder (optional)</label>
     <input id="uFile" type="file" multiple />
-    <p class="hint">Selecting multiple files uploads each one into the repo's "uploads" folder. The update's link will point to the first file, unless you set a link above.</p>
+    <p class="hint">Selecting multiple files uploads each one into the repo's "uploads" folder, stamped with today's date and time. The update's link will point to the first file, unless you set a link above.</p>
 
     <div class="checkrow">
-      <input id="uTicker" type="checkbox" />
-      <label for="uTicker">Also show in the scrolling yellow ticker banner</label>
+      <input id="uTicker" type="checkbox" checked />
+      <label for="uTicker">Show on the home screen ticker banner</label>
+    </div>
+    <div class="checkrow">
+      <input id="uFlash" type="checkbox" />
+      <label for="uFlash">Make it flash red (urgent alert) — can be turned off anytime by re-saving without this checked</label>
+    </div>
+    <div class="checkrow">
+      <input id="uShowList" type="checkbox" checked />
+      <label for="uShowList">Show in the Daily updates log list</label>
     </div>
 
     <button id="postUpdate">Post update</button>
     <div id="uStatus"></div>
+    <p class="hint">Tip: an update needs at least one of "ticker" or "list" checked, or it won't be visible anywhere.</p>
   </div>
 
   <div class="card">
-    <h1>Manage / remove updates</h1>
-    <p class="sub">Loads what's currently posted so you can delete anything wrong or outdated.</p>
-    <button id="loadUpdates">Load current updates</button>
-    <div id="manageStatus"></div>
-    <div id="updatesList"></div>
+    <h1>Site settings</h1>
+    <p class="sub">Controls the home-screen ticker layout and the "Last updated" line shown at the bottom of every tab. Uses the same GitHub connection as above.</p>
+
+    <label for="sTickerDir">Ticker banner layout</label>
+    <select id="sTickerDir">
+      <option value="horizontal">Horizontal — scrolling marquee (current default)</option>
+      <option value="vertical">Vertical — stacked list of alerts</option>
+    </select>
+
+    <div class="row2">
+      <div>
+        <label for="sDate">Last updated — date</label>
+        <input id="sDate" placeholder="e.g. 23 SEP 2026" />
+      </div>
+      <div>
+        <label for="sTime">Last updated — time</label>
+        <input id="sTime" placeholder="e.g. 5:31 PM IST" />
+      </div>
+    </div>
+
+    <button id="saveSettings">Save site settings</button>
+    <div id="sStatus"></div>
+  </div>
+
+  <div class="card">
+    <h1>Manage posted updates</h1>
+    <p class="sub">Edit or remove updates you've already posted — choose exactly where each one should keep showing.</p>
+    <button class="load-btn" id="loadEntries">Load posted updates</button>
+    <div id="entriesStatus" class="hint"></div>
+    <div id="entriesList"></div>
+  </div>
+
+  <div class="card">
+    <h1>Manage uploaded files</h1>
+    <p class="sub">Files attached to updates live in the repo's "uploads" folder. Delete anything outdated or wrong here.</p>
+    <button class="load-btn" id="loadFiles">Load uploaded files</button>
+    <div id="filesStatus" class="hint"></div>
+    <div id="filesList"></div>
+  </div>
+
+  <div class="card">
+    <h1>Manage subject folders</h1>
+    <p class="sub">Add extra folders/buttons to the Subjects tab (beyond the built-in ones), or remove ones you added before.</p>
+
+    <label for="fCode">Short code</label>
+    <input id="fCode" placeholder="e.g. SANS" />
+    <label for="fTitle">Title</label>
+    <input id="fTitle" placeholder="e.g. Sanskrit" />
+    <label for="fPeriod">Label (optional)</label>
+    <input id="fPeriod" placeholder="e.g. Period 8" />
+    <label for="fUrl">Link</label>
+    <input id="fUrl" placeholder="https://drive.google.com/drive/folders/..." />
+    <button id="addFolder">Add folder</button>
+    <div id="folderStatus" class="hint"></div>
+
+    <button class="load-btn" style="margin-top:16px;" id="loadFolders">Load existing added folders</button>
+    <div id="foldersList"></div>
   </div>
 
 <script>
@@ -119,6 +189,7 @@
   gh('ghRepo').value = localStorage.getItem('classx_gh_repo') || 'jointsecretary79-bot/classx-drive-frontend';
   gh('ghBranch').value = localStorage.getItem('classx_gh_branch') || 'main';
   gh('uDate').value = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase().replace(/\s/g, ' ');
+  gh('uTime').value = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   function b64EncodeUnicode(str) {
     return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
@@ -157,25 +228,67 @@
     return res.json();
   }
 
+  async function ghDeleteFile(owner, repo, path, branch, token, sha, message) {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      body: JSON.stringify({ message, sha, branch }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || `GitHub delete failed (${res.status})`);
+    }
+    return res.json();
+  }
+
+  async function ghListDir(owner, repo, path, branch, token) {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    });
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`GitHub read failed (${res.status})`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }
+
+  // Reads the GitHub connection fields, validated and saved to localStorage.
+  // Used by every "manage" panel below so the person only has to type it once.
+  function getGhCreds(statusEl) {
+    const token = gh('ghToken').value.trim();
+    const repoFull = gh('ghRepo').value.trim();
+    const branch = gh('ghBranch').value.trim() || 'main';
+    if (!token || !repoFull) {
+      if (statusEl) statusEl.textContent = 'Fill in the GitHub token and repository above first.';
+      return null;
+    }
+    const [owner, repo] = repoFull.split('/');
+    if (!owner || !repo) {
+      if (statusEl) statusEl.textContent = 'Repository should look like owner/repo-name.';
+      return null;
+    }
+    localStorage.setItem('classx_gh_token', token);
+    localStorage.setItem('classx_gh_repo', repoFull);
+    localStorage.setItem('classx_gh_branch', branch);
+    return { owner, repo, branch, token };
+  }
+
   gh('postUpdate').addEventListener('click', async () => {
     const token = gh('ghToken').value.trim();
     const repoFull = gh('ghRepo').value.trim();
     const branch = gh('ghBranch').value.trim() || 'main';
     const date = gh('uDate').value.trim();
+    const time = gh('uTime').value.trim();
     const title = gh('uTitle').value.trim();
     const note = gh('uNote').value.trim();
-    const category = gh('uCategory').value;
     let url = gh('uUrl').value.trim();
     const files = gh('uFile').files;
-    const ticker = gh('uTicker').checked;
+    const showInTicker = gh('uTicker').checked;
+    const flash = gh('uFlash').checked;
+    const showInList = gh('uShowList').checked;
     const status = gh('uStatus');
 
     if (!token || !repoFull || !date || !title) {
       status.textContent = 'Fill in the GitHub token, repository, date and title.';
-      return;
-    }
-    if (!category) {
-      status.textContent = 'Choose where this update should appear.';
       return;
     }
     const [owner, repo] = repoFull.split('/');
@@ -217,7 +330,8 @@
       }
 
       // 3. Prepend the new entry and write it back
-      entries.unshift({ date, title, note, url, ticker, category, ts: Date.now() });
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      entries.unshift({ id, date, time, title, note, url, showInTicker, showInList, flash, ts: Date.now() });
       status.textContent = 'Saving update…';
       const newContent = b64EncodeUnicode(JSON.stringify(entries, null, 2));
       await ghPutFile(owner, repo, 'data/updates.json', branch, token, newContent, `Post update: ${title}`, sha);
@@ -225,93 +339,277 @@
       status.textContent = 'Posted! It will appear on index.html within a minute or two.';
       gh('uTitle').value = '';
       gh('uNote').value = '';
-      gh('uCategory').value = '';
       gh('uUrl').value = '';
       gh('uFile').value = '';
-      gh('uTicker').checked = false;
+      gh('uTicker').checked = true;
+      gh('uFlash').checked = false;
+      gh('uShowList').checked = true;
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
     } finally {
       gh('postUpdate').disabled = false;
     }
   });
+</script>
 
-  function categoryLabel(cat) {
-    if (cat === 'cbse') return 'CBSE latest official';
-    if (cat === 'app') return 'App / website updates';
-    return 'Daily log only';
-  }
-
-  async function fetchEntries() {
-    const token = gh('ghToken').value.trim();
-    const repoFull = gh('ghRepo').value.trim();
-    const branch = gh('ghBranch').value.trim() || 'main';
-    const [owner, repo] = repoFull.split('/');
-    const existing = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
-    if (!existing) return { owner, repo, branch, token, sha: undefined, entries: [] };
-    let entries = [];
-    try { entries = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); }
-    catch { entries = []; }
-    return { owner, repo, branch, token, sha: existing.sha, entries };
-  }
-
-  function renderUpdatesList(state) {
-    const container = gh('updatesList');
-    container.innerHTML = '';
-    if (!state.entries.length) {
-      container.innerHTML = '<p class="hint">No updates posted yet.</p>';
+<script>
+  // ============ Site settings (ticker layout + last-updated stamp) ============
+  gh('saveSettings').addEventListener('click', async () => {
+    const status = gh('sStatus');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    const { owner, repo, branch, token } = creds;
+    const tickerDirection = gh('sTickerDir').value;
+    const dateVal = gh('sDate').value.trim();
+    const timeVal = gh('sTime').value.trim();
+    if (!dateVal || !timeVal) {
+      status.textContent = 'Fill in both the date and time.';
       return;
     }
-    state.entries.forEach((entry, i) => {
-      const row = document.createElement('div');
-      row.className = 'update-row';
-      row.innerHTML = `
-        <div class="u-text">
-          <div class="u-title">${entry.title || '(untitled)'}</div>
-          <div class="u-meta">${entry.date || ''} · ${categoryLabel(entry.category)}${entry.ticker ? ' · in ticker' : ''}</div>
-        </div>
-        <button type="button" data-idx="${i}">Delete</button>
-      `;
-      container.appendChild(row);
-    });
-    container.querySelectorAll('button[data-idx]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        btn.textContent = 'Deleting…';
-        try {
-          const idx = Number(btn.dataset.idx);
-          state.entries.splice(idx, 1);
-          const newContent = b64EncodeUnicode(JSON.stringify(state.entries, null, 2));
-          const result = await ghPutFile(state.owner, state.repo, 'data/updates.json', state.branch, state.token, newContent, 'Delete update via admin portal', state.sha);
-          state.sha = result.content.sha;
-          gh('manageStatus').textContent = 'Deleted. It will disappear from index.html within a minute or two.';
-          renderUpdatesList(state);
-        } catch (err) {
-          gh('manageStatus').textContent = `Error: ${err.message}`;
-          btn.disabled = false;
-          btn.textContent = 'Delete';
-        }
-      });
-    });
-  }
+    const lastUpdatedText = `${dateVal} · ${timeVal}`;
 
-  gh('loadUpdates').addEventListener('click', async () => {
-    const token = gh('ghToken').value.trim();
-    const repoFull = gh('ghRepo').value.trim();
-    if (!token || !repoFull) {
-      gh('manageStatus').textContent = 'Fill in the GitHub token and repository above first.';
-      return;
-    }
-    gh('loadUpdates').disabled = true;
-    gh('manageStatus').textContent = 'Loading…';
+    gh('saveSettings').disabled = true;
+    status.textContent = 'Saving settings…';
     try {
-      const state = await fetchEntries();
-      gh('manageStatus').textContent = `${state.entries.length} update(s) found.`;
-      renderUpdatesList(state);
+      const existing = await ghGetFile(owner, repo, 'data/settings.json', branch, token);
+      const sha = existing ? existing.sha : undefined;
+      const content = b64EncodeUnicode(JSON.stringify({ tickerDirection, lastUpdatedText }, null, 2));
+      await ghPutFile(owner, repo, 'data/settings.json', branch, token, content, 'Update site settings via admin portal', sha);
+      status.textContent = 'Saved! index.html will reflect this within a minute or two.';
     } catch (err) {
-      gh('manageStatus').textContent = `Error: ${err.message}`;
+      status.textContent = `Error: ${err.message}`;
     } finally {
-      gh('loadUpdates').disabled = false;
+      gh('saveSettings').disabled = false;
+    }
+  });
+
+  // Pre-fill the settings form with today's date/time as a convenient default.
+  gh('sDate').value = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+  gh('sTime').value = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST';
+
+  // ============ Manage posted updates ============
+  function renderEntryRow(entry, index, owner, repo, branch, token, sha) {
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `
+      <div class="li-title">${(entry.title || '(untitled)').replace(/</g, '&lt;')}</div>
+      <div class="li-sub">${(entry.date || '')}${entry.time ? ', ' + entry.time : ''} — ${(entry.note || '')}</div>
+      <div class="li-checks">
+        <label><input type="checkbox" class="e-ticker" ${entry.showInTicker !== false && entry.ticker !== false ? 'checked' : ''}> Show in ticker</label>
+        <label><input type="checkbox" class="e-flash" ${entry.flash ? 'checked' : ''}> Flash red</label>
+        <label><input type="checkbox" class="e-list" ${entry.showInList !== false ? 'checked' : ''}> Show in list</label>
+      </div>
+      <div class="li-actions">
+        <button class="small-btn e-save">Save changes</button>
+        <button class="small-btn danger e-delete">Delete entirely</button>
+      </div>
+      <div class="hint e-status"></div>
+    `;
+
+    div.querySelector('.e-save').addEventListener('click', async () => {
+      const statusEl = div.querySelector('.e-status');
+      statusEl.textContent = 'Saving…';
+      try {
+        const fresh = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
+        const entries = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, '')));
+        const target = entries.find(e => e.id === entry.id) || entries[index];
+        target.showInTicker = div.querySelector('.e-ticker').checked;
+        target.flash = div.querySelector('.e-flash').checked;
+        target.showInList = div.querySelector('.e-list').checked;
+        const content = b64EncodeUnicode(JSON.stringify(entries, null, 2));
+        await ghPutFile(owner, repo, 'data/updates.json', branch, token, content, `Edit update: ${entry.title}`, fresh.sha);
+        statusEl.textContent = 'Saved.';
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+      }
+    });
+
+    div.querySelector('.e-delete').addEventListener('click', async () => {
+      if (!confirm(`Delete "${entry.title}" entirely? This removes it from both the ticker and the list.`)) return;
+      const statusEl = div.querySelector('.e-status');
+      statusEl.textContent = 'Deleting…';
+      try {
+        const fresh = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
+        let entries = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, '')));
+        entries = entries.filter(e => (entry.id ? e.id !== entry.id : e !== entries[index]));
+        const content = b64EncodeUnicode(JSON.stringify(entries, null, 2));
+        await ghPutFile(owner, repo, 'data/updates.json', branch, token, content, `Delete update: ${entry.title}`, fresh.sha);
+        div.remove();
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+      }
+    });
+
+    return div;
+  }
+
+  gh('loadEntries').addEventListener('click', async () => {
+    const status = gh('entriesStatus');
+    const listEl = gh('entriesList');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    const { owner, repo, branch, token } = creds;
+    status.textContent = 'Loading…';
+    listEl.innerHTML = '';
+    try {
+      const existing = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
+      if (!existing) {
+        status.textContent = 'No updates posted yet.';
+        return;
+      }
+      const entries = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, '')));
+      if (!entries.length) {
+        status.textContent = 'No updates posted yet.';
+        return;
+      }
+      status.textContent = `${entries.length} update(s) loaded.`;
+      entries.forEach((entry, i) => listEl.appendChild(renderEntryRow(entry, i, owner, repo, branch, token, existing.sha)));
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    }
+  });
+
+  // ============ Manage uploaded files ============
+  gh('loadFiles').addEventListener('click', async () => {
+    const status = gh('filesStatus');
+    const listEl = gh('filesList');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    const { owner, repo, branch, token } = creds;
+    status.textContent = 'Loading…';
+    listEl.innerHTML = '';
+    try {
+      const files = await ghListDir(owner, repo, 'uploads', branch, token);
+      if (!files.length) {
+        status.textContent = 'No files uploaded yet.';
+        return;
+      }
+      status.textContent = `${files.length} file(s) loaded.`;
+      files.forEach(f => {
+        // Uploaded paths are named "<timestamp>-<originalname>" — pull the timestamp back out for display.
+        const match = f.name.match(/^(\d+)-(.+)$/);
+        const uploadedAt = match ? new Date(Number(match[1])) : null;
+        const displayName = match ? match[2] : f.name;
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+          <div class="li-title">${displayName.replace(/</g, '&lt;')}</div>
+          <div class="li-sub">${uploadedAt ? 'Uploaded ' + uploadedAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + uploadedAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+          <div class="li-actions">
+            <a class="small-btn" style="text-decoration:none;" href="${f.download_url || '#'}" target="_blank" rel="noopener">Open</a>
+            <button class="small-btn danger e-delete">Delete</button>
+          </div>
+          <div class="hint e-status"></div>
+        `;
+        div.querySelector('.e-delete').addEventListener('click', async () => {
+          if (!confirm(`Delete "${displayName}" from the repo? Any update linking to it will break.`)) return;
+          const statusEl = div.querySelector('.e-status');
+          statusEl.textContent = 'Deleting…';
+          try {
+            await ghDeleteFile(owner, repo, f.path, branch, token, f.sha, `Delete upload ${displayName} via admin portal`);
+            div.remove();
+          } catch (err) {
+            statusEl.textContent = `Error: ${err.message}`;
+          }
+        });
+        listEl.appendChild(div);
+      });
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    }
+  });
+
+  // ============ Manage subject folders ============
+  gh('addFolder').addEventListener('click', async () => {
+    const status = gh('folderStatus');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    const { owner, repo, branch, token } = creds;
+    const code = gh('fCode').value.trim();
+    const title = gh('fTitle').value.trim();
+    const period = gh('fPeriod').value.trim();
+    const url = gh('fUrl').value.trim();
+    if (!code || !title || !url) {
+      status.textContent = 'Fill in at least the code, title and link.';
+      return;
+    }
+    gh('addFolder').disabled = true;
+    status.textContent = 'Saving…';
+    try {
+      const existing = await ghGetFile(owner, repo, 'data/folders.json', branch, token);
+      let folders = [];
+      let sha;
+      if (existing) {
+        sha = existing.sha;
+        try { folders = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); }
+        catch { folders = []; }
+      }
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      folders.push({ id, code, title, period, url });
+      const content = b64EncodeUnicode(JSON.stringify(folders, null, 2));
+      await ghPutFile(owner, repo, 'data/folders.json', branch, token, content, `Add folder: ${title}`, sha);
+      status.textContent = 'Added! It will appear on the Subjects tab within a minute or two.';
+      gh('fCode').value = '';
+      gh('fTitle').value = '';
+      gh('fPeriod').value = '';
+      gh('fUrl').value = '';
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    } finally {
+      gh('addFolder').disabled = false;
+    }
+  });
+
+  gh('loadFolders').addEventListener('click', async () => {
+    const status = gh('folderStatus');
+    const listEl = gh('foldersList');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    const { owner, repo, branch, token } = creds;
+    status.textContent = 'Loading…';
+    listEl.innerHTML = '';
+    try {
+      const existing = await ghGetFile(owner, repo, 'data/folders.json', branch, token);
+      if (!existing) {
+        status.textContent = 'No extra folders added yet.';
+        return;
+      }
+      const folders = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, '')));
+      if (!folders.length) {
+        status.textContent = 'No extra folders added yet.';
+        return;
+      }
+      status.textContent = `${folders.length} folder(s) loaded.`;
+      folders.forEach((folder, i) => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+          <div class="li-title">${(folder.code || '')} — ${(folder.title || '').replace(/</g, '&lt;')}</div>
+          <div class="li-sub">${(folder.period || '')}</div>
+          <div class="li-actions">
+            <button class="small-btn danger e-delete">Delete</button>
+          </div>
+          <div class="hint e-status"></div>
+        `;
+        div.querySelector('.e-delete').addEventListener('click', async () => {
+          if (!confirm(`Remove the "${folder.title}" folder from Subjects?`)) return;
+          const statusEl = div.querySelector('.e-status');
+          statusEl.textContent = 'Deleting…';
+          try {
+            const fresh = await ghGetFile(owner, repo, 'data/folders.json', branch, token);
+            let all = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, '')));
+            all = all.filter(f => (folder.id ? f.id !== folder.id : f !== all[i]));
+            const content = b64EncodeUnicode(JSON.stringify(all, null, 2));
+            await ghPutFile(owner, repo, 'data/folders.json', branch, token, content, `Delete folder: ${folder.title}`, fresh.sha);
+            div.remove();
+          } catch (err) {
+            statusEl.textContent = `Error: ${err.message}`;
+          }
+        });
+        listEl.appendChild(div);
+      });
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
     }
   });
 </script>
@@ -357,4 +655,4 @@
   });
 </script>
 </body>
-      </html>
+  </html>

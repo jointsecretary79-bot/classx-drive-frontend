@@ -108,6 +108,12 @@
     padding:0 20px; border-right:1px solid rgba(20,38,69,0.35);
   }
   @keyframes scroll-left{ 0%{ transform:translateX(0);} 100%{ transform:translateX(-50%);} }
+  .ticker-vertical{ background:var(--marigold); color:var(--ink); border-top:1px solid rgba(20,38,69,0.15); }
+  .ticker-vertical .trow{
+    padding:9px 18px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; font-weight:600;
+    border-top:1px solid rgba(20,38,69,0.25);
+  }
+  .ticker-vertical .trow:first-child{ border-top:none; }
   .section-label{ display:flex; align-items:center; gap:8px; margin:22px 0 12px; }
   .section-label .num{ font-family:'IBM Plex Mono', monospace; color:var(--marigold-deep); font-size:12px; font-weight:600; }
   .section-label h3{ font-size:15px; text-transform:uppercase; letter-spacing:0.04em; }
@@ -347,6 +353,10 @@
         </div>
       </div>
 
+      <!-- Vertical alert layout, shown instead of the two scrolling tickers above
+           when admin sets tickerDirection to "vertical" in data/settings.json -->
+      <div class="ticker-vertical" id="ticker-vertical" style="display:none;" role="list" aria-label="Update alerts"></div>
+
       <div class="pad">
         <div class="section-label"><span class="num">01</span><h3>Must read first</h3></div>
 
@@ -375,7 +385,7 @@
     <section class="screen" data-screen="subjects">
       <div class="pad">
         <div class="section-label"><span class="num">02</span><h3>Subject</h3></div>
-        <div class="timetable">
+        <div class="timetable" id="subjects-timetable">
           <a class="period-card" href="https://drive.google.com/drive/folders/1LiSlPYiBGHBQlOY4rsi8EIuAl0mHLrhH" target="_blank" rel="noopener">
             <div class="left"><span class="code">ENG</span><div><h4>English</h4><span class="period-no">Period 1</span></div></div>
             <span class="go">OPEN →</span>
@@ -525,7 +535,7 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="ftitle">CBSE latest official</span><span class="fnote">Circulars &amp; notices straight from CBSE.</span></span>
             <span class="fchev">⌄</span>
           </summary>
-          <div class="folder-body" id="folder-cbse-list">
+          <div class="folder-body">
              <a class="resource-row" href="https://drive.google.com/file/d/1ZUdDvpSPhocXaLticI1ngYtOgutz_4DN/view?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">22 SEP </span>
             <span style="flex:1"><span class="rtitle flash-alert"> Submission of List of Candidates (LOC) for Class X and Class XII Main
@@ -554,7 +564,7 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="ftitle">App / website updates</span><span class="fnote">What's changed on this Drive app itself.</span></span>
             <span class="fchev">⌄</span>
           </summary>
-          <div class="folder-body" id="folder-app-list">
+          <div class="folder-body">
             <a class="resource-row" href="https://docs.google.com/document/d/1dkCw3YpoeiUTytuioySRNZ13-im4WwrWHiGpn2_zQF0/edit?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">11 SEP </span>
             <span style="flex:1"><span class="rtitle"> Bharat Scriptures & Knowledge Resources</span><span class="rnote">READ</span></span>
@@ -792,9 +802,70 @@ Examinations- 2026-27- reg
 
   setupPush();
 
-  // ---- dynamic updates & ticker, posted from admin.html via GitHub ----
-  // admin.html commits new entries to data/updates.json in this repo.
-  // This just reads that file and renders it — nothing here can write to it.
+  // ---- dynamic updates, ticker, site settings & folders — all posted from admin.html via GitHub ----
+  // admin.html commits to data/updates.json, data/settings.json and data/folders.json in this repo.
+  // This just reads those files and renders them — nothing here can write to them.
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // -- site settings: ticker orientation + "Last updated" stamp, both admin-controlled --
+  async function loadSiteSettings() {
+    try {
+      const res = await fetch('./data/settings.json', { cache: 'no-store' });
+      if (!res.ok) return; // not created yet — keep defaults
+      const settings = await res.json();
+
+      if (settings.lastUpdatedText) {
+        const el = document.getElementById('last-updated-text');
+        if (el) el.textContent = settings.lastUpdatedText;
+      }
+
+      if (settings.tickerDirection === 'vertical') {
+        document.querySelectorAll('.ticker').forEach(el => { el.style.display = 'none'; });
+        const vert = document.getElementById('ticker-vertical');
+        if (vert) vert.style.display = 'block';
+      }
+      // 'horizontal' (or missing) keeps the default markup as-is.
+    } catch (err) {
+      console.warn('Site settings not loaded:', err);
+    }
+  }
+
+  // -- admin-created subject folders, appended after the built-in ones --
+  async function loadExtraFolders() {
+    try {
+      const res = await fetch('./data/folders.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const folders = await res.json();
+      if (!Array.isArray(folders) || folders.length === 0) return;
+
+      const wrap = document.getElementById('subjects-timetable');
+      if (!wrap) return;
+      const frag = document.createDocumentFragment();
+      folders.forEach(f => {
+        const a = document.createElement('a');
+        a.className = 'period-card';
+        a.href = f.url || '#';
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.innerHTML =
+          `<div class="left"><span class="code">${escapeHtml(f.code || '')}</span>` +
+          `<div><h4>${escapeHtml(f.title || '')}</h4>` +
+          `<span class="period-no">${escapeHtml(f.period || '')}</span></div></div>` +
+          `<span class="go">OPEN →</span>`;
+        frag.appendChild(a);
+      });
+      wrap.appendChild(frag);
+    } catch (err) {
+      console.warn('Extra folders not loaded:', err);
+    }
+  }
+
+  // -- daily updates + home ticker, each entry independently controls where it shows --
   async function loadDynamicUpdates() {
     try {
       const res = await fetch('./data/updates.json', { cache: 'no-store' });
@@ -805,47 +876,61 @@ Examinations- 2026-27- reg
       // newest first
       entries.sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
-      // -- ticker: fill in dynamic messages flagged for the ticker --
-      const tickerEntries = entries.filter(e => e.ticker);
+      // Back-compat: older entries only have a single "ticker" flag, which used to
+      // mean both "show in ticker" and "flash red". Newer entries set showInTicker,
+      // showInList and flash independently from the admin panel.
+      const norm = entries.map(e => ({
+        ...e,
+        showInTicker: e.showInTicker !== undefined ? !!e.showInTicker : !!e.ticker,
+        showInList: e.showInList !== undefined ? !!e.showInList : true,
+        flash: e.flash !== undefined ? !!e.flash : !!e.ticker,
+      }));
+
+      // -- ticker (horizontal mode): fill in up to 2 messages flagged for the ticker --
+      const tickerEntries = norm.filter(e => e.showInTicker);
       const tracks = [document.getElementById('ticker-track-1'), document.getElementById('ticker-track-2')];
       tickerEntries.slice(0, 2).forEach((entry, i) => {
         const track = tracks[i];
         if (!track) return;
         const text = `${entry.date} — ${entry.title}`;
+        const cls = entry.flash ? 'flash-alert' : '';
         track.innerHTML =
-          `<span class="flash-alert">${escapeHtml(text)}</span>` +
-          `<span class="flash-alert">${escapeHtml(text)}</span>`;
+          `<span class="${cls}">${escapeHtml(text)}</span>` +
+          `<span class="${cls}">${escapeHtml(text)}</span>`;
       });
 
-      // -- daily updates log: prepend dynamic entries above the existing history --
+      // -- ticker (vertical mode): stack every flagged entry as its own row --
+      const vertWrap = document.getElementById('ticker-vertical');
+      if (vertWrap) {
+        vertWrap.innerHTML = '';
+        tickerEntries.slice(0, 6).forEach(entry => {
+          const row = document.createElement('div');
+          row.className = 'trow' + (entry.flash ? ' flash-alert' : '');
+          row.textContent = `${entry.date} — ${entry.title}`;
+          vertWrap.appendChild(row);
+        });
+      }
+
+      // -- daily updates log: prepend dynamic entries flagged to show in the list --
       const list = document.getElementById('updates-log-list');
-      const folderTargets = { cbse: document.getElementById('folder-cbse-list'), app: document.getElementById('folder-app-list') };
       if (list) {
         const frag = document.createDocumentFragment();
-        const folderFrags = { cbse: document.createDocumentFragment(), app: document.createDocumentFragment() };
-        entries.forEach(entry => {
-          const makeRow = () => {
-            const a = document.createElement('a');
-            a.className = 'resource-row';
-            a.href = entry.url || '#';
-            a.target = '_blank';
-            a.rel = 'noopener';
-            const flashClass = entry.ticker ? ' flash-alert' : '';
-            a.innerHTML =
-              `<span class="rdate mono">${escapeHtml(entry.date || '')}</span>` +
-              `<span style="flex:1"><span class="rtitle${flashClass}">${escapeHtml(entry.title || '')}</span>` +
-              `<span class="rnote${flashClass}">${escapeHtml(entry.note || '')}</span></span>` +
-              `<span class="rarrow">→</span>`;
-            return a;
-          };
-          frag.appendChild(makeRow());
-          if (entry.category === 'cbse' || entry.category === 'app') {
-            folderFrags[entry.category].appendChild(makeRow());
-          }
+        norm.filter(e => e.showInList).forEach(entry => {
+          const a = document.createElement('a');
+          a.className = 'resource-row';
+          a.href = entry.url || '#';
+          a.target = '_blank';
+          a.rel = 'noopener';
+          const flashClass = entry.flash ? ' flash-alert' : '';
+          const timeStr = entry.time ? `, ${entry.time}` : '';
+          a.innerHTML =
+            `<span class="rdate mono">${escapeHtml((entry.date || '') + timeStr)}</span>` +
+            `<span style="flex:1"><span class="rtitle${flashClass}">${escapeHtml(entry.title || '')}</span>` +
+            `<span class="rnote${flashClass}">${escapeHtml(entry.note || '')}</span></span>` +
+            `<span class="rarrow">→</span>`;
+          frag.appendChild(a);
         });
         list.prepend(frag);
-        if (folderTargets.cbse) folderTargets.cbse.prepend(folderFrags.cbse);
-        if (folderTargets.app) folderTargets.app.prepend(folderFrags.app);
       }
     } catch (err) {
       // network hiccup or bad JSON — fail quietly, static content still shows
@@ -853,14 +938,11 @@ Examinations- 2026-27- reg
     }
   }
 
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-  }
-
+  loadSiteSettings();
+  loadExtraFolders();
   loadDynamicUpdates();
 </script>
 
 </body>
-  </html>
+</html>
+        

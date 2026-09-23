@@ -10,7 +10,7 @@
   h1{ font-size:20px; margin:0 0 6px; }
   p.sub{ color:#aeb6cc; font-size:13px; margin:0 0 22px; }
   label{ display:block; font-size:12px; color:#c7cee2; margin:14px 0 6px; }
-  input, textarea{ width:100%; padding:10px 12px; border-radius:4px; border:1px solid #28406b; background:#0c1730; color:#fff; font-family:inherit; font-size:14px; }
+  input, textarea, select{ width:100%; padding:10px 12px; border-radius:4px; border:1px solid #28406b; background:#0c1730; color:#fff; font-family:inherit; font-size:14px; }
   textarea{ min-height:70px; resize:vertical; }
   button{ margin-top:20px; width:100%; padding:12px; background:#E7A23C; color:#142645; border:none; border-radius:4px; font-weight:700; font-size:14px; cursor:pointer; }
   button:disabled{ opacity:0.6; cursor:not-allowed; }
@@ -23,6 +23,12 @@
   details.ghsettings{ margin-top:6px; border:1px solid #28406b; border-radius:4px; padding:2px 12px 12px; }
   details.ghsettings summary{ cursor:pointer; padding:10px 0; font-size:13px; color:#c7cee2; }
   .hint{ font-size:11px; color:#8b93ab; margin-top:4px; line-height:1.5; }
+
+  .update-row{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #28406b; }
+  .update-row .u-text{ flex:1; min-width:0; }
+  .update-row .u-title{ font-size:13px; font-weight:600; }
+  .update-row .u-meta{ font-size:11px; color:#8b93ab; }
+  .update-row button{ margin:0; width:auto; padding:6px 12px; background:#8B2E2E; color:#fff; font-size:12px; }
 </style>
 </head>
 <body>
@@ -75,6 +81,14 @@
     <label for="uNote">Note / tag</label>
     <input id="uNote" placeholder="e.g. SCIENCE CH.4 NOTES" />
 
+    <label for="uCategory">Where should this appear?</label>
+    <select id="uCategory">
+      <option value="">— Choose —</option>
+      <option value="cbse">CBSE latest official (CBSE circulars)</option>
+      <option value="app">App / website updates</option>
+      <option value="none">Just the Daily updates log (no folder)</option>
+    </select>
+
     <label for="uUrl">Link (optional — leave blank if attaching a file below)</label>
     <input id="uUrl" placeholder="https://drive.google.com/..." />
 
@@ -89,6 +103,14 @@
 
     <button id="postUpdate">Post update</button>
     <div id="uStatus"></div>
+  </div>
+
+  <div class="card">
+    <h1>Manage / remove updates</h1>
+    <p class="sub">Loads what's currently posted so you can delete anything wrong or outdated.</p>
+    <button id="loadUpdates">Load current updates</button>
+    <div id="manageStatus"></div>
+    <div id="updatesList"></div>
   </div>
 
 <script>
@@ -142,6 +164,7 @@
     const date = gh('uDate').value.trim();
     const title = gh('uTitle').value.trim();
     const note = gh('uNote').value.trim();
+    const category = gh('uCategory').value;
     let url = gh('uUrl').value.trim();
     const files = gh('uFile').files;
     const ticker = gh('uTicker').checked;
@@ -149,6 +172,10 @@
 
     if (!token || !repoFull || !date || !title) {
       status.textContent = 'Fill in the GitHub token, repository, date and title.';
+      return;
+    }
+    if (!category) {
+      status.textContent = 'Choose where this update should appear.';
       return;
     }
     const [owner, repo] = repoFull.split('/');
@@ -190,7 +217,7 @@
       }
 
       // 3. Prepend the new entry and write it back
-      entries.unshift({ date, title, note, url, ticker, ts: Date.now() });
+      entries.unshift({ date, title, note, url, ticker, category, ts: Date.now() });
       status.textContent = 'Saving update…';
       const newContent = b64EncodeUnicode(JSON.stringify(entries, null, 2));
       await ghPutFile(owner, repo, 'data/updates.json', branch, token, newContent, `Post update: ${title}`, sha);
@@ -198,6 +225,7 @@
       status.textContent = 'Posted! It will appear on index.html within a minute or two.';
       gh('uTitle').value = '';
       gh('uNote').value = '';
+      gh('uCategory').value = '';
       gh('uUrl').value = '';
       gh('uFile').value = '';
       gh('uTicker').checked = false;
@@ -205,6 +233,85 @@
       status.textContent = `Error: ${err.message}`;
     } finally {
       gh('postUpdate').disabled = false;
+    }
+  });
+
+  function categoryLabel(cat) {
+    if (cat === 'cbse') return 'CBSE latest official';
+    if (cat === 'app') return 'App / website updates';
+    return 'Daily log only';
+  }
+
+  async function fetchEntries() {
+    const token = gh('ghToken').value.trim();
+    const repoFull = gh('ghRepo').value.trim();
+    const branch = gh('ghBranch').value.trim() || 'main';
+    const [owner, repo] = repoFull.split('/');
+    const existing = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
+    if (!existing) return { owner, repo, branch, token, sha: undefined, entries: [] };
+    let entries = [];
+    try { entries = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); }
+    catch { entries = []; }
+    return { owner, repo, branch, token, sha: existing.sha, entries };
+  }
+
+  function renderUpdatesList(state) {
+    const container = gh('updatesList');
+    container.innerHTML = '';
+    if (!state.entries.length) {
+      container.innerHTML = '<p class="hint">No updates posted yet.</p>';
+      return;
+    }
+    state.entries.forEach((entry, i) => {
+      const row = document.createElement('div');
+      row.className = 'update-row';
+      row.innerHTML = `
+        <div class="u-text">
+          <div class="u-title">${entry.title || '(untitled)'}</div>
+          <div class="u-meta">${entry.date || ''} · ${categoryLabel(entry.category)}${entry.ticker ? ' · in ticker' : ''}</div>
+        </div>
+        <button type="button" data-idx="${i}">Delete</button>
+      `;
+      container.appendChild(row);
+    });
+    container.querySelectorAll('button[data-idx]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.textContent = 'Deleting…';
+        try {
+          const idx = Number(btn.dataset.idx);
+          state.entries.splice(idx, 1);
+          const newContent = b64EncodeUnicode(JSON.stringify(state.entries, null, 2));
+          const result = await ghPutFile(state.owner, state.repo, 'data/updates.json', state.branch, state.token, newContent, 'Delete update via admin portal', state.sha);
+          state.sha = result.content.sha;
+          gh('manageStatus').textContent = 'Deleted. It will disappear from index.html within a minute or two.';
+          renderUpdatesList(state);
+        } catch (err) {
+          gh('manageStatus').textContent = `Error: ${err.message}`;
+          btn.disabled = false;
+          btn.textContent = 'Delete';
+        }
+      });
+    });
+  }
+
+  gh('loadUpdates').addEventListener('click', async () => {
+    const token = gh('ghToken').value.trim();
+    const repoFull = gh('ghRepo').value.trim();
+    if (!token || !repoFull) {
+      gh('manageStatus').textContent = 'Fill in the GitHub token and repository above first.';
+      return;
+    }
+    gh('loadUpdates').disabled = true;
+    gh('manageStatus').textContent = 'Loading…';
+    try {
+      const state = await fetchEntries();
+      gh('manageStatus').textContent = `${state.entries.length} update(s) found.`;
+      renderUpdatesList(state);
+    } catch (err) {
+      gh('manageStatus').textContent = `Error: ${err.message}`;
+    } finally {
+      gh('loadUpdates').disabled = false;
     }
   });
 </script>
@@ -250,4 +357,4 @@
   });
 </script>
 </body>
-                                                                                                                                                                                                                                          </html>
+      </html>

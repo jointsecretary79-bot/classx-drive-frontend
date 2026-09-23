@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "id": "1790164899251-8gtdq8",
+    "date": "23 SEPT",
+    "time": "05:29 pm",
+    "title": "Testing",
+    "note": "Testing",
+    "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1790164890675-0-Screenshot_20260923-165047_Docs.jpg",
+    "files": [
+      {
+        "name": "Screenshot_20260923-165047_Docs.jpg",
+        "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1790164890675-0-Screenshot_20260923-165047_Docs.jpg"
+      },
+      {
+        "name": "Screenshot_20260923-111641_Samsung Browser.jpg",
+        "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1790164893541-1-Screenshot_20260923-111641_Samsung_Browser.jpg"
+      },
+      {
+        "name": "Class 10th rise observation;.pdf",
+        "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1790164896306-2-Class_10th_rise_observation_.pdf"
+      }
+    ],
+    "showInTicker": true,
+    "showInList": true,
+    "flash": true,
+    "folderCbse": true,
+    "folderApp": true,
+    "ts": 1790164899251
+  }
+]

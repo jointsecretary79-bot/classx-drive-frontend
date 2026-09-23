@@ -525,7 +525,7 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="ftitle">CBSE latest official</span><span class="fnote">Circulars &amp; notices straight from CBSE.</span></span>
             <span class="fchev">⌄</span>
           </summary>
-          <div class="folder-body">
+          <div class="folder-body" id="folder-cbse-list">
              <a class="resource-row" href="https://drive.google.com/file/d/1ZUdDvpSPhocXaLticI1ngYtOgutz_4DN/view?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">22 SEP </span>
             <span style="flex:1"><span class="rtitle flash-alert"> Submission of List of Candidates (LOC) for Class X and Class XII Main
@@ -554,7 +554,7 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="ftitle">App / website updates</span><span class="fnote">What's changed on this Drive app itself.</span></span>
             <span class="fchev">⌄</span>
           </summary>
-          <div class="folder-body">
+          <div class="folder-body" id="folder-app-list">
             <a class="resource-row" href="https://docs.google.com/document/d/1dkCw3YpoeiUTytuioySRNZ13-im4WwrWHiGpn2_zQF0/edit?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">11 SEP </span>
             <span style="flex:1"><span class="rtitle"> Bharat Scriptures & Knowledge Resources</span><span class="rnote">READ</span></span>
@@ -819,23 +819,33 @@ Examinations- 2026-27- reg
 
       // -- daily updates log: prepend dynamic entries above the existing history --
       const list = document.getElementById('updates-log-list');
+      const folderTargets = { cbse: document.getElementById('folder-cbse-list'), app: document.getElementById('folder-app-list') };
       if (list) {
         const frag = document.createDocumentFragment();
+        const folderFrags = { cbse: document.createDocumentFragment(), app: document.createDocumentFragment() };
         entries.forEach(entry => {
-          const a = document.createElement('a');
-          a.className = 'resource-row';
-          a.href = entry.url || '#';
-          a.target = '_blank';
-          a.rel = 'noopener';
-          const flashClass = entry.ticker ? ' flash-alert' : '';
-          a.innerHTML =
-            `<span class="rdate mono">${escapeHtml(entry.date || '')}</span>` +
-            `<span style="flex:1"><span class="rtitle${flashClass}">${escapeHtml(entry.title || '')}</span>` +
-            `<span class="rnote${flashClass}">${escapeHtml(entry.note || '')}</span></span>` +
-            `<span class="rarrow">→</span>`;
-          frag.appendChild(a);
+          const makeRow = () => {
+            const a = document.createElement('a');
+            a.className = 'resource-row';
+            a.href = entry.url || '#';
+            a.target = '_blank';
+            a.rel = 'noopener';
+            const flashClass = entry.ticker ? ' flash-alert' : '';
+            a.innerHTML =
+              `<span class="rdate mono">${escapeHtml(entry.date || '')}</span>` +
+              `<span style="flex:1"><span class="rtitle${flashClass}">${escapeHtml(entry.title || '')}</span>` +
+              `<span class="rnote${flashClass}">${escapeHtml(entry.note || '')}</span></span>` +
+              `<span class="rarrow">→</span>`;
+            return a;
+          };
+          frag.appendChild(makeRow());
+          if (entry.category === 'cbse' || entry.category === 'app') {
+            folderFrags[entry.category].appendChild(makeRow());
+          }
         });
         list.prepend(frag);
+        if (folderTargets.cbse) folderTargets.cbse.prepend(folderFrags.cbse);
+        if (folderTargets.app) folderTargets.app.prepend(folderFrags.app);
       }
     } catch (err) {
       // network hiccup or bad JSON — fail quietly, static content still shows

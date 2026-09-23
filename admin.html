@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Send an update — Class X Drive</title>
 <style>
-  body{ font-family:'IBM Plex Sans', Arial, sans-serif; background:#0c1730; color:#eef1f6; display:flex; justify-content:center; padding:40px 16px; }
+  body{ font-family:'IBM Plex Sans', Arial, sans-serif; background:#0c1730; color:#eef1f6; display:flex; flex-direction:column; align-items:center; gap:24px; padding:40px 16px; }
   .card{ background:#142645; padding:28px; border-radius:8px; max-width:420px; width:100%; }
   h1{ font-size:20px; margin:0 0 6px; }
   p.sub{ color:#aeb6cc; font-size:13px; margin:0 0 22px; }
@@ -16,6 +16,13 @@
   button:disabled{ opacity:0.6; cursor:not-allowed; }
   #status{ margin-top:14px; font-size:13px; color:#aeb6cc; }
   #backend{ margin-bottom:18px; }
+
+  .checkrow{ display:flex; align-items:center; gap:8px; margin-top:16px; }
+  .checkrow input{ width:auto; }
+  .checkrow label{ margin:0; font-size:13px; color:#eef1f6; }
+  details.ghsettings{ margin-top:6px; border:1px solid #28406b; border-radius:4px; padding:2px 12px 12px; }
+  details.ghsettings summary{ cursor:pointer; padding:10px 0; font-size:13px; color:#c7cee2; }
+  .hint{ font-size:11px; color:#8b93ab; margin-top:4px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -35,6 +42,215 @@
     <label for="body">Message</label>
     <textarea id="body" placeholder="Short description of the update"></textarea>
 
+    <label for="url">Link to open (optional)</label>
+    <input id="url" placeholder="https://drive.google.com/..." />
+
+    <button id="send">Send notification</button>
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <h1>Post a Drive update</h1>
+    <p class="sub">Adds an entry to the "Daily updates log" on index.html, and optionally to the scrolling yellow ticker. Can also attach a file, which gets uploaded straight into the GitHub repo.</p>
+
+    <details class="ghsettings">
+      <summary>GitHub connection settings</summary>
+      <label for="ghToken">GitHub token</label>
+      <input id="ghToken" type="password" placeholder="fine-grained token, Contents: read & write" />
+      <p class="hint">Create this at github.com → Settings → Developer settings → Fine-grained tokens. Scope it to only this one repo, permission "Contents: Read and write". Don't share this token — anyone with it can edit the site.</p>
+
+      <label for="ghRepo">Repository (owner/name)</label>
+      <input id="ghRepo" placeholder="jointsecretary79-bot/classx-drive-frontend" />
+
+      <label for="ghBranch">Branch</label>
+      <input id="ghBranch" placeholder="main" />
+    </details>
+
+    <label for="uDate">Date</label>
+    <input id="uDate" placeholder="e.g. 23 SEP" />
+
+    <label for="uTitle">Title</label>
+    <input id="uTitle" placeholder="e.g. New Science notes uploaded" />
+
+    <label for="uNote">Note / tag</label>
+    <input id="uNote" placeholder="e.g. SCIENCE CH.4 NOTES" />
+
+    <label for="uUrl">Link (optional — leave blank if attaching a file below)</label>
+    <input id="uUrl" placeholder="https://drive.google.com/..." />
+
+    <label for="uFile">Attach a file or folder (optional)</label>
+    <input id="uFile" type="file" multiple />
+    <p class="hint">Selecting multiple files uploads each one into the repo's "uploads" folder. The update's link will point to the first file, unless you set a link above.</p>
+
+    <div class="checkrow">
+      <input id="uTicker" type="checkbox" />
+      <label for="uTicker">Also show in the scrolling yellow ticker banner</label>
+    </div>
+
+    <button id="postUpdate">Post update</button>
+    <div id="uStatus"></div>
+  </div>
+
+<script>
+  const gh = (id) => document.getElementById(id);
+  gh('ghToken').value = localStorage.getItem('classx_gh_token') || '';
+  gh('ghRepo').value = localStorage.getItem('classx_gh_repo') || 'jointsecretary79-bot/classx-drive-frontend';
+  gh('ghBranch').value = localStorage.getItem('classx_gh_branch') || 'main';
+  gh('uDate').value = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase().replace(/\s/g, ' ');
+
+  function b64EncodeUnicode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
+  }
+  function b64DecodeUnicode(str) {
+    return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function ghGetFile(owner, repo, path, branch, token) {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`GitHub read failed (${res.status})`);
+    return res.json();
+  }
+
+  async function ghPutFile(owner, repo, path, branch, token, contentB64, message, sha) {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      body: JSON.stringify({ message, content: contentB64, branch, ...(sha ? { sha } : {}) }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || `GitHub write failed (${res.status})`);
+    }
+    return res.json();
+  }
+
+  gh('postUpdate').addEventListener('click', async () => {
+    const token = gh('ghToken').value.trim();
+    const repoFull = gh('ghRepo').value.trim();
+    const branch = gh('ghBranch').value.trim() || 'main';
+    const date = gh('uDate').value.trim();
+    const title = gh('uTitle').value.trim();
+    const note = gh('uNote').value.trim();
+    let url = gh('uUrl').value.trim();
+    const files = gh('uFile').files;
+    const ticker = gh('uTicker').checked;
+    const status = gh('uStatus');
+
+    if (!token || !repoFull || !date || !title) {
+      status.textContent = 'Fill in the GitHub token, repository, date and title.';
+      return;
+    }
+    const [owner, repo] = repoFull.split('/');
+    if (!owner || !repo) {
+      status.textContent = 'Repository should look like owner/repo-name.';
+      return;
+    }
+
+    localStorage.setItem('classx_gh_token', token);
+    localStorage.setItem('classx_gh_repo', repoFull);
+    localStorage.setItem('classx_gh_branch', branch);
+
+    gh('postUpdate').disabled = true;
+    try {
+      // 1. Upload any attached files into /uploads
+      if (files && files.length) {
+        status.textContent = `Uploading ${files.length} file(s)…`;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const b64 = await fileToBase64(file);
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const path = `uploads/${Date.now()}-${safeName}`;
+          await ghPutFile(owner, repo, path, branch, token, b64, `Upload ${file.name} via admin portal`);
+          if (!url) {
+            url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+          }
+        }
+      }
+
+      // 2. Read the current updates.json (create it fresh if it doesn't exist yet)
+      status.textContent = 'Reading existing updates…';
+      const existing = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
+      let entries = [];
+      let sha;
+      if (existing) {
+        sha = existing.sha;
+        try { entries = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); }
+        catch { entries = []; }
+      }
+
+      // 3. Prepend the new entry and write it back
+      entries.unshift({ date, title, note, url, ticker, ts: Date.now() });
+      status.textContent = 'Saving update…';
+      const newContent = b64EncodeUnicode(JSON.stringify(entries, null, 2));
+      await ghPutFile(owner, repo, 'data/updates.json', branch, token, newContent, `Post update: ${title}`, sha);
+
+      status.textContent = 'Posted! It will appear on index.html within a minute or two.';
+      gh('uTitle').value = '';
+      gh('uNote').value = '';
+      gh('uUrl').value = '';
+      gh('uFile').value = '';
+      gh('uTicker').checked = false;
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    } finally {
+      gh('postUpdate').disabled = false;
+    }
+  });
+</script>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  $('backend').value = localStorage.getItem('classx_backend') || '';
+  $('adminKey').value = localStorage.getItem('classx_admin_key') || '';
+
+  $('send').addEventListener('click', async () => {
+    const backend = $('backend').value.replace(/\/$/, '');
+    const adminKey = $('adminKey').value;
+    const title = $('title').value.trim();
+    const body = $('body').value.trim();
+    const url = $('url').value.trim();
+    const status = $('status');
+
+    if (!backend || !adminKey || !title || !body) {
+      status.textContent = 'Fill in backend URL, admin key, title and message.';
+      return;
+    }
+
+    localStorage.setItem('classx_backend', backend);
+    localStorage.setItem('classx_admin_key', adminKey);
+
+    $('send').disabled = true;
+    status.textContent = 'Sending…';
+
+    try {
+      const res = await fetch(`${backend}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, title, body, url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
+      status.textContent = `Sent to ${data.sent} of ${data.total} devices.`;
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    } finally {
+      $('send').disabled = false;
+    }
+  });
+</script>
+</body>
+  </html>
     <label for="url">Link to open (optional)</label>
     <input id="url" placeholder="https://drive.google.com/..." />
 

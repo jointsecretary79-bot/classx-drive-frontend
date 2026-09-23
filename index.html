@@ -268,6 +268,39 @@
   .folder-card[open] .fchev{ transform:rotate(180deg); }
   .folder-body{ padding:0 14px 6px; border-top:1px solid var(--line); }
   .folder-body .resource-row:last-child{ border-bottom:none; }
+
+  /* ---- attachment thumbnails (images) & PDF chips on update rows ---- */
+  .attachments{ padding:0 2px 14px; display:flex; flex-direction:column; gap:8px; margin-top:-6px; }
+  .attach-images{ display:flex; flex-wrap:wrap; gap:8px; }
+  .attach-thumb{
+    position:relative; width:60px; height:60px; border-radius:4px; overflow:hidden;
+    border:1px solid var(--line); cursor:zoom-in; flex-shrink:0; background:#fff; padding:0;
+  }
+  .attach-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .attach-thumb .zoom-badge{
+    position:absolute; bottom:2px; right:2px; width:16px; height:16px; border-radius:50%;
+    background:rgba(20,38,69,0.78); display:flex; align-items:center; justify-content:center;
+  }
+  .attach-thumb .zoom-badge svg{ width:9px; height:9px; }
+  .attach-pdfs{ display:flex; flex-wrap:wrap; gap:8px; }
+  .pdf-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11px;
+    color:var(--ink); background:var(--paper-card); border:1px solid var(--line); border-radius:20px;
+    padding:6px 12px; text-decoration:none; max-width:100%;
+  }
+  .pdf-chip span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ---- fullscreen image lightbox ---- */
+  .img-lightbox{
+    position:fixed; inset:0; background:rgba(6,16,31,0.94); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:28px;
+  }
+  .img-lightbox.hidden{ display:none; }
+  .img-lightbox img{ max-width:100%; max-height:100%; border-radius:4px; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+  .img-lightbox .lb-close{
+    position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.12); border:none;
+    color:#fff; font-size:20px; width:36px; height:36px; border-radius:50%; cursor:pointer; line-height:1;
+  }
 </style>
 </head>
 <body>
@@ -296,6 +329,12 @@
       <button class="btn" id="teacher-modal-close">Cancel</button>
     </div>
   </div>
+</div>
+
+<!-- ===== Fullscreen image viewer — opened by tapping any attached photo ===== -->
+<div class="img-lightbox hidden" id="img-lightbox">
+  <button class="lb-close" id="lb-close" type="button" aria-label="Close image">✕</button>
+  <img id="lb-img" src="" alt="" />
 </div>
 
 <div class="app-shell">
@@ -535,7 +574,7 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="ftitle">CBSE latest official</span><span class="fnote">Circulars &amp; notices straight from CBSE.</span></span>
             <span class="fchev">⌄</span>
           </summary>
-          <div class="folder-body">
+          <div class="folder-body" id="folder-cbse-list">
              <a class="resource-row" href="https://drive.google.com/file/d/1ZUdDvpSPhocXaLticI1ngYtOgutz_4DN/view?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">22 SEP </span>
             <span style="flex:1"><span class="rtitle flash-alert"> Submission of List of Candidates (LOC) for Class X and Class XII Main
@@ -564,7 +603,7 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="ftitle">App / website updates</span><span class="fnote">What's changed on this Drive app itself.</span></span>
             <span class="fchev">⌄</span>
           </summary>
-          <div class="folder-body">
+          <div class="folder-body" id="folder-app-list">
             <a class="resource-row" href="https://docs.google.com/document/d/1dkCw3YpoeiUTytuioySRNZ13-im4WwrWHiGpn2_zQF0/edit?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">11 SEP </span>
             <span style="flex:1"><span class="rtitle"> Bharat Scriptures & Knowledge Resources</span><span class="rnote">READ</span></span>
@@ -735,6 +774,22 @@ Examinations- 2026-27- reg
     teacherModal.classList.add('hidden');
   });
 
+  // ---- fullscreen image lightbox (opened by attached photo thumbnails) ----
+  const imgLightbox = document.getElementById('img-lightbox');
+  const lbImg = document.getElementById('lb-img');
+  function openLightbox(src, alt) {
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    imgLightbox.classList.remove('hidden');
+  }
+  function closeLightbox() {
+    imgLightbox.classList.add('hidden');
+    lbImg.src = '';
+  }
+  document.getElementById('lb-close').addEventListener('click', closeLightbox);
+  imgLightbox.addEventListener('click', (e) => { if (e.target === imgLightbox) closeLightbox(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
   // ---- push notifications ----
   // Set this to your deployed backend URL after Step 3 of the deploy guide, e.g.
   // const BACKEND_URL = "https://classx-push.onrender.com";
@@ -866,6 +921,91 @@ Examinations- 2026-27- reg
   }
 
   // -- daily updates + home ticker, each entry independently controls where it shows --
+  // ---- helpers for image/PDF attachments on an update entry ----
+  function isImageFile(name) { return /\.(jpe?g|png|gif|webp|svg)$/i.test(name || ''); }
+  function isPdfFile(name) { return /\.pdf$/i.test(name || ''); }
+
+  function getEntryFiles(entry) {
+    if (Array.isArray(entry.files) && entry.files.length) return entry.files;
+    // Back-compat: single-file entries from before "files[]" existed only had one url.
+    if (entry.url) {
+      const clean = entry.url.split('?')[0];
+      if (isImageFile(clean) || isPdfFile(clean)) {
+        return [{ name: decodeURIComponent(clean.split('/').pop() || ''), url: entry.url }];
+      }
+    }
+    return [];
+  }
+
+  function buildAttachmentsEl(entry) {
+    const files = getEntryFiles(entry);
+    const images = files.filter(f => isImageFile(f.name || f.url));
+    const pdfs = files.filter(f => isPdfFile(f.name || f.url));
+    if (!images.length && !pdfs.length) return null;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'attachments';
+
+    if (images.length) {
+      const grid = document.createElement('div');
+      grid.className = 'attach-images';
+      images.forEach(f => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'attach-thumb';
+        btn.setAttribute('aria-label', `View image ${f.name || ''}`);
+        const img = document.createElement('img');
+        img.src = f.url; img.alt = f.name || ''; img.loading = 'lazy';
+        const badge = document.createElement('span');
+        badge.className = 'zoom-badge';
+        badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M21 21l-5.5-5.5"/></svg>';
+        btn.appendChild(img); btn.appendChild(badge);
+        btn.addEventListener('click', () => openLightbox(f.url, f.name || ''));
+        grid.appendChild(btn);
+      });
+      wrap.appendChild(grid);
+    }
+
+    if (pdfs.length) {
+      const row = document.createElement('div');
+      row.className = 'attach-pdfs';
+      pdfs.forEach(f => {
+        const a = document.createElement('a');
+        a.className = 'pdf-chip';
+        a.href = f.url; a.target = '_blank'; a.rel = 'noopener';
+        const label = document.createElement('span');
+        label.textContent = f.name || 'Open PDF';
+        a.textContent = '📄 ';
+        a.appendChild(label);
+        row.appendChild(a);
+      });
+      wrap.appendChild(row);
+    }
+
+    return wrap;
+  }
+
+  function buildEntryRow(entry) {
+    const a = document.createElement('a');
+    a.className = 'resource-row';
+    const firstFile = getEntryFiles(entry)[0];
+    a.href = entry.url || (firstFile && firstFile.url) || '#';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    const flashClass = entry.flash ? ' flash-alert' : '';
+    const timeStr = entry.time ? `, ${entry.time}` : '';
+    a.innerHTML =
+      `<span class="rdate mono">${escapeHtml((entry.date || '') + timeStr)}</span>` +
+      `<span style="flex:1"><span class="rtitle${flashClass}">${escapeHtml(entry.title || '')}</span>` +
+      `<span class="rnote${flashClass}">${escapeHtml(entry.note || '')}</span></span>` +
+      `<span class="rarrow">→</span>`;
+    const piece = document.createDocumentFragment();
+    piece.appendChild(a);
+    const att = buildAttachmentsEl(entry);
+    if (att) piece.appendChild(att);
+    return piece;
+  }
+
   async function loadDynamicUpdates() {
     try {
       const res = await fetch('./data/updates.json', { cache: 'no-store' });
@@ -878,12 +1018,14 @@ Examinations- 2026-27- reg
 
       // Back-compat: older entries only have a single "ticker" flag, which used to
       // mean both "show in ticker" and "flash red". Newer entries set showInTicker,
-      // showInList and flash independently from the admin panel.
+      // showInList, flash, folderCbse and folderApp independently from the admin panel.
       const norm = entries.map(e => ({
         ...e,
         showInTicker: e.showInTicker !== undefined ? !!e.showInTicker : !!e.ticker,
         showInList: e.showInList !== undefined ? !!e.showInList : true,
         flash: e.flash !== undefined ? !!e.flash : !!e.ticker,
+        folderCbse: !!e.folderCbse,
+        folderApp: !!e.folderApp,
       }));
 
       // -- ticker (horizontal mode): fill in up to 2 messages flagged for the ticker --
@@ -915,22 +1057,22 @@ Examinations- 2026-27- reg
       const list = document.getElementById('updates-log-list');
       if (list) {
         const frag = document.createDocumentFragment();
-        norm.filter(e => e.showInList).forEach(entry => {
-          const a = document.createElement('a');
-          a.className = 'resource-row';
-          a.href = entry.url || '#';
-          a.target = '_blank';
-          a.rel = 'noopener';
-          const flashClass = entry.flash ? ' flash-alert' : '';
-          const timeStr = entry.time ? `, ${entry.time}` : '';
-          a.innerHTML =
-            `<span class="rdate mono">${escapeHtml((entry.date || '') + timeStr)}</span>` +
-            `<span style="flex:1"><span class="rtitle${flashClass}">${escapeHtml(entry.title || '')}</span>` +
-            `<span class="rnote${flashClass}">${escapeHtml(entry.note || '')}</span></span>` +
-            `<span class="rarrow">→</span>`;
-          frag.appendChild(a);
-        });
+        norm.filter(e => e.showInList).forEach(entry => frag.appendChild(buildEntryRow(entry)));
         list.prepend(frag);
+      }
+
+      // -- "Browse by folder": file entries under CBSE and/or App updates, as chosen in admin --
+      const cbseList = document.getElementById('folder-cbse-list');
+      if (cbseList) {
+        const frag = document.createDocumentFragment();
+        norm.filter(e => e.folderCbse).forEach(entry => frag.appendChild(buildEntryRow(entry)));
+        cbseList.prepend(frag);
+      }
+      const appList = document.getElementById('folder-app-list');
+      if (appList) {
+        const frag = document.createDocumentFragment();
+        norm.filter(e => e.folderApp).forEach(entry => frag.appendChild(buildEntryRow(entry)));
+        appList.prepend(frag);
       }
     } catch (err) {
       // network hiccup or bad JSON — fail quietly, static content still shows
@@ -945,4 +1087,3 @@ Examinations- 2026-27- reg
 
 </body>
 </html>
-        

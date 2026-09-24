@@ -785,6 +785,13 @@ Examinations- 2026-27- reg
   const welcomeModal = document.getElementById('welcome-modal');
   document.getElementById('welcome-ok-btn').addEventListener('click', () => {
     welcomeModal.classList.add('hidden');
+    // Chain straight into sign-in (if not already signed in), then notifications —
+    // one onboarding flow instead of three separate things people have to find.
+    if (!localStorage.getItem('classx_user')) {
+      accountModal.classList.remove('hidden');
+    } else {
+      requestPushPermission();
+    }
   });
 
   // ---- teacher login popup (opened from the app bar, beside the clock) ----
@@ -838,13 +845,34 @@ Examinations- 2026-27- reg
     }
   }
 
+  // Once you've created a free form at https://formspree.io, paste its endpoint
+  // here (looks like "https://formspree.io/f/xxxxabcd") to get an email/dashboard
+  // entry every time someone signs in. Left as a placeholder until then — the
+  // sign-in flow itself works fine either way, this step is just silently skipped.
+  const SIGNIN_LOG_ENDPOINT = 'https://formspree.io/f/xqpabogn';
+
+  function logSignIn(user) {
+    if (!SIGNIN_LOG_ENDPOINT) return;
+    fetch(SIGNIN_LOG_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ name: user.name, email: user.email, signedInAt: new Date().toISOString() }),
+    }).catch(err => console.warn('Sign-in log not sent:', err));
+  }
+
   function handleGoogleCredential(response) {
     const payload = decodeJwt(response.credential);
     if (!payload) return;
-    localStorage.setItem('classx_user', JSON.stringify({
-      name: payload.name, email: payload.email, picture: payload.picture,
-    }));
+    const user = { name: payload.name, email: payload.email, picture: payload.picture };
+    localStorage.setItem('classx_user', JSON.stringify(user));
+    logSignIn(user);
     renderAccountUI();
+    // Continue the onboarding chain: close this popup and move straight into
+    // asking for notification permission, so it's not a separate thing to hunt for.
+    setTimeout(() => {
+      accountModal.classList.add('hidden');
+      requestPushPermission();
+    }, 900);
   }
 
   if (window.google && google.accounts && google.accounts.id) {
@@ -908,34 +936,43 @@ Examinations- 2026-27- reg
 
   async function setupPush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      pushStatus.textContent = 'Push notifications are not supported on this browser.';
-      pushBtn.disabled = true;
+      if (pushStatus) pushStatus.textContent = 'Push notifications are not supported on this browser.';
+      if (pushBtn) pushBtn.disabled = true;
       return;
     }
     if (BACKEND_URL.includes('YOUR-BACKEND-URL-HERE')) {
-      pushStatus.textContent = 'Backend not configured yet — see the deploy guide.';
-      pushBtn.disabled = true;
+      if (pushStatus) pushStatus.textContent = 'Backend not configured yet — see the deploy guide.';
+      if (pushBtn) pushBtn.disabled = true;
       return;
     }
     const reg = await navigator.serviceWorker.register('./service-worker.js');
     const existing = await reg.pushManager.getSubscription();
-    if (existing) {
+    if (existing && pushBtn) {
       pushBtn.textContent = 'Notifications enabled ✓';
       pushStatus.textContent = 'You will get an update the moment one is posted.';
+    } else if (!localStorage.getItem('classx_user') && pushStatus) {
+      pushStatus.textContent = 'Sign in above first, then enable notifications here.';
     }
   }
 
-  pushBtn?.addEventListener('click', async () => {
-    pushBtn.disabled = true;
-    pushStatus.textContent = 'Requesting permission…';
+  // Shared by the manual "Enable notifications" button in More, and by the
+  // automatic prompt shown right after signing in. Only people who tap "Allow"
+  // on the browser's permission prompt ever get subscribed — everyone else is
+  // simply left alone, so posted updates only reach people who said yes.
+  async function requestPushPermission() {
+    // Notifications are only ever set up for people who've signed in — this is the
+    // single gate every call path (auto-onboarding and the manual button) goes through.
+    if (!localStorage.getItem('classx_user')) return false;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    if (BACKEND_URL.includes('YOUR-BACKEND-URL-HERE')) return false;
     try {
+      const reg = await navigator.serviceWorker.ready.catch(() => navigator.serviceWorker.register('./service-worker.js'));
+      const already = await reg.pushManager.getSubscription();
+      if (already) return true; // already subscribed on this device — nothing to do
+
       const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        pushStatus.textContent = 'Permission denied. Re-enable it in your browser site settings.';
-        pushBtn.disabled = false;
-        return;
-      }
-      const reg = await navigator.serviceWorker.ready;
+      if (permission !== 'granted') return false;
+
       const keyRes = await fetch(`${BACKEND_URL}/api/vapid-public-key`);
       const { publicKey } = await keyRes.json();
       const subscription = await reg.pushManager.subscribe({
@@ -947,13 +984,26 @@ Examinations- 2026-27- reg
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subscription),
       });
-      pushBtn.textContent = 'Notifications enabled ✓';
-      pushStatus.textContent = 'You will get an update the moment one is posted.';
+      if (pushBtn) pushBtn.textContent = 'Notifications enabled ✓';
+      if (pushStatus) pushStatus.textContent = 'You will get an update the moment one is posted.';
+      return true;
     } catch (err) {
-      pushStatus.textContent = `Could not enable notifications: ${err.message}`;
-    } finally {
-      pushBtn.disabled = false;
+      if (pushStatus) pushStatus.textContent = `Could not enable notifications: ${err.message}`;
+      return false;
     }
+  }
+
+  pushBtn?.addEventListener('click', async () => {
+    if (!localStorage.getItem('classx_user')) {
+      pushStatus.textContent = 'Please sign in first — notifications are only set up for signed-in students.';
+      accountModal.classList.remove('hidden');
+      return;
+    }
+    pushBtn.disabled = true;
+    pushStatus.textContent = 'Requesting permission…';
+    const ok = await requestPushPermission();
+    if (!ok) pushStatus.textContent = 'Permission denied. Re-enable it in your browser site settings.';
+    pushBtn.disabled = false;
   });
 
   setupPush();

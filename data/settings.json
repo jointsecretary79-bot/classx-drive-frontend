@@ -2,9 +2,9 @@
   "tickerDirection": "horizontal",
   "tickerMode": "custom",
   "customTickerMessages": [
-    "Test",
-    "Test"
+    "Registration And Submission OF LIST OF CANDIDATES (LOC) 2026-27 MAIN BOARD EXAM-CHECK UPDATE TAB",
+    "SAMPLE PAPER RELEASED OFFICAL BY CBSE-CHECK PAPER TAB"
   ],
-  "customTickerFlash": false,
+  "customTickerFlash": true,
   "lastUpdatedText": "24 SEPT 2026 · 08:50 am IST"
 }

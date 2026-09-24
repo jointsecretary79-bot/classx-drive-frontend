@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --ink:#142645;
@@ -331,6 +332,25 @@
   </div>
 </div>
 
+<!-- ===== Student account popup (Google Sign-In, cosmetic only — no server involved) ===== -->
+<div class="modal-overlay hidden" id="account-modal">
+  <div class="modal-card">
+    <span class="tag">MY ACCOUNT</span>
+    <h4 id="account-modal-title">Sign in with Google</h4>
+    <p id="account-modal-desc">Sign in so the app can greet you by name. This only remembers you on this device — it doesn't restrict or unlock anything.</p>
+    <div id="gsi-button-container" style="display:flex; justify-content:center; margin:14px 0;"></div>
+    <div id="account-signed-in-view" class="hidden" style="text-align:center;">
+      <img id="account-avatar" src="" alt="" style="width:56px; height:56px; border-radius:50%; margin-bottom:10px;">
+      <p id="account-name" style="font-weight:700; margin:0 0 4px;"></p>
+      <p id="account-email" class="mono" style="font-size:12px; color:var(--faint); margin:0 0 14px;"></p>
+      <button class="btn" id="account-signout-btn">Sign out</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="account-modal-close">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Fullscreen image viewer — opened by tapping any attached photo ===== -->
 <div class="img-lightbox hidden" id="img-lightbox">
   <button class="lb-close" id="lb-close" type="button" aria-label="Close image">✕</button>
@@ -353,6 +373,8 @@
     <div class="appbar-right">
       <div class="appbar-clock-row">
         <span class="live-clock" id="live-clock">--:--:--</span>
+        <span class="divider-dot">·</span>
+        <button class="teacher-link" id="account-popup-trigger" type="button">Sign in</button>
         <span class="divider-dot">·</span>
         <button class="teacher-link" id="teacher-popup-trigger" type="button">Teacher Login</button>
       </div>
@@ -774,6 +796,85 @@ Examinations- 2026-27- reg
     teacherModal.classList.add('hidden');
   });
 
+  // ---- student account popup: Google Sign-In (cosmetic only — decoded in the browser, ----
+  // ---- never verified server-side, so it's for greeting/display only, not for security gates) ----
+  const GOOGLE_CLIENT_ID = '67192974879-m1ff3lvj5jmql8ljg345uhbroghs0v29.apps.googleusercontent.com';
+  const accountModal = document.getElementById('account-modal');
+  const accountTrigger = document.getElementById('account-popup-trigger');
+  const gsiButtonContainer = document.getElementById('gsi-button-container');
+  const signedInView = document.getElementById('account-signed-in-view');
+
+  function decodeJwt(token) {
+    try {
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const json = decodeURIComponent(atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join(''));
+      return JSON.parse(json);
+    } catch (err) {
+      console.warn('Could not decode Google credential:', err);
+      return null;
+    }
+  }
+
+  function renderAccountUI() {
+    const saved = localStorage.getItem('classx_user');
+    if (saved) {
+      const user = JSON.parse(saved);
+      accountTrigger.textContent = `Hi, ${user.name.split(' ')[0]}`;
+      gsiButtonContainer.style.display = 'none';
+      signedInView.classList.remove('hidden');
+      document.getElementById('account-avatar').src = user.picture || '';
+      document.getElementById('account-name').textContent = user.name || '';
+      document.getElementById('account-email').textContent = user.email || '';
+      document.getElementById('account-modal-title').textContent = 'Signed in';
+      document.getElementById('account-modal-desc').textContent = 'You\'re signed in on this device.';
+    } else {
+      accountTrigger.textContent = 'Sign in';
+      gsiButtonContainer.style.display = 'flex';
+      signedInView.classList.add('hidden');
+      document.getElementById('account-modal-title').textContent = 'Sign in with Google';
+      document.getElementById('account-modal-desc').textContent = 'Sign in so the app can greet you by name. This only remembers you on this device — it doesn\'t restrict or unlock anything.';
+    }
+  }
+
+  function handleGoogleCredential(response) {
+    const payload = decodeJwt(response.credential);
+    if (!payload) return;
+    localStorage.setItem('classx_user', JSON.stringify({
+      name: payload.name, email: payload.email, picture: payload.picture,
+    }));
+    renderAccountUI();
+  }
+
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
+    google.accounts.id.renderButton(gsiButtonContainer, { theme: 'outline', size: 'large', shape: 'pill' });
+  } else {
+    // Script hadn't finished loading yet (it's loaded with `defer`) — try again shortly.
+    window.addEventListener('load', () => {
+      if (window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
+        google.accounts.id.renderButton(gsiButtonContainer, { theme: 'outline', size: 'large', shape: 'pill' });
+      }
+    });
+  }
+
+  accountTrigger.addEventListener('click', () => {
+    renderAccountUI();
+    accountModal.classList.remove('hidden');
+  });
+  document.getElementById('account-modal-close').addEventListener('click', () => {
+    accountModal.classList.add('hidden');
+  });
+  document.getElementById('account-signout-btn').addEventListener('click', () => {
+    localStorage.removeItem('classx_user');
+    if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+    renderAccountUI();
+  });
+
+  renderAccountUI(); // reflect a saved sign-in immediately, e.g. after a page refresh
+
   // ---- fullscreen image lightbox (opened by attached photo thumbnails) ----
   const imgLightbox = document.getElementById('img-lightbox');
   const lbImg = document.getElementById('lb-img');
@@ -871,7 +972,7 @@ Examinations- 2026-27- reg
   async function loadSiteSettings() {
     try {
       const res = await fetch('./data/settings.json', { cache: 'no-store' });
-      if (!res.ok) return; // not created yet — keep defaults
+      if (!res.ok) return {}; // not created yet — keep defaults
       const settings = await res.json();
 
       if (settings.lastUpdatedText) {
@@ -885,8 +986,38 @@ Examinations- 2026-27- reg
         if (vert) vert.style.display = 'block';
       }
       // 'horizontal' (or missing) keeps the default markup as-is.
+
+      if (settings.tickerMode === 'hidden') {
+        // Admin has turned the ticker off entirely — hide both layouts.
+        document.querySelectorAll('.ticker').forEach(el => { el.style.display = 'none'; });
+        const vert = document.getElementById('ticker-vertical');
+        if (vert) vert.style.display = 'none';
+      } else if (settings.tickerMode === 'custom' && Array.isArray(settings.customTickerMessages) && settings.customTickerMessages.length) {
+        // Admin has replaced the built-in "circular" text with their own message(s).
+        const cls = settings.customTickerFlash ? 'flash-alert' : '';
+        const msgs = settings.customTickerMessages;
+        const tracks = [document.getElementById('ticker-track-1'), document.getElementById('ticker-track-2')];
+        tracks.forEach((track, i) => {
+          if (!track) return;
+          const text = msgs[i] || msgs[0];
+          track.innerHTML = `<span class="${cls}">${escapeHtml(text)}</span><span class="${cls}">${escapeHtml(text)}</span>`;
+        });
+        const vertWrap = document.getElementById('ticker-vertical');
+        if (vertWrap) {
+          vertWrap.innerHTML = '';
+          msgs.forEach(text => {
+            const row = document.createElement('div');
+            row.className = 'trow' + (settings.customTickerFlash ? ' flash-alert' : '');
+            row.textContent = text;
+            vertWrap.appendChild(row);
+          });
+        }
+      }
+
+      return settings;
     } catch (err) {
       console.warn('Site settings not loaded:', err);
+      return {};
     }
   }
 
@@ -1006,7 +1137,8 @@ Examinations- 2026-27- reg
     return piece;
   }
 
-  async function loadDynamicUpdates() {
+  async function loadDynamicUpdates(settings) {
+    settings = settings || {};
     try {
       const res = await fetch('./data/updates.json', { cache: 'no-store' });
       if (!res.ok) return; // file not created yet — keep the static content as-is
@@ -1028,29 +1160,34 @@ Examinations- 2026-27- reg
         folderApp: !!e.folderApp,
       }));
 
-      // -- ticker (horizontal mode): fill in up to 2 messages flagged for the ticker --
-      const tickerEntries = norm.filter(e => e.showInTicker);
-      const tracks = [document.getElementById('ticker-track-1'), document.getElementById('ticker-track-2')];
-      tickerEntries.slice(0, 2).forEach((entry, i) => {
-        const track = tracks[i];
-        if (!track) return;
-        const text = `${entry.date} — ${entry.title}`;
-        const cls = entry.flash ? 'flash-alert' : '';
-        track.innerHTML =
-          `<span class="${cls}">${escapeHtml(text)}</span>` +
-          `<span class="${cls}">${escapeHtml(text)}</span>`;
-      });
-
-      // -- ticker (vertical mode): stack every flagged entry as its own row --
-      const vertWrap = document.getElementById('ticker-vertical');
-      if (vertWrap) {
-        vertWrap.innerHTML = '';
-        tickerEntries.slice(0, 6).forEach(entry => {
-          const row = document.createElement('div');
-          row.className = 'trow' + (entry.flash ? ' flash-alert' : '');
-          row.textContent = `${entry.date} — ${entry.title}`;
-          vertWrap.appendChild(row);
+      // If the admin has set a custom ticker message or hidden the ticker in Site settings,
+      // that already took effect in loadSiteSettings() — leave the ticker alone here so
+      // posted updates don't silently override that choice.
+      if (settings.tickerMode !== 'custom' && settings.tickerMode !== 'hidden') {
+        // -- ticker (horizontal mode): fill in up to 2 messages flagged for the ticker --
+        const tickerEntries = norm.filter(e => e.showInTicker);
+        const tracks = [document.getElementById('ticker-track-1'), document.getElementById('ticker-track-2')];
+        tickerEntries.slice(0, 2).forEach((entry, i) => {
+          const track = tracks[i];
+          if (!track) return;
+          const text = `${entry.date} — ${entry.title}`;
+          const cls = entry.flash ? 'flash-alert' : '';
+          track.innerHTML =
+            `<span class="${cls}">${escapeHtml(text)}</span>` +
+            `<span class="${cls}">${escapeHtml(text)}</span>`;
         });
+
+        // -- ticker (vertical mode): stack every flagged entry as its own row --
+        const vertWrap = document.getElementById('ticker-vertical');
+        if (vertWrap) {
+          vertWrap.innerHTML = '';
+          tickerEntries.slice(0, 6).forEach(entry => {
+            const row = document.createElement('div');
+            row.className = 'trow' + (entry.flash ? ' flash-alert' : '');
+            row.textContent = `${entry.date} — ${entry.title}`;
+            vertWrap.appendChild(row);
+          });
+        }
       }
 
       // -- daily updates log: prepend dynamic entries flagged to show in the list --
@@ -1080,9 +1217,11 @@ Examinations- 2026-27- reg
     }
   }
 
-  loadSiteSettings();
-  loadExtraFolders();
-  loadDynamicUpdates();
+  (async function initDynamicContent() {
+    const settings = await loadSiteSettings();
+    loadExtraFolders();
+    loadDynamicUpdates(settings);
+  })();
 </script>
 
 </body>

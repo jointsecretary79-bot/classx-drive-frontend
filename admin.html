@@ -1,4 +1,4 @@
-              <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -140,6 +140,25 @@
       <option value="horizontal">Horizontal — scrolling marquee (current default)</option>
       <option value="vertical">Vertical — stacked list of alerts</option>
     </select>
+
+    <label for="sTickerMode">Ticker content</label>
+    <select id="sTickerMode">
+      <option value="auto">Automatic — show whatever's posted with "ticker" checked (default)</option>
+      <option value="custom">Custom message — write your own text below</option>
+      <option value="hidden">Hidden — remove the ticker banner from the home screen entirely</option>
+    </select>
+    <p class="hint">The built-in "Registration for Class X Board Exam" text you started with is baked into the app file itself, so it can't be edited or deleted directly. Choosing "Custom message" or "Hidden" here overrides it on the live site — this is how you replace or remove it without touching the file.</p>
+
+    <div id="sCustomTickerWrap" style="display:none;">
+      <label for="sTickerMsg1">Custom message — line 1</label>
+      <input id="sTickerMsg1" placeholder="e.g. School reopens 1 OCT — attendance compulsory" />
+      <label for="sTickerMsg2">Custom message — line 2 (optional)</label>
+      <input id="sTickerMsg2" placeholder="Leave blank to show only one message" />
+      <div class="checkrow">
+        <input id="sTickerFlash" type="checkbox" />
+        <label for="sTickerFlash">Flash these red</label>
+      </div>
+    </div>
 
     <div class="row2">
       <div>
@@ -373,16 +392,57 @@
 
 <script>
   // ============ Site settings (ticker layout + last-updated stamp) ============
+
+  // Show/hide the custom-message fields depending on the selected ticker content mode.
+  function refreshTickerModeUI() {
+    gh('sCustomTickerWrap').style.display = gh('sTickerMode').value === 'custom' ? 'block' : 'none';
+  }
+  gh('sTickerMode').addEventListener('change', refreshTickerModeUI);
+  refreshTickerModeUI();
+
+  // Load any settings already saved to the repo, so this form reflects the live site.
+  (async function loadExistingSettings() {
+    const creds = getGhCreds(null);
+    if (!creds) return; // no GitHub creds saved yet — leave the form at its defaults
+    try {
+      const existing = await ghGetFile(creds.owner, creds.repo, 'data/settings.json', creds.branch, creds.token);
+      if (!existing) return;
+      const settings = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, '')));
+      if (settings.tickerDirection) gh('sTickerDir').value = settings.tickerDirection;
+      if (settings.tickerMode) gh('sTickerMode').value = settings.tickerMode;
+      if (settings.customTickerMessages) {
+        gh('sTickerMsg1').value = settings.customTickerMessages[0] || '';
+        gh('sTickerMsg2').value = settings.customTickerMessages[1] || '';
+      }
+      gh('sTickerFlash').checked = !!settings.customTickerFlash;
+      if (settings.lastUpdatedText) {
+        const parts = settings.lastUpdatedText.split(' · ');
+        gh('sDate').value = parts[0] || '';
+        gh('sTime').value = parts[1] || '';
+      }
+      refreshTickerModeUI();
+    } catch (err) {
+      console.warn('Could not load existing settings:', err);
+    }
+  })();
+
   gh('saveSettings').addEventListener('click', async () => {
     const status = gh('sStatus');
     const creds = getGhCreds(status);
     if (!creds) return;
     const { owner, repo, branch, token } = creds;
     const tickerDirection = gh('sTickerDir').value;
+    const tickerMode = gh('sTickerMode').value;
+    const customTickerMessages = [gh('sTickerMsg1').value.trim(), gh('sTickerMsg2').value.trim()].filter(Boolean);
+    const customTickerFlash = gh('sTickerFlash').checked;
     const dateVal = gh('sDate').value.trim();
     const timeVal = gh('sTime').value.trim();
     if (!dateVal || !timeVal) {
       status.textContent = 'Fill in both the date and time.';
+      return;
+    }
+    if (tickerMode === 'custom' && customTickerMessages.length === 0) {
+      status.textContent = 'Write at least one custom ticker message, or switch the mode.';
       return;
     }
     const lastUpdatedText = `${dateVal} · ${timeVal}`;
@@ -392,7 +452,10 @@
     try {
       const existing = await ghGetFile(owner, repo, 'data/settings.json', branch, token);
       const sha = existing ? existing.sha : undefined;
-      const content = b64EncodeUnicode(JSON.stringify({ tickerDirection, lastUpdatedText }, null, 2));
+      const content = b64EncodeUnicode(JSON.stringify(
+        { tickerDirection, tickerMode, customTickerMessages, customTickerFlash, lastUpdatedText },
+        null, 2
+      ));
       await ghPutFile(owner, repo, 'data/settings.json', branch, token, content, 'Update site settings via admin portal', sha);
       status.textContent = 'Saved! index.html will reflect this within a minute or two.';
     } catch (err) {
@@ -698,4 +761,4 @@
   });
 </script>
 </body>
-      </html>
+</html>

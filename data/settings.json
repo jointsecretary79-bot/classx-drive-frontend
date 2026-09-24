@@ -1,4 +1,10 @@
 {
   "tickerDirection": "horizontal",
+  "tickerMode": "custom",
+  "customTickerMessages": [
+    "Test",
+    "Test"
+  ],
+  "customTickerFlash": false,
   "lastUpdatedText": "24 SEPT 2026 · 08:50 am IST"
 }

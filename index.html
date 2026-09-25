@@ -402,21 +402,16 @@
       </div>
 
       <div class="ticker" role="marquee" aria-label="Update ticker 1">
-        <div class="ticker-track" id="ticker-track-1">
-          <span class="flash-alert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
-          <span class="flash-alert">22 SEP — SAMPLE PAPERS 2026‑27 released — check Papers tab</span>
-        </div>
+        <div class="ticker-track" id="ticker-track-1"></div>
       </div>
       <div class="ticker" role="marquee" aria-label="Update ticker 2">
-        <div class="ticker-track" id="ticker-track-2">
-          <span class="flash-alert">22 SEP — Registration for Class X Board Exam — check Updates section</span>
-          <span class="flash-alert">22 SEP — Registration for Class X Board Exam — check Updates section</span>
-        </div>
+        <div class="ticker-track" id="ticker-track-2"></div>
       </div>
 
       <!-- Vertical alert layout, shown instead of the two scrolling tickers above
            when admin sets tickerDirection to "vertical" in data/settings.json -->
       <div class="ticker-vertical" id="ticker-vertical" style="display:none;" role="list" aria-label="Update alerts"></div>
+
 
       <div class="pad">
         <div class="section-label"><span class="num">01</span><h3>Must read first</h3></div>
@@ -1240,6 +1235,20 @@ Examinations- 2026-27- reg
             row.textContent = `${entry.date} — ${entry.title}`;
             vertWrap.appendChild(row);
           });
+        }
+
+        // Nothing posted for the ticker right now — hide the banner entirely
+        // instead of showing an empty yellow strip.
+        if (tickerEntries.length === 0) {
+          document.querySelectorAll('.ticker').forEach(el => { el.style.display = 'none'; });
+          if (vertWrap) vertWrap.style.display = 'none';
+        } else {
+          // restore visibility appropriate to the chosen layout (set earlier in loadSiteSettings)
+          if (settings.tickerDirection === 'vertical') {
+            if (vertWrap) vertWrap.style.display = 'block';
+          } else {
+            document.querySelectorAll('.ticker').forEach(el => { el.style.display = ''; });
+          }
         }
       }
 

@@ -133,13 +133,7 @@
 
   <div class="card">
     <h1>Site settings</h1>
-    <p class="sub">Controls the home-screen ticker layout and the "Last updated" line shown at the bottom of every tab. Uses the same GitHub connection as above.</p>
-
-    <label for="sTickerDir">Ticker banner layout</label>
-    <select id="sTickerDir">
-      <option value="horizontal">Horizontal — scrolling marquee (current default)</option>
-      <option value="vertical">Vertical — stacked list of alerts</option>
-    </select>
+    <p class="sub">Controls the home-screen ticker banner (a simple downward-stacking list — no layout choice needed) and the "Last updated" line shown at the bottom of every tab. Uses the same GitHub connection as above.</p>
 
     <label for="sTickerMode">Ticker content</label>
     <select id="sTickerMode">
@@ -147,7 +141,7 @@
       <option value="custom">Custom message — write your own text below</option>
       <option value="hidden">Hidden — remove the ticker banner from the home screen entirely</option>
     </select>
-    <p class="hint">The built-in "Registration for Class X Board Exam" text you started with is baked into the app file itself, so it can't be edited or deleted directly. Choosing "Custom message" or "Hidden" here overrides it on the live site — this is how you replace or remove it without touching the file.</p>
+    <p class="hint">The built-in "Registration for Class X Board Exam" text from the original file has been removed — the ticker is empty until you post something with "ticker" checked below, or write a custom message here.</p>
 
     <div id="sCustomTickerWrap" style="display:none;">
       <label for="sTickerMsg1">Custom message — line 1</label>
@@ -408,7 +402,6 @@
       const existing = await ghGetFile(creds.owner, creds.repo, 'data/settings.json', creds.branch, creds.token);
       if (!existing) return;
       const settings = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, '')));
-      if (settings.tickerDirection) gh('sTickerDir').value = settings.tickerDirection;
       if (settings.tickerMode) gh('sTickerMode').value = settings.tickerMode;
       if (settings.customTickerMessages) {
         gh('sTickerMsg1').value = settings.customTickerMessages[0] || '';
@@ -431,7 +424,6 @@
     const creds = getGhCreds(status);
     if (!creds) return;
     const { owner, repo, branch, token } = creds;
-    const tickerDirection = gh('sTickerDir').value;
     const tickerMode = gh('sTickerMode').value;
     const customTickerMessages = [gh('sTickerMsg1').value.trim(), gh('sTickerMsg2').value.trim()].filter(Boolean);
     const customTickerFlash = gh('sTickerFlash').checked;
@@ -453,7 +445,7 @@
       const existing = await ghGetFile(owner, repo, 'data/settings.json', branch, token);
       const sha = existing ? existing.sha : undefined;
       const content = b64EncodeUnicode(JSON.stringify(
-        { tickerDirection, tickerMode, customTickerMessages, customTickerFlash, lastUpdatedText },
+        { tickerMode, customTickerMessages, customTickerFlash, lastUpdatedText },
         null, 2
       ));
       await ghPutFile(owner, repo, 'data/settings.json', branch, token, content, 'Update site settings via admin portal', sha);

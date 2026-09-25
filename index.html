@@ -101,14 +101,6 @@
   .hero h2{ color:#fff; font-size:26px; line-height:1.1; max-width:14ch; }
   .hero p{ margin-top:10px; color:#c7cee2; font-size:13.5px; max-width:34ch; position:relative; z-index:1; }
   .seal{ flex-shrink:0; width:72px; height:72px; transform:rotate(-9deg); }
-  .ticker{ background:var(--marigold); color:var(--ink); overflow:hidden; white-space:nowrap; border-top:1px solid rgba(20,38,69,0.15); }
-  .ticker + .ticker{ border-top:1px solid rgba(20,38,69,0.35); }
-  .ticker-track{ display:inline-flex; align-items:center; padding:8px 0; animation:scroll-left 26s linear infinite; }
-  .ticker-track span{
-    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600;
-    padding:0 20px; border-right:1px solid rgba(20,38,69,0.35);
-  }
-  @keyframes scroll-left{ 0%{ transform:translateX(0);} 100%{ transform:translateX(-50%);} }
   .ticker-vertical{ background:var(--marigold); color:var(--ink); border-top:1px solid rgba(20,38,69,0.15); }
   .ticker-vertical .trow{
     padding:9px 18px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; font-weight:600;
@@ -401,15 +393,9 @@
         </div>
       </div>
 
-      <div class="ticker" role="marquee" aria-label="Update ticker 1">
-        <div class="ticker-track" id="ticker-track-1"></div>
-      </div>
-      <div class="ticker" role="marquee" aria-label="Update ticker 2">
-        <div class="ticker-track" id="ticker-track-2"></div>
-      </div>
-
-      <!-- Vertical alert layout, shown instead of the two scrolling tickers above
-           when admin sets tickerDirection to "vertical" in data/settings.json -->
+      <!-- Home-screen alert banner: a simple downward-stacking list of everything
+           posted from admin.html with "ticker" checked. No layout choice needed —
+           this is the only style, and it hides itself when there's nothing to show. -->
       <div class="ticker-vertical" id="ticker-vertical" style="display:none;" role="list" aria-label="Update alerts"></div>
 
 
@@ -1016,7 +1002,7 @@ Examinations- 2026-27- reg
     }[c]));
   }
 
-  // -- site settings: ticker orientation + "Last updated" stamp, both admin-controlled --
+  // -- site settings: "Last updated" stamp + optional custom/hidden ticker override --
   async function loadSiteSettings() {
     try {
       const res = await fetch('./data/settings.json', { cache: 'no-store' });
@@ -1028,37 +1014,21 @@ Examinations- 2026-27- reg
         if (el) el.textContent = settings.lastUpdatedText;
       }
 
-      if (settings.tickerDirection === 'vertical') {
-        document.querySelectorAll('.ticker').forEach(el => { el.style.display = 'none'; });
-        const vert = document.getElementById('ticker-vertical');
-        if (vert) vert.style.display = 'block';
-      }
-      // 'horizontal' (or missing) keeps the default markup as-is.
-
+      const vertWrap = document.getElementById('ticker-vertical');
       if (settings.tickerMode === 'hidden') {
-        // Admin has turned the ticker off entirely — hide both layouts.
-        document.querySelectorAll('.ticker').forEach(el => { el.style.display = 'none'; });
-        const vert = document.getElementById('ticker-vertical');
-        if (vert) vert.style.display = 'none';
+        // Admin has turned the ticker off entirely.
+        if (vertWrap) vertWrap.style.display = 'none';
       } else if (settings.tickerMode === 'custom' && Array.isArray(settings.customTickerMessages) && settings.customTickerMessages.length) {
         // Admin has replaced the built-in "circular" text with their own message(s).
-        const cls = settings.customTickerFlash ? 'flash-alert' : '';
-        const msgs = settings.customTickerMessages;
-        const tracks = [document.getElementById('ticker-track-1'), document.getElementById('ticker-track-2')];
-        tracks.forEach((track, i) => {
-          if (!track) return;
-          const text = msgs[i] || msgs[0];
-          track.innerHTML = `<span class="${cls}">${escapeHtml(text)}</span><span class="${cls}">${escapeHtml(text)}</span>`;
-        });
-        const vertWrap = document.getElementById('ticker-vertical');
         if (vertWrap) {
           vertWrap.innerHTML = '';
-          msgs.forEach(text => {
+          settings.customTickerMessages.forEach(text => {
             const row = document.createElement('div');
             row.className = 'trow' + (settings.customTickerFlash ? ' flash-alert' : '');
             row.textContent = text;
             vertWrap.appendChild(row);
           });
+          vertWrap.style.display = 'block';
         }
       }
 
@@ -1212,43 +1182,21 @@ Examinations- 2026-27- reg
       // that already took effect in loadSiteSettings() — leave the ticker alone here so
       // posted updates don't silently override that choice.
       if (settings.tickerMode !== 'custom' && settings.tickerMode !== 'hidden') {
-        // -- ticker (horizontal mode): fill in up to 2 messages flagged for the ticker --
+        // Every update posted with "ticker" checked gets its own row, newest on top —
+        // a simple downward-stacking list, nothing scrolling or overlapping.
         const tickerEntries = norm.filter(e => e.showInTicker);
-        const tracks = [document.getElementById('ticker-track-1'), document.getElementById('ticker-track-2')];
-        tickerEntries.slice(0, 2).forEach((entry, i) => {
-          const track = tracks[i];
-          if (!track) return;
-          const text = `${entry.date} — ${entry.title}`;
-          const cls = entry.flash ? 'flash-alert' : '';
-          track.innerHTML =
-            `<span class="${cls}">${escapeHtml(text)}</span>` +
-            `<span class="${cls}">${escapeHtml(text)}</span>`;
-        });
-
-        // -- ticker (vertical mode): stack every flagged entry as its own row --
         const vertWrap = document.getElementById('ticker-vertical');
         if (vertWrap) {
           vertWrap.innerHTML = '';
-          tickerEntries.slice(0, 6).forEach(entry => {
+          tickerEntries.forEach(entry => {
             const row = document.createElement('div');
             row.className = 'trow' + (entry.flash ? ' flash-alert' : '');
             row.textContent = `${entry.date} — ${entry.title}`;
             vertWrap.appendChild(row);
           });
-        }
-
-        // Nothing posted for the ticker right now — hide the banner entirely
-        // instead of showing an empty yellow strip.
-        if (tickerEntries.length === 0) {
-          document.querySelectorAll('.ticker').forEach(el => { el.style.display = 'none'; });
-          if (vertWrap) vertWrap.style.display = 'none';
-        } else {
-          // restore visibility appropriate to the chosen layout (set earlier in loadSiteSettings)
-          if (settings.tickerDirection === 'vertical') {
-            if (vertWrap) vertWrap.style.display = 'block';
-          } else {
-            document.querySelectorAll('.ticker').forEach(el => { el.style.display = ''; });
-          }
+          // Nothing posted for the ticker right now — hide the banner entirely
+          // instead of showing an empty yellow strip.
+          vertWrap.style.display = tickerEntries.length ? 'block' : 'none';
         }
       }
 

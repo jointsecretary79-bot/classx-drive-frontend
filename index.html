@@ -211,6 +211,21 @@
   }
   .appbar-clock-row{ display:flex; align-items:center; gap:8px; }
   .appbar-clock-row .divider-dot{ color:#4f5d80; font-size:10px; }
+
+  /* ---- Google Translate widget: restyle to fit the dark app bar, hide Google's own chrome ---- */
+  .translate-widget{ display:inline-flex; align-items:center; }
+  .translate-widget .goog-te-gadget{ font-family:'IBM Plex Mono', monospace !important; font-size:0 !important; color:transparent !important; }
+  .translate-widget .goog-te-gadget > span > a{ display:none !important; } /* hides "powered by Google" link */
+  .translate-widget select.goog-te-combo{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; font-weight:600;
+    background:#0c1730; color:#c7cee2; border:1px solid #28406b; border-radius:3px;
+    padding:2px 4px; cursor:pointer;
+  }
+  /* Google injects a top banner iframe + shifts <body> down when a translation is active — remove both */
+  .goog-te-banner-frame{ display:none !important; }
+  body{ top:0 !important; }
+  .goog-tooltip, .goog-tooltip:hover{ display:none !important; }
+  .goog-text-highlight{ background:none !important; box-shadow:none !important; }
   .teacher-link{
     font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.04em;
     color:var(--marigold); background:none; border:none; padding:0 0 1px;
@@ -369,6 +384,8 @@
     <div class="appbar-right">
       <div class="appbar-clock-row">
         <span class="live-clock" id="live-clock">--:--:--</span>
+        <span class="divider-dot">·</span>
+        <div id="google_translate_element" class="translate-widget"></div>
         <span class="divider-dot">·</span>
         <button class="teacher-link" id="account-popup-trigger" type="button">Sign in</button>
         <span class="divider-dot">·</span>
@@ -1258,6 +1275,19 @@ Examinations- 2026-27- reg
     loadDynamicUpdates(settings);
   })();
 </script>
+
+<!-- ===== Google Translate: Hindi, Kannada, Gujarati, Telugu, Tamil, English, Sanskrit ===== -->
+<script type="text/javascript">
+  function googleTranslateElementInit() {
+    new google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: 'hi,kn,gu,te,ta,en,sa',
+      layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+      autoDisplay: false,
+    }, 'google_translate_element');
+  }
+</script>
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 </body>
 </html>

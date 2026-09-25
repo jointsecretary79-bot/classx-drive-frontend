@@ -101,7 +101,11 @@
   .hero h2{ color:#fff; font-size:26px; line-height:1.1; max-width:14ch; }
   .hero p{ margin-top:10px; color:#c7cee2; font-size:13.5px; max-width:34ch; position:relative; z-index:1; }
   .seal{ flex-shrink:0; width:72px; height:72px; transform:rotate(-9deg); }
-  .ticker-vertical{ background:var(--marigold); color:var(--ink); border-top:1px solid rgba(20,38,69,0.15); }
+  .ticker-label{
+    background:var(--ink); color:var(--marigold); font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px; font-weight:700; letter-spacing:0.08em; text-align:center; padding:4px 0;
+  }
+  .ticker-vertical{ background:var(--marigold); color:var(--ink); border-top:1px solid rgba(20,38,69,0.15); cursor:pointer; }
   .ticker-vertical .trow{
     padding:9px 18px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; font-weight:600;
     border-top:1px solid rgba(20,38,69,0.25);
@@ -395,8 +399,10 @@
 
       <!-- Home-screen alert banner: a simple downward-stacking list of everything
            posted from admin.html with "ticker" checked. No layout choice needed —
-           this is the only style, and it hides itself when there's nothing to show. -->
-      <div class="ticker-vertical" id="ticker-vertical" style="display:none;" role="list" aria-label="Update alerts"></div>
+           this is the only style, and it hides itself when there's nothing to show.
+           Tapping it jumps straight to the Updates tab. -->
+      <div class="ticker-label" id="ticker-label" style="display:none;">NOTIFICATION</div>
+      <div class="ticker-vertical" id="ticker-vertical" style="display:none;" role="button" tabindex="0" aria-label="Open Updates tab"></div>
 
 
       <div class="pad">
@@ -739,15 +745,34 @@ Examinations- 2026-27- reg
   const labels = { home:'Home', subjects:'Subjects', papers:'Papers', scriptures:'Scriptures', updates:'Updates', more:'More' };
   const scrollArea = document.querySelector('.screens');
 
+  function goToTab(target) {
+    const btn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+    navBtns.forEach(b => b.classList.toggle('active', b === btn));
+    screens.forEach(s => s.classList.toggle('active', s.dataset.screen === target));
+    if (labels[target]) screenTag.textContent = labels[target];
+    scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   navBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.target;
-      navBtns.forEach(b => b.classList.toggle('active', b === btn));
-      screens.forEach(s => s.classList.toggle('active', s.dataset.screen === target));
-      screenTag.textContent = labels[target];
-      scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    btn.addEventListener('click', () => goToTab(btn.dataset.target));
   });
+
+  // Tapping the yellow notification banner jumps straight to the Updates tab.
+  const tickerVertical = document.getElementById('ticker-vertical');
+  if (tickerVertical) {
+    tickerVertical.addEventListener('click', () => goToTab('updates'));
+    tickerVertical.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToTab('updates'); }
+    });
+  }
+
+  // Shows/hides the ticker banner and its "NOTIFICATION" label together, so they
+  // never end up out of sync with each other.
+  function setTickerVisible(visible) {
+    const label = document.getElementById('ticker-label');
+    if (tickerVertical) tickerVertical.style.display = visible ? 'block' : 'none';
+    if (label) label.style.display = visible ? 'block' : 'none';
+  }
 
   // ---- live clock (top of app bar) ----
   function updateClock() {
@@ -1017,7 +1042,7 @@ Examinations- 2026-27- reg
       const vertWrap = document.getElementById('ticker-vertical');
       if (settings.tickerMode === 'hidden') {
         // Admin has turned the ticker off entirely.
-        if (vertWrap) vertWrap.style.display = 'none';
+        setTickerVisible(false);
       } else if (settings.tickerMode === 'custom' && Array.isArray(settings.customTickerMessages) && settings.customTickerMessages.length) {
         // Admin has replaced the built-in "circular" text with their own message(s).
         if (vertWrap) {
@@ -1028,7 +1053,7 @@ Examinations- 2026-27- reg
             row.textContent = text;
             vertWrap.appendChild(row);
           });
-          vertWrap.style.display = 'block';
+          setTickerVisible(true);
         }
       }
 
@@ -1196,7 +1221,7 @@ Examinations- 2026-27- reg
           });
           // Nothing posted for the ticker right now — hide the banner entirely
           // instead of showing an empty yellow strip.
-          vertWrap.style.display = tickerEntries.length ? 'block' : 'none';
+          setTickerVisible(tickerEntries.length > 0);
         }
       }
 

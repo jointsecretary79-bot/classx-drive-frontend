@@ -12,8 +12,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --ink:#142645;
@@ -70,8 +68,6 @@
   }
   .appbar .brand{ display:flex; align-items:center; gap:10px; }
   .appbar .brand svg{ width:26px; height:26px; }
-  .brics-logo-link{ display:flex; align-items:center; flex-shrink:0; }
-  .brics-logo-link img{ height:46px; width:auto; display:block; border-radius:2px; background:#fff; padding:2px; }
   .appbar h1{ color:#fff; font-size:16px; font-weight:600; letter-spacing:0.01em; }
   .appbar .screen-tag{
     font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.1em;
@@ -316,27 +312,30 @@
     color:#fff; font-size:20px; width:36px; height:36px; border-radius:50%; cursor:pointer; line-height:1;
   }
 
-  /* ---- OTP sign-in ---- */
+  /* ---- generic helpers + sign-up form ---- */
   .hidden{ display:none !important; }
-  .otp-divider{ display:flex; align-items:center; gap:10px; margin:6px 0 14px; color:var(--text-soft);
-    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; }
-  .otp-divider::before,.otp-divider::after{ content:""; flex:1; height:1px; background:var(--line); }
-  .otp-input{
-    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:var(--radius);
-    font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--text); background:#fff; margin-bottom:10px;
+  .pf-note{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-soft); margin:0 0 12px; }
+  .pf-label{ display:block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--text-soft); margin:0 0 4px; }
+  .pf-input{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius);
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px; color:var(--text); background:#fff; margin-bottom:10px;
   }
-  .otp-input:focus{ outline:3px solid var(--marigold); outline-offset:1px; border-color:var(--ink); }
-  .phone-row{ display:flex; gap:8px; }
-  .phone-row .cc{ display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:var(--radius);
-    background:var(--paper); font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--ink); margin-bottom:10px; }
-  .phone-row .otp-input{ flex:1; min-width:0; }
-  .otp-code{ text-align:center; letter-spacing:0.5em; font-size:20px; font-weight:600; }
-  .otp-msg{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; margin:0 0 10px; min-height:16px; color:var(--text-soft); }
-  .otp-msg.err{ color:#c0392b; }
-  .otp-links{ display:flex; justify-content:space-between; margin-top:10px; }
-  .otp-links button{ background:none; border:none; padding:0; cursor:pointer; font-family:'IBM Plex Mono', monospace;
-    font-size:11px; color:var(--marigold-deep); border-bottom:1px solid var(--marigold); }
-  .otp-links button[disabled]{ opacity:0.5; cursor:not-allowed; border-bottom-color:transparent; }
+  .pf-input:focus{ outline:3px solid var(--marigold); outline-offset:1px; border-color:var(--ink); }
+  .pf-row{ display:flex; gap:8px; }
+  .pf-row .pf-cc{ display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--paper); font-family:'IBM Plex Mono', monospace; font-size:14px; margin-bottom:10px; }
+  .pf-row .pf-input{ flex:1; min-width:0; }
+  .pf-msg{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; margin:0 0 10px; min-height:16px; color:#c0392b; }
+
+  /* ---- tidy app bar ---- */
+  .appbar h1{ white-space:nowrap; }
+  .appbar .brand{ min-width:0; flex-shrink:0; }
+  .appbar-right{ gap:4px; min-width:0; }
+  .appbar-sub-row{ display:flex; align-items:center; gap:8px; }
+  .translate-widget select.goog-te-combo{ max-width:112px; }
+  .translate-widget .goog-te-gadget{ line-height:0; }
+  .translate-widget .goog-te-gadget span{ display:none; }
 </style>
 </head>
 <body>
@@ -368,32 +367,30 @@
 </div>
 
 <!-- ===== Student account popup (Google Sign-In, cosmetic only — no server involved) ===== -->
-<div class="modal-overlay hidden" id="account-modal">
+<div class="modal-overlay hidden" id="account-modal" style="overflow-y:auto;">
   <div class="modal-card">
     <span class="tag">MY ACCOUNT</span>
     <h4 id="account-modal-title">Sign in with Google</h4>
     <p id="account-modal-desc">Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who's using it.</p>
     <div id="gsi-button-container" style="display:flex; justify-content:center; margin:14px 0;"></div>
-    <div id="otp-section">
-      <div class="otp-divider">or sign in with mobile OTP</div>
-      <div id="otp-step-phone">
-        <div class="phone-row">
-          <span class="cc">+91</span>
-          <input class="otp-input" id="otp-phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="10-digit mobile number" aria-label="Mobile number">
-        </div>
-        <button class="btn btn-solid" id="otp-send-btn" type="button" style="width:100%; justify-content:center;">Send SMS OTP</button>
-      </div>
-      <div id="otp-step-code" class="hidden">
-        <p class="otp-msg" id="otp-sent-note"></p>
-        <input class="otp-input otp-code" id="otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" aria-label="6-digit OTP">
-        <button class="btn btn-solid" id="otp-verify-btn" type="button" style="width:100%; justify-content:center;">Verify &amp; sign in</button>
-        <div class="otp-links">
-          <button type="button" id="otp-resend-btn" disabled>Resend OTP</button>
-          <button type="button" id="otp-change-btn">Change number</button>
-        </div>
-      </div>
-      <p class="otp-msg" id="otp-msg" role="status"></p>
-      <div id="recaptcha-container"></div>
+    <div id="profile-form" class="hidden" style="text-align:left;">
+      <label class="pf-label" for="pf-name">Full name</label>
+      <input class="pf-input" id="pf-name" type="text" autocomplete="name" placeholder="Your name">
+      <label class="pf-label" for="pf-role">I am a</label>
+      <select class="pf-input" id="pf-role">
+        <option value="">Select…</option><option>Student</option><option>Teacher</option><option>Parent</option>
+      </select>
+      <label class="pf-label" for="pf-school">School name</label>
+      <input class="pf-input" id="pf-school" type="text" autocomplete="organization" placeholder="Your school">
+      <label class="pf-label" for="pf-state">State / UT</label>
+      <select class="pf-input" id="pf-state"><option value="">Select…</option><option>Andhra Pradesh</option><option>Arunachal Pradesh</option><option>Assam</option><option>Bihar</option><option>Chhattisgarh</option><option>Goa</option><option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option><option>Manipur</option><option>Meghalaya</option><option>Mizoram</option><option>Nagaland</option><option>Odisha</option><option>Punjab</option><option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option><option>Telangana</option><option>Tripura</option><option>Uttar Pradesh</option><option>Uttarakhand</option><option>West Bengal</option><option>Andaman and Nicobar Islands</option><option>Chandigarh</option><option>Dadra and Nagar Haveli and Daman and Diu</option><option>Delhi</option><option>Jammu and Kashmir</option><option>Ladakh</option><option>Lakshadweep</option><option>Puducherry</option></select>
+      <label class="pf-label" for="pf-district">District</label>
+      <input class="pf-input" id="pf-district" type="text" placeholder="Your district">
+      <label class="pf-label" for="pf-mobile">Mobile number</label>
+      <div class="pf-row"><span class="pf-cc">+91</span>
+        <input class="pf-input" id="pf-mobile" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="10-digit number"></div>
+      <p class="pf-msg" id="pf-msg" role="alert"></p>
+      <button class="btn btn-solid" id="pf-save-btn" type="button" style="width:100%; justify-content:center;">Save &amp; continue</button>
     </div>
     <div id="account-signed-in-view" class="hidden" style="text-align:center;">
       <img id="account-avatar" src="" alt="" style="width:56px; height:56px; border-radius:50%; margin-bottom:10px;">
@@ -422,21 +419,17 @@
         <path d="M8 12.5l2.5 2.5L16 9" stroke="#E7A23C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <h1>Class X Drive</h1>
-      <a class="brics-logo-link" href="https://www.brics2026.gov.in/" target="_blank" rel="noopener" aria-label="BRICS 2026 India — official website">
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEis1T9ks6GXJUdv89XfPjHzvmGZ_Yi2N3-b8IORHpMk2PgUWKHDHMuYRuR8miDRNiWUrmmNUFVkids9WnSqBpd3-SyPDqXdW1dZjjASZagh_wncVtWSy8MyqwUT9JDjRzuTGU3mshq9R1MPhLDsjfxDGlUUAZeoLezcfRFG4yttY4o0q7VB974g4c--ds7t/s16000/bricks_summit_logo_2026.jpg" alt="BRICS 2026 India logo">
-      </a>
     </div>
     <div class="appbar-right">
       <div class="appbar-clock-row">
-        <span class="live-clock" id="live-clock">--:--:--</span>
-        <span class="divider-dot">·</span>
         <div id="google_translate_element" class="translate-widget"></div>
-        <span class="divider-dot">·</span>
-        <button class="teacher-link" id="account-popup-trigger" type="button">Sign in</button>
+      </div>
+      <div class="appbar-sub-row">
+        <span class="screen-tag" id="screen-tag">Home</span>
         <span class="divider-dot">·</span>
         <button class="teacher-link" id="teacher-popup-trigger" type="button">Teacher Login</button>
       </div>
-      <span class="screen-tag" id="screen-tag">Home</span>
+      <span class="live-clock" id="live-clock" hidden>--:--:--</span>
     </div>
   </div>
 
@@ -855,7 +848,7 @@ Examinations- 2026-27- reg
     welcomeModal.classList.add('hidden');
     // Chain straight into sign-in (if not already signed in), then notifications —
     // one onboarding flow instead of three separate things people have to find.
-    if (!localStorage.getItem('classx_user')) {
+    if (!isOnboarded()) {
       accountModal.classList.remove('hidden');
     } else {
       requestPushPermission();
@@ -875,7 +868,6 @@ Examinations- 2026-27- reg
   // ---- never verified server-side, so it's for greeting/display only, not for security gates) ----
   const GOOGLE_CLIENT_ID = '67192974879-m1ff3lvj5jmql8ljg345uhbroghs0v29.apps.googleusercontent.com';
   const accountModal = document.getElementById('account-modal');
-  const accountTrigger = document.getElementById('account-popup-trigger');
   const gsiButtonContainer = document.getElementById('gsi-button-container');
   const signedInView = document.getElementById('account-signed-in-view');
 
@@ -892,29 +884,43 @@ Examinations- 2026-27- reg
     }
   }
 
+  const profileForm = document.getElementById('profile-form');
+  function readJSON(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+  const getUser = () => readJSON('classx_user');
+  const getProfile = () => readJSON('classx_profile');
+  const isOnboarded = () => !!(getUser() && getProfile());
+
   function renderAccountUI() {
-    const saved = localStorage.getItem('classx_user');
+    const user = getUser(), profile = getProfile();
     const closeBtn = document.getElementById('account-modal-close');
-    if (saved) {
-      const user = JSON.parse(saved);
-      accountTrigger.textContent = `Hi, ${user.name.split(' ')[0]}`;
+    const title = document.getElementById('account-modal-title');
+    const desc = document.getElementById('account-modal-desc');
+    if (!user) {                       // step 1: Google sign-in (mandatory)
+      gsiButtonContainer.style.display = 'flex';
+      profileForm.classList.add('hidden');
+      signedInView.classList.add('hidden');
+      title.textContent = 'Sign in required';
+      desc.textContent = 'Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who\'s using it.';
+      closeBtn.style.display = 'none';
+    } else if (!profile) {             // step 2: details form (mandatory)
       gsiButtonContainer.style.display = 'none';
-      document.getElementById('otp-section').classList.add('hidden');
+      signedInView.classList.add('hidden');
+      profileForm.classList.remove('hidden');
+      title.textContent = 'One last step';
+      desc.textContent = `Signed in as ${user.email}. Please fill in your details to continue.`;
+      const nameEl = document.getElementById('pf-name');
+      if (!nameEl.value) nameEl.value = user.name || '';
+      closeBtn.style.display = 'none';
+    } else {                           // done
+      gsiButtonContainer.style.display = 'none';
+      profileForm.classList.add('hidden');
       signedInView.classList.remove('hidden');
       document.getElementById('account-avatar').src = user.picture || '';
-      document.getElementById('account-name').textContent = user.name || '';
-      document.getElementById('account-email').textContent = user.email || user.phone || '';
-      document.getElementById('account-modal-title').textContent = 'Signed in';
-      document.getElementById('account-modal-desc').textContent = 'You\'re signed in on this device.';
-      closeBtn.style.display = 'inline-block'; // fine to dismiss once actually signed in
-    } else {
-      accountTrigger.textContent = 'Sign in';
-      gsiButtonContainer.style.display = 'flex';
-      document.getElementById('otp-section').classList.remove('hidden');
-      signedInView.classList.add('hidden');
-      document.getElementById('account-modal-title').textContent = 'Sign in required';
-      document.getElementById('account-modal-desc').textContent = 'Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who\'s using it.';
-      closeBtn.style.display = 'none'; // mandatory: no way to dismiss without signing in
+      document.getElementById('account-name').textContent = profile.name || user.name || '';
+      document.getElementById('account-email').textContent = user.email || '';
+      title.textContent = 'Signed in';
+      desc.textContent = 'You\'re signed in on this device.';
+      closeBtn.style.display = 'inline-block';
     }
   }
 
@@ -924,28 +930,24 @@ Examinations- 2026-27- reg
   // sign-in flow itself works fine either way, this step is just silently skipped.
   const SIGNIN_LOG_ENDPOINT = 'https://formspree.io/f/xqpabogn';
 
-  function logSignIn(user) {
+  function logSignIn(user, profile) {
     if (!SIGNIN_LOG_ENDPOINT) return;
     fetch(SIGNIN_LOG_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ name: user.name, email: user.email || '', phone: user.phone || '', signedInAt: new Date().toISOString() }),
+      body: JSON.stringify({
+        name: profile.name, role: profile.role, school: profile.school, state: profile.state,
+        district: profile.district, mobile: profile.mobile, email: user.email,
+        signedInAt: new Date().toISOString(),
+      }),
     }).catch(err => console.warn('Sign-in log not sent:', err));
   }
 
   function handleGoogleCredential(response) {
     const payload = decodeJwt(response.credential);
     if (!payload) return;
-    const user = { name: payload.name, email: payload.email, picture: payload.picture };
-    localStorage.setItem('classx_user', JSON.stringify(user));
-    logSignIn(user);
-    renderAccountUI();
-    // Continue the onboarding chain: close this popup and move straight into
-    // asking for notification permission, so it's not a separate thing to hunt for.
-    setTimeout(() => {
-      accountModal.classList.add('hidden');
-      requestPushPermission();
-    }, 900);
+    localStorage.setItem('classx_user', JSON.stringify({ name: payload.name, email: payload.email, picture: payload.picture }));
+    renderAccountUI(); // moves on to the details form
   }
 
   if (window.google && google.accounts && google.accounts.id) {
@@ -961,159 +963,46 @@ Examinations- 2026-27- reg
     });
   }
 
-  accountTrigger.addEventListener('click', () => {
-    renderAccountUI();
-    accountModal.classList.remove('hidden');
-  });
   document.getElementById('account-modal-close').addEventListener('click', () => {
     accountModal.classList.add('hidden');
   });
   document.getElementById('account-signout-btn').addEventListener('click', () => {
     localStorage.removeItem('classx_user');
-    try { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); } catch (e) {}
+    localStorage.removeItem('classx_profile');
     if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
     renderAccountUI();
   });
 
 
-  // ---- SMS OTP sign-in via Firebase Phone Auth (no backend needed) ----
-  // Setup: console.firebase.google.com -> create project -> Authentication -> Sign-in method -> enable "Phone".
-  // Then Project settings -> Your apps -> Web app -> paste the config values below.
-  // Also add your site's domain under Authentication -> Settings -> Authorized domains.
-  const FIREBASE_CONFIG = {
-    apiKey: 'AIzaSyB9k8VygQqJeLD-tyC7oVbqqdIpr8rfQ2M',
-    authDomain: 'class-drive-mobile-authent.firebaseapp.com',
-    projectId: 'class-drive-mobile-authent',
-    appId: '1:39548236924:web:539aec15a300ac976bc5f9',
-  };
+  // ---- details form (shown right after Google sign-in) ----
+  const pfMobile = document.getElementById('pf-mobile');
+  pfMobile.addEventListener('input', () => { pfMobile.value = pfMobile.value.replace(/\D/g, '').slice(0, 10); });
 
-  const otpPhone = document.getElementById('otp-phone');
-  const otpCode = document.getElementById('otp-code');
-  const otpMsg = document.getElementById('otp-msg');
-  const otpStepPhone = document.getElementById('otp-step-phone');
-  const otpStepCode = document.getElementById('otp-step-code');
-  const otpSendBtn = document.getElementById('otp-send-btn');
-  const otpVerifyBtn = document.getElementById('otp-verify-btn');
-  const otpResendBtn = document.getElementById('otp-resend-btn');
-  let otpPendingPhone = '';
-  let otpTimer = null;
-  let confirmationResult = null;
-  let recaptchaVerifier = null;
-
-  function otpSay(text, isErr) { otpMsg.textContent = text || ''; otpMsg.classList.toggle('err', !!isErr); }
-
-  function otpErrorText(err) {
-    const map = {
-      'auth/invalid-phone-number': 'That mobile number looks invalid.',
-      'auth/too-many-requests': 'Too many attempts. Please wait a while and try again.',
-      'auth/quota-exceeded': 'SMS limit reached for today. Try again later or use Google sign-in.',
-      'auth/invalid-verification-code': 'Wrong OTP. Try again.',
-      'auth/code-expired': 'OTP expired. Request a new one.',
-      'auth/captcha-check-failed': 'Verification check failed. Refresh and try again.',
-      'auth/network-request-failed': 'Network error. Check your connection.',
-      'auth/unauthorized-domain': 'This website domain is not authorised in Firebase yet.',
+  document.getElementById('pf-save-btn').addEventListener('click', () => {
+    const val = id => document.getElementById(id).value.trim();
+    const profile = {
+      name: val('pf-name'), role: val('pf-role'), school: val('pf-school'),
+      state: val('pf-state'), district: val('pf-district'), mobile: val('pf-mobile'),
     };
-    return map[err && err.code] || 'Something went wrong. Please try again.';
-  }
-
-  function firebaseReady() {
-    if (!window.firebase) { otpSay('Still loading — try again in a moment.', true); return false; }
-    if (FIREBASE_CONFIG.apiKey.startsWith('PASTE')) { otpSay('SMS sign-in is not configured yet. Please use Google sign-in.', true); return false; }
-    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-    return true;
-  }
-
-  function resetRecaptcha() {
-    try { if (recaptchaVerifier) recaptchaVerifier.clear(); } catch (e) {}
-    recaptchaVerifier = null;
-    document.getElementById('recaptcha-container').innerHTML = '';
-  }
-
-  function otpStartCooldown(sec) {
-    clearInterval(otpTimer);
-    let left = sec;
-    otpResendBtn.disabled = true;
-    otpResendBtn.textContent = `Resend in ${left}s`;
-    otpTimer = setInterval(() => {
-      left--;
-      if (left <= 0) { clearInterval(otpTimer); otpResendBtn.disabled = false; otpResendBtn.textContent = 'Resend OTP'; }
-      else otpResendBtn.textContent = `Resend in ${left}s`;
-    }, 1000);
-  }
-
-  async function otpSend(phone) {
-    if (!firebaseReady()) return;
-    otpSendBtn.disabled = true; otpResendBtn.disabled = true;
-    otpSay('Sending OTP…');
-    try {
-      resetRecaptcha();
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-      confirmationResult = await firebase.auth().signInWithPhoneNumber('+91' + phone, recaptchaVerifier);
-      otpPendingPhone = phone;
-      otpStepPhone.classList.add('hidden');
-      otpStepCode.classList.remove('hidden');
-      document.getElementById('otp-sent-note').textContent = `OTP sent by SMS to +91 ${phone}.`;
-      otpSay('');
-      otpCode.value = ''; otpCode.focus();
-      otpStartCooldown(30);
-    } catch (err) {
-      console.warn('OTP send failed:', err);
-      otpSay(otpErrorText(err), true);
-      resetRecaptcha();
-      otpResendBtn.disabled = !otpPendingPhone;
-    } finally {
-      otpSendBtn.disabled = false;
-    }
-  }
-
-  otpSendBtn.addEventListener('click', () => {
-    const phone = otpPhone.value.replace(/\D/g, '');
-    if (!/^[6-9]\d{9}$/.test(phone)) { otpSay('Enter a valid 10-digit Indian mobile number.', true); return; }
-    otpSend(phone);
-  });
-  otpPhone.addEventListener('input', () => { otpPhone.value = otpPhone.value.replace(/\D/g, '').slice(0, 10); });
-  otpPhone.addEventListener('keydown', e => { if (e.key === 'Enter') otpSendBtn.click(); });
-  otpResendBtn.addEventListener('click', () => otpSend(otpPendingPhone));
-
-  document.getElementById('otp-change-btn').addEventListener('click', () => {
-    clearInterval(otpTimer);
-    otpPendingPhone = ''; confirmationResult = null;
-    otpStepCode.classList.add('hidden');
-    otpStepPhone.classList.remove('hidden');
-    otpSay('');
-    otpPhone.focus();
+    const msg = document.getElementById('pf-msg');
+    let err = '';
+    if (profile.name.length < 2) err = 'Please enter your full name.';
+    else if (!profile.role) err = 'Please choose Student, Teacher or Parent.';
+    else if (profile.school.length < 2) err = 'Please enter your school name.';
+    else if (!profile.state) err = 'Please select your state.';
+    else if (profile.district.length < 2) err = 'Please enter your district.';
+    else if (!/^[6-9]\d{9}$/.test(profile.mobile)) err = 'Enter a valid 10-digit mobile number.';
+    msg.textContent = err;
+    if (err) return;
+    localStorage.setItem('classx_profile', JSON.stringify(profile));
+    logSignIn(getUser(), profile);
+    renderAccountUI();
+    accountModal.classList.add('hidden');
+    requestPushPermission();
   });
 
-  otpCode.addEventListener('input', () => { otpCode.value = otpCode.value.replace(/\D/g, '').slice(0, 6); });
-  otpCode.addEventListener('keydown', e => { if (e.key === 'Enter') otpVerifyBtn.click(); });
-
-  otpVerifyBtn.addEventListener('click', async () => {
-    const code = otpCode.value.trim();
-    if (code.length !== 6) { otpSay('Enter the 6-digit OTP.', true); return; }
-    if (!confirmationResult) { otpSay('Request an OTP first.', true); return; }
-    otpVerifyBtn.disabled = true;
-    otpSay('Verifying…');
-    try {
-      await confirmationResult.confirm(code);
-      const user = { name: 'Student', email: '', phone: '+91' + otpPendingPhone, picture: '', method: 'sms' };
-      localStorage.setItem('classx_user', JSON.stringify(user));
-      logSignIn(user);
-      clearInterval(otpTimer);
-      confirmationResult = null; otpPendingPhone = '';
-      otpStepCode.classList.add('hidden'); otpStepPhone.classList.remove('hidden');
-      otpPhone.value = ''; otpCode.value = ''; otpSay('');
-      resetRecaptcha();
-      renderAccountUI();
-      setTimeout(() => { accountModal.classList.add('hidden'); requestPushPermission(); }, 900);
-    } catch (err) {
-      console.warn('OTP verify failed:', err);
-      otpSay(otpErrorText(err), true);
-    } finally {
-      otpVerifyBtn.disabled = false;
-    }
-  });
-
-  renderAccountUI(); // reflect a saved sign-in immediately, e.g. after a page refresh
+  renderAccountUI(); // reflect saved progress after a page refresh
+  if (getUser() && !getProfile()) accountModal.classList.remove('hidden'); // signed in but details missing
 
   // ---- fullscreen image lightbox (opened by attached photo thumbnails) ----
   const imgLightbox = document.getElementById('img-lightbox');
@@ -1468,7 +1357,7 @@ Examinations- 2026-27- reg
     new google.translate.TranslateElement({
       pageLanguage: 'en',
       includedLanguages: 'hi,kn,gu,te,ta,en,sa',
-      layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+      layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL,
       autoDisplay: false,
     }, 'google_translate_element');
   }

@@ -12,6 +12,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --ink:#142645;
@@ -313,6 +315,28 @@
     position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.12); border:none;
     color:#fff; font-size:20px; width:36px; height:36px; border-radius:50%; cursor:pointer; line-height:1;
   }
+
+  /* ---- OTP sign-in ---- */
+  .hidden{ display:none !important; }
+  .otp-divider{ display:flex; align-items:center; gap:10px; margin:6px 0 14px; color:var(--text-soft);
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; }
+  .otp-divider::before,.otp-divider::after{ content:""; flex:1; height:1px; background:var(--line); }
+  .otp-input{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:var(--radius);
+    font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--text); background:#fff; margin-bottom:10px;
+  }
+  .otp-input:focus{ outline:3px solid var(--marigold); outline-offset:1px; border-color:var(--ink); }
+  .phone-row{ display:flex; gap:8px; }
+  .phone-row .cc{ display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--paper); font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--ink); margin-bottom:10px; }
+  .phone-row .otp-input{ flex:1; min-width:0; }
+  .otp-code{ text-align:center; letter-spacing:0.5em; font-size:20px; font-weight:600; }
+  .otp-msg{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; margin:0 0 10px; min-height:16px; color:var(--text-soft); }
+  .otp-msg.err{ color:#c0392b; }
+  .otp-links{ display:flex; justify-content:space-between; margin-top:10px; }
+  .otp-links button{ background:none; border:none; padding:0; cursor:pointer; font-family:'IBM Plex Mono', monospace;
+    font-size:11px; color:var(--marigold-deep); border-bottom:1px solid var(--marigold); }
+  .otp-links button[disabled]{ opacity:0.5; cursor:not-allowed; border-bottom-color:transparent; }
 </style>
 </head>
 <body>
@@ -350,6 +374,27 @@
     <h4 id="account-modal-title">Sign in with Google</h4>
     <p id="account-modal-desc">Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who's using it.</p>
     <div id="gsi-button-container" style="display:flex; justify-content:center; margin:14px 0;"></div>
+    <div id="otp-section">
+      <div class="otp-divider">or sign in with mobile OTP</div>
+      <div id="otp-step-phone">
+        <div class="phone-row">
+          <span class="cc">+91</span>
+          <input class="otp-input" id="otp-phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="10-digit mobile number" aria-label="Mobile number">
+        </div>
+        <button class="btn btn-solid" id="otp-send-btn" type="button" style="width:100%; justify-content:center;">Send SMS OTP</button>
+      </div>
+      <div id="otp-step-code" class="hidden">
+        <p class="otp-msg" id="otp-sent-note"></p>
+        <input class="otp-input otp-code" id="otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" aria-label="6-digit OTP">
+        <button class="btn btn-solid" id="otp-verify-btn" type="button" style="width:100%; justify-content:center;">Verify &amp; sign in</button>
+        <div class="otp-links">
+          <button type="button" id="otp-resend-btn" disabled>Resend OTP</button>
+          <button type="button" id="otp-change-btn">Change number</button>
+        </div>
+      </div>
+      <p class="otp-msg" id="otp-msg" role="status"></p>
+      <div id="recaptcha-container"></div>
+    </div>
     <div id="account-signed-in-view" class="hidden" style="text-align:center;">
       <img id="account-avatar" src="" alt="" style="width:56px; height:56px; border-radius:50%; margin-bottom:10px;">
       <p id="account-name" style="font-weight:700; margin:0 0 4px;"></p>
@@ -854,16 +899,18 @@ Examinations- 2026-27- reg
       const user = JSON.parse(saved);
       accountTrigger.textContent = `Hi, ${user.name.split(' ')[0]}`;
       gsiButtonContainer.style.display = 'none';
+      document.getElementById('otp-section').classList.add('hidden');
       signedInView.classList.remove('hidden');
       document.getElementById('account-avatar').src = user.picture || '';
       document.getElementById('account-name').textContent = user.name || '';
-      document.getElementById('account-email').textContent = user.email || '';
+      document.getElementById('account-email').textContent = user.email || user.phone || '';
       document.getElementById('account-modal-title').textContent = 'Signed in';
       document.getElementById('account-modal-desc').textContent = 'You\'re signed in on this device.';
       closeBtn.style.display = 'inline-block'; // fine to dismiss once actually signed in
     } else {
       accountTrigger.textContent = 'Sign in';
       gsiButtonContainer.style.display = 'flex';
+      document.getElementById('otp-section').classList.remove('hidden');
       signedInView.classList.add('hidden');
       document.getElementById('account-modal-title').textContent = 'Sign in required';
       document.getElementById('account-modal-desc').textContent = 'Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who\'s using it.';
@@ -882,7 +929,7 @@ Examinations- 2026-27- reg
     fetch(SIGNIN_LOG_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ name: user.name, email: user.email, signedInAt: new Date().toISOString() }),
+      body: JSON.stringify({ name: user.name, email: user.email || '', phone: user.phone || '', signedInAt: new Date().toISOString() }),
     }).catch(err => console.warn('Sign-in log not sent:', err));
   }
 
@@ -923,8 +970,147 @@ Examinations- 2026-27- reg
   });
   document.getElementById('account-signout-btn').addEventListener('click', () => {
     localStorage.removeItem('classx_user');
+    try { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); } catch (e) {}
     if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
     renderAccountUI();
+  });
+
+
+  // ---- SMS OTP sign-in via Firebase Phone Auth (no backend needed) ----
+  // Setup: console.firebase.google.com -> create project -> Authentication -> Sign-in method -> enable "Phone".
+  // Then Project settings -> Your apps -> Web app -> paste the config values below.
+  // Also add your site's domain under Authentication -> Settings -> Authorized domains.
+  const FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyB9k8VygQqJeLD-tyC7oVbqqdIpr8rfQ2M',
+    authDomain: 'class-drive-mobile-authent.firebaseapp.com',
+    projectId: 'class-drive-mobile-authent',
+    appId: '1:39548236924:web:539aec15a300ac976bc5f9',
+  };
+
+  const otpPhone = document.getElementById('otp-phone');
+  const otpCode = document.getElementById('otp-code');
+  const otpMsg = document.getElementById('otp-msg');
+  const otpStepPhone = document.getElementById('otp-step-phone');
+  const otpStepCode = document.getElementById('otp-step-code');
+  const otpSendBtn = document.getElementById('otp-send-btn');
+  const otpVerifyBtn = document.getElementById('otp-verify-btn');
+  const otpResendBtn = document.getElementById('otp-resend-btn');
+  let otpPendingPhone = '';
+  let otpTimer = null;
+  let confirmationResult = null;
+  let recaptchaVerifier = null;
+
+  function otpSay(text, isErr) { otpMsg.textContent = text || ''; otpMsg.classList.toggle('err', !!isErr); }
+
+  function otpErrorText(err) {
+    const map = {
+      'auth/invalid-phone-number': 'That mobile number looks invalid.',
+      'auth/too-many-requests': 'Too many attempts. Please wait a while and try again.',
+      'auth/quota-exceeded': 'SMS limit reached for today. Try again later or use Google sign-in.',
+      'auth/invalid-verification-code': 'Wrong OTP. Try again.',
+      'auth/code-expired': 'OTP expired. Request a new one.',
+      'auth/captcha-check-failed': 'Verification check failed. Refresh and try again.',
+      'auth/network-request-failed': 'Network error. Check your connection.',
+      'auth/unauthorized-domain': 'This website domain is not authorised in Firebase yet.',
+    };
+    return map[err && err.code] || 'Something went wrong. Please try again.';
+  }
+
+  function firebaseReady() {
+    if (!window.firebase) { otpSay('Still loading — try again in a moment.', true); return false; }
+    if (FIREBASE_CONFIG.apiKey.startsWith('PASTE')) { otpSay('SMS sign-in is not configured yet. Please use Google sign-in.', true); return false; }
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    return true;
+  }
+
+  function resetRecaptcha() {
+    try { if (recaptchaVerifier) recaptchaVerifier.clear(); } catch (e) {}
+    recaptchaVerifier = null;
+    document.getElementById('recaptcha-container').innerHTML = '';
+  }
+
+  function otpStartCooldown(sec) {
+    clearInterval(otpTimer);
+    let left = sec;
+    otpResendBtn.disabled = true;
+    otpResendBtn.textContent = `Resend in ${left}s`;
+    otpTimer = setInterval(() => {
+      left--;
+      if (left <= 0) { clearInterval(otpTimer); otpResendBtn.disabled = false; otpResendBtn.textContent = 'Resend OTP'; }
+      else otpResendBtn.textContent = `Resend in ${left}s`;
+    }, 1000);
+  }
+
+  async function otpSend(phone) {
+    if (!firebaseReady()) return;
+    otpSendBtn.disabled = true; otpResendBtn.disabled = true;
+    otpSay('Sending OTP…');
+    try {
+      resetRecaptcha();
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+      confirmationResult = await firebase.auth().signInWithPhoneNumber('+91' + phone, recaptchaVerifier);
+      otpPendingPhone = phone;
+      otpStepPhone.classList.add('hidden');
+      otpStepCode.classList.remove('hidden');
+      document.getElementById('otp-sent-note').textContent = `OTP sent by SMS to +91 ${phone}.`;
+      otpSay('');
+      otpCode.value = ''; otpCode.focus();
+      otpStartCooldown(30);
+    } catch (err) {
+      console.warn('OTP send failed:', err);
+      otpSay(otpErrorText(err), true);
+      resetRecaptcha();
+      otpResendBtn.disabled = !otpPendingPhone;
+    } finally {
+      otpSendBtn.disabled = false;
+    }
+  }
+
+  otpSendBtn.addEventListener('click', () => {
+    const phone = otpPhone.value.replace(/\D/g, '');
+    if (!/^[6-9]\d{9}$/.test(phone)) { otpSay('Enter a valid 10-digit Indian mobile number.', true); return; }
+    otpSend(phone);
+  });
+  otpPhone.addEventListener('input', () => { otpPhone.value = otpPhone.value.replace(/\D/g, '').slice(0, 10); });
+  otpPhone.addEventListener('keydown', e => { if (e.key === 'Enter') otpSendBtn.click(); });
+  otpResendBtn.addEventListener('click', () => otpSend(otpPendingPhone));
+
+  document.getElementById('otp-change-btn').addEventListener('click', () => {
+    clearInterval(otpTimer);
+    otpPendingPhone = ''; confirmationResult = null;
+    otpStepCode.classList.add('hidden');
+    otpStepPhone.classList.remove('hidden');
+    otpSay('');
+    otpPhone.focus();
+  });
+
+  otpCode.addEventListener('input', () => { otpCode.value = otpCode.value.replace(/\D/g, '').slice(0, 6); });
+  otpCode.addEventListener('keydown', e => { if (e.key === 'Enter') otpVerifyBtn.click(); });
+
+  otpVerifyBtn.addEventListener('click', async () => {
+    const code = otpCode.value.trim();
+    if (code.length !== 6) { otpSay('Enter the 6-digit OTP.', true); return; }
+    if (!confirmationResult) { otpSay('Request an OTP first.', true); return; }
+    otpVerifyBtn.disabled = true;
+    otpSay('Verifying…');
+    try {
+      await confirmationResult.confirm(code);
+      const user = { name: 'Student', email: '', phone: '+91' + otpPendingPhone, picture: '', method: 'sms' };
+      localStorage.setItem('classx_user', JSON.stringify(user));
+      logSignIn(user);
+      clearInterval(otpTimer);
+      confirmationResult = null; otpPendingPhone = '';
+      otpStepCode.classList.add('hidden'); otpStepPhone.classList.remove('hidden');
+      otpPhone.value = ''; otpCode.value = ''; otpSay('');
+      resetRecaptcha();
+      renderAccountUI();
+      setTimeout(() => { accountModal.classList.add('hidden'); requestPushPermission(); }, 900);
+    } catch (err) {
+      console.warn('OTP verify failed:', err);
+      otpSay(otpErrorText(err), true);
+    } finally {
+      otpVerifyBtn.disabled = false;
+    }
   });
 
   renderAccountUI(); // reflect a saved sign-in immediately, e.g. after a page refresh

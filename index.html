@@ -336,6 +336,23 @@
   .translate-widget select.goog-te-combo{ max-width:112px; }
   .translate-widget .goog-te-gadget{ line-height:0; }
   .translate-widget .goog-te-gadget span{ display:none; }
+
+  /* ---- login mode switch, notice, profile button ---- */
+  .mode-switch{ display:flex; gap:8px; margin:12px 0 4px; }
+  .mode-btn{ flex:1; text-align:left; padding:10px 11px; border:1px solid var(--line); background:#fff;
+    border-radius:var(--radius); cursor:pointer; font-family:'IBM Plex Sans', sans-serif; }
+  .mode-btn b{ display:block; font-size:13px; color:var(--ink); }
+  .mode-btn span{ display:block; font-size:11px; color:var(--text-soft); margin-top:2px; line-height:1.3; }
+  .mode-btn.active{ border-color:var(--ink); box-shadow:0 0 0 3px var(--marigold); }
+  .pf-notice{ background:#fff7e6; border-left:3px solid var(--marigold); padding:8px 10px; margin:10px 0 4px;
+    font-size:12px; line-height:1.45; color:var(--text); text-align:left; }
+  .profile-btn{ color:var(--ink); background:var(--marigold); border:none; border-radius:14px;
+    padding:5px 12px; font-weight:700; font-size:11.5px; cursor:pointer; white-space:nowrap; }
+  .acc-details{ text-align:left; margin:0 0 14px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; }
+  .acc-details div{ display:flex; justify-content:space-between; gap:12px; padding:7px 11px; font-size:12.5px; border-bottom:1px dashed var(--line); }
+  .acc-details div:last-child{ border-bottom:none; }
+  .acc-details dt{ color:var(--text-soft); font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; }
+  .acc-details dd{ margin:0; font-weight:600; text-align:right; word-break:break-word; }
 </style>
 </head>
 <body>
@@ -372,6 +389,11 @@
     <span class="tag">MY ACCOUNT</span>
     <h4 id="account-modal-title">Sign in with Google</h4>
     <p id="account-modal-desc">Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who's using it.</p>
+    <div id="account-notice" class="pf-notice"><b>Mandatory:</b> Google sign-in <u>and</u> the details form are both required. Please use your real details — fake profiles are not allowed.</div>
+    <div class="mode-switch" id="mode-switch">
+      <button type="button" class="mode-btn active" data-mode="new"><b>New login</b><span>First time here — sign in, then fill your details</span></button>
+      <button type="button" class="mode-btn" data-mode="existing"><b>Already registered</b><span>Just sign in with Google</span></button>
+    </div>
     <div id="gsi-button-container" style="display:flex; justify-content:center; margin:14px 0;"></div>
     <div id="profile-form" class="hidden" style="text-align:left;">
       <label class="pf-label" for="pf-name">Full name</label>
@@ -395,7 +417,8 @@
     <div id="account-signed-in-view" class="hidden" style="text-align:center;">
       <img id="account-avatar" src="" alt="" style="width:56px; height:56px; border-radius:50%; margin-bottom:10px;">
       <p id="account-name" style="font-weight:700; margin:0 0 4px;"></p>
-      <p id="account-email" class="mono" style="font-size:12px; color:var(--faint); margin:0 0 14px;"></p>
+      <p id="account-email" class="mono" style="font-size:12px; color:var(--faint); margin:0 0 12px;"></p>
+      <dl class="acc-details" id="account-details"></dl>
       <button class="btn" id="account-signout-btn">Sign out</button>
     </div>
     <div class="modal-actions" id="account-modal-actions">
@@ -423,6 +446,7 @@
     <div class="appbar-right">
       <div class="appbar-clock-row">
         <div id="google_translate_element" class="translate-widget"></div>
+        <button class="profile-btn" id="account-popup-trigger" type="button">Sign in</button>
       </div>
       <div class="appbar-sub-row">
         <span class="screen-tag" id="screen-tag">Home</span>
@@ -885,41 +909,83 @@ Examinations- 2026-27- reg
   }
 
   const profileForm = document.getElementById('profile-form');
+  const accountTrigger = document.getElementById('account-popup-trigger');
+  const modeSwitch = document.getElementById('mode-switch');
+  const accountNotice = document.getElementById('account-notice');
   function readJSON(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+  const profileKey = email => 'classx_profile:' + String(email || '').toLowerCase();
   const getUser = () => readJSON('classx_user');
-  const getProfile = () => readJSON('classx_profile');
+  const getProfile = () => { const u = getUser(); return u ? readJSON(profileKey(u.email)) : null; };
   const isOnboarded = () => !!(getUser() && getProfile());
+
+  // One-time migration of a profile saved by the previous version (single global key).
+  (function migrateOldProfile() {
+    const old = readJSON('classx_profile'), u = getUser();
+    if (old && u && u.email) { localStorage.setItem(profileKey(u.email), JSON.stringify(old)); }
+    localStorage.removeItem('classx_profile');
+  })();
+
+  let loginMode = 'new';      // 'new' = fill the form, 'existing' = Google sign-in only
+  let formRequired = false;   // true right after a "New login" until the form is saved
+  let formNote = '';
+
+  function setMode(mode) {
+    loginMode = mode;
+    modeSwitch.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  }
+  modeSwitch.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+  function fillForm(saved, user) {
+    const set = (id, v) => { document.getElementById(id).value = v || ''; };
+    set('pf-name', (saved && saved.name) || (user && user.name));
+    set('pf-role', saved && saved.role);
+    set('pf-school', saved && saved.school);
+    set('pf-state', saved && saved.state);
+    set('pf-district', saved && saved.district);
+    set('pf-mobile', saved && saved.mobile);
+    document.getElementById('pf-msg').textContent = '';
+  }
 
   function renderAccountUI() {
     const user = getUser(), profile = getProfile();
     const closeBtn = document.getElementById('account-modal-close');
     const title = document.getElementById('account-modal-title');
     const desc = document.getElementById('account-modal-desc');
-    if (!user) {                       // step 1: Google sign-in (mandatory)
+    const done = user && profile && !formRequired;
+    accountTrigger.textContent = done ? `👤 ${(profile.name || user.name || 'Profile').split(' ')[0]}` : 'Sign in';
+
+    if (!user) {                                   // step 1: Google sign-in (mandatory)
       gsiButtonContainer.style.display = 'flex';
-      profileForm.classList.add('hidden');
-      signedInView.classList.add('hidden');
+      modeSwitch.classList.remove('hidden'); accountNotice.classList.remove('hidden');
+      profileForm.classList.add('hidden'); signedInView.classList.add('hidden');
       title.textContent = 'Sign in required';
-      desc.textContent = 'Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who\'s using it.';
+      desc.textContent = 'Choose how you are logging in, then continue with Google.';
       closeBtn.style.display = 'none';
-    } else if (!profile) {             // step 2: details form (mandatory)
+    } else if (!done) {                            // step 2: details form (mandatory)
       gsiButtonContainer.style.display = 'none';
-      signedInView.classList.add('hidden');
-      profileForm.classList.remove('hidden');
-      title.textContent = 'One last step';
-      desc.textContent = `Signed in as ${user.email}. Please fill in your details to continue.`;
-      const nameEl = document.getElementById('pf-name');
-      if (!nameEl.value) nameEl.value = user.name || '';
+      modeSwitch.classList.add('hidden'); accountNotice.classList.remove('hidden');
+      signedInView.classList.add('hidden'); profileForm.classList.remove('hidden');
+      title.textContent = 'Fill your details';
+      desc.textContent = (formNote ? formNote + ' ' : '') + `Signed in as ${user.email}.`;
       closeBtn.style.display = 'none';
-    } else {                           // done
+    } else {                                       // signed in + registered: show profile
       gsiButtonContainer.style.display = 'none';
-      profileForm.classList.add('hidden');
-      signedInView.classList.remove('hidden');
+      modeSwitch.classList.add('hidden'); accountNotice.classList.add('hidden');
+      profileForm.classList.add('hidden'); signedInView.classList.remove('hidden');
       document.getElementById('account-avatar').src = user.picture || '';
       document.getElementById('account-name').textContent = profile.name || user.name || '';
       document.getElementById('account-email').textContent = user.email || '';
-      title.textContent = 'Signed in';
-      desc.textContent = 'You\'re signed in on this device.';
+      const dl = document.getElementById('account-details');
+      dl.innerHTML = '';
+      [['Role', profile.role], ['School', profile.school], ['District', profile.district],
+       ['State', profile.state], ['Mobile', '+91 ' + profile.mobile]].forEach(([k, v]) => {
+        const row = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = k;
+        const dd = document.createElement('dd'); dd.textContent = v || '—';
+        row.append(dt, dd); dl.appendChild(row);
+      });
+      title.textContent = 'Your profile';
+      desc.textContent = 'You are signed in on this device.';
       closeBtn.style.display = 'inline-block';
     }
   }
@@ -946,8 +1012,23 @@ Examinations- 2026-27- reg
   function handleGoogleCredential(response) {
     const payload = decodeJwt(response.credential);
     if (!payload) return;
-    localStorage.setItem('classx_user', JSON.stringify({ name: payload.name, email: payload.email, picture: payload.picture }));
-    renderAccountUI(); // moves on to the details form
+    const user = { name: payload.name, email: payload.email, picture: payload.picture };
+    localStorage.setItem('classx_user', JSON.stringify(user));
+    const saved = readJSON(profileKey(user.email));
+
+    if (loginMode === 'existing' && saved) {       // already registered -> Google sign-in is enough
+      formRequired = false; formNote = '';
+      renderAccountUI();
+      setTimeout(() => { accountModal.classList.add('hidden'); requestPushPermission(); }, 700);
+      return;
+    }
+    // New login (or "already registered" but no record on this device): details form is mandatory
+    formRequired = true;
+    formNote = (loginMode === 'existing')
+      ? 'We could not find your details on this device, so please fill the form once.'
+      : '';
+    fillForm(saved, user);
+    renderAccountUI();
   }
 
   if (window.google && google.accounts && google.accounts.id) {
@@ -963,12 +1044,17 @@ Examinations- 2026-27- reg
     });
   }
 
+  accountTrigger.addEventListener('click', () => {
+    renderAccountUI();
+    accountModal.classList.remove('hidden');
+  });
   document.getElementById('account-modal-close').addEventListener('click', () => {
     accountModal.classList.add('hidden');
   });
   document.getElementById('account-signout-btn').addEventListener('click', () => {
-    localStorage.removeItem('classx_user');
-    localStorage.removeItem('classx_profile');
+    localStorage.removeItem('classx_user');   // the saved details stay on this device for next time
+    formRequired = false; formNote = '';
+    setMode('existing');                      // people logging back in are most likely already registered
     if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
     renderAccountUI();
   });
@@ -994,7 +1080,8 @@ Examinations- 2026-27- reg
     else if (!/^[6-9]\d{9}$/.test(profile.mobile)) err = 'Enter a valid 10-digit mobile number.';
     msg.textContent = err;
     if (err) return;
-    localStorage.setItem('classx_profile', JSON.stringify(profile));
+    localStorage.setItem(profileKey(getUser().email), JSON.stringify(profile));
+    formRequired = false; formNote = '';
     logSignIn(getUser(), profile);
     renderAccountUI();
     accountModal.classList.add('hidden');
@@ -1002,7 +1089,7 @@ Examinations- 2026-27- reg
   });
 
   renderAccountUI(); // reflect saved progress after a page refresh
-  if (getUser() && !getProfile()) accountModal.classList.remove('hidden'); // signed in but details missing
+  if (getUser() && !getProfile()) { formRequired = true; fillForm(null, getUser()); renderAccountUI(); accountModal.classList.remove('hidden'); } // signed in but details missing
 
   // ---- fullscreen image lightbox (opened by attached photo thumbnails) ----
   const imgLightbox = document.getElementById('img-lightbox');

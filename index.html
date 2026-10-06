@@ -1012,8 +1012,15 @@ Examinations- 2026-27- reg
       'auth/captcha-check-failed': 'Verification check failed. Refresh and try again.',
       'auth/network-request-failed': 'Network error. Check your connection.',
       'auth/unauthorized-domain': 'This website domain is not authorised in Firebase yet.',
+      'auth/billing-not-enabled': 'SMS needs billing enabled on the Firebase project (or use a test number).',
+      'auth/operation-not-allowed': 'Phone sign-in or this region is not allowed in Firebase settings.',
+      'auth/invalid-app-credential': 'reCAPTCHA / app check failed. Refresh and try again.',
+      'auth/app-not-authorized': 'This app/API key is not authorised. Check the API key restrictions.',
+      'auth/missing-client-identifier': 'Verification could not start. Refresh and try again.',
+      'auth/web-storage-unsupported': 'Your browser is blocking storage. Enable cookies/storage and retry.',
     };
-    return map[err && err.code] || 'Something went wrong. Please try again.';
+    const code = (err && err.code) || (err && err.message) || 'unknown';
+    return map[err && err.code] || ('Could not send OTP (' + code + '). Please try again.');
   }
 
   function firebaseReady() {

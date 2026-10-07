@@ -391,8 +391,8 @@
     <p id="account-modal-desc">Signing in with Google is required to use this app — this lets updates reach you and keeps a record of who's using it.</p>
     <div id="account-notice" class="pf-notice"><b>Mandatory:</b> Google sign-in <u>and</u> the details form are both required. Please use your real details — fake profiles are not allowed.</div>
     <div class="mode-switch" id="mode-switch">
-      <button type="button" class="mode-btn active" data-mode="new"><b>New login</b><span>First time here — sign in, then fill your details</span></button>
-      <button type="button" class="mode-btn" data-mode="existing"><b>Already registered</b><span>Just sign in with Google</span></button>
+      <button type="button" class="mode-btn active" data-mode="new"><b>New login</b><span>First time here — sign in with Google, then fill your details once</span></button>
+      <button type="button" class="mode-btn" data-mode="existing"><b>Already registered</b><span>Sign in with Google — no form if you registered before</span></button>
     </div>
     <div id="gsi-button-container" style="display:flex; justify-content:center; margin:14px 0;"></div>
     <div id="profile-form" class="hidden" style="text-align:left;">
@@ -928,6 +928,9 @@ Examinations- 2026-27- reg
   let loginMode = 'new';      // 'new' = fill the form, 'existing' = Google sign-in only
   let formRequired = false;   // true right after a "New login" until the form is saved
   let formNote = '';
+  let checking = false;       // true while we look the Gmail up in the registry
+  let doneNote = '';
+  let lastCredential = '';    // Google ID token from this sign-in, needed to register
 
   function setMode(mode) {
     loginMode = mode;
@@ -951,10 +954,17 @@ Examinations- 2026-27- reg
     const closeBtn = document.getElementById('account-modal-close');
     const title = document.getElementById('account-modal-title');
     const desc = document.getElementById('account-modal-desc');
-    const done = user && profile && !formRequired;
+    const done = user && profile && !formRequired && !checking;
     accountTrigger.textContent = done ? `👤 ${(profile.name || user.name || 'Profile').split(' ')[0]}` : 'Sign in';
 
-    if (!user) {                                   // step 1: Google sign-in (mandatory)
+    if (checking) {                                // looking the Gmail up
+      gsiButtonContainer.style.display = 'none';
+      modeSwitch.classList.add('hidden'); accountNotice.classList.add('hidden');
+      profileForm.classList.add('hidden'); signedInView.classList.add('hidden');
+      title.textContent = 'Checking your account…';
+      desc.textContent = 'Checking whether this Gmail is already registered.';
+      closeBtn.style.display = 'none';
+    } else if (!user) {                            // step 1: Google sign-in (mandatory)
       gsiButtonContainer.style.display = 'flex';
       modeSwitch.classList.remove('hidden'); accountNotice.classList.remove('hidden');
       profileForm.classList.add('hidden'); signedInView.classList.add('hidden');
@@ -985,7 +995,7 @@ Examinations- 2026-27- reg
         row.append(dt, dd); dl.appendChild(row);
       });
       title.textContent = 'Your profile';
-      desc.textContent = 'You are signed in on this device.';
+      desc.textContent = doneNote || 'You are signed in on this device.';
       closeBtn.style.display = 'inline-block';
     }
   }
@@ -1009,25 +1019,61 @@ Examinations- 2026-27- reg
     }).catch(err => console.warn('Sign-in log not sent:', err));
   }
 
-  function handleGoogleCredential(response) {
+  // ---- registration registry (Google Sheet via Apps Script — see registry-apps-script.gs) ----
+  // Paste the deployed Web app URL here. While empty, "already registered" is remembered
+  // only on the same phone/browser. With it set, a Gmail is recognised on ANY device.
+  const REGISTRY_URL = 'https://script.google.com/macros/s/AKfycbwXvCqfMJkyTXbF-o0fa4qMJQz5y4fLG-_o620cyYQ66hvaFbwvSYRBgr1p_qC0974t/exec';
+
+  async function registryCall(action, credential, profile) {
+    if (!REGISTRY_URL) return null;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch(REGISTRY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // plain text avoids a CORS pre-flight
+        body: JSON.stringify({ action, credential, profile }),
+        signal: ctrl.signal,
+      });
+      return await res.json();
+    } finally { clearTimeout(t); }
+  }
+
+  async function handleGoogleCredential(response) {
     const payload = decodeJwt(response.credential);
     if (!payload) return;
     const user = { name: payload.name, email: payload.email, picture: payload.picture };
     localStorage.setItem('classx_user', JSON.stringify(user));
-    const saved = readJSON(profileKey(user.email));
+    lastCredential = response.credential;
+    formRequired = false; formNote = ''; doneNote = '';
+    checking = true; renderAccountUI();
 
-    if (loginMode === 'existing' && saved) {       // already registered -> Google sign-in is enough
-      formRequired = false; formNote = '';
+    let profile = readJSON(profileKey(user.email));   // remembered on this device?
+    let serverError = false;
+    if (REGISTRY_URL) {                                // remembered anywhere? (verified by Gmail on the server)
+      try {
+        const r = await registryCall('lookup', lastCredential);
+        if (r && r.ok && r.registered && r.profile) {
+          profile = r.profile;
+          localStorage.setItem(profileKey(user.email), JSON.stringify(profile));
+        } else if (r && r.ok && !r.registered && profile) {
+          registryCall('register', lastCredential, profile).catch(() => {}); // back-fill an older local-only record
+        } else if (!r || !r.ok) { serverError = true; }
+      } catch (err) { console.warn('Registry lookup failed:', err); serverError = true; }
+    }
+    checking = false;
+
+    if (profile) {                                     // registered -> straight in, never asks the form again
+      doneNote = loginMode === 'new' ? 'You were already registered, so you are logged in.' : '';
       renderAccountUI();
-      setTimeout(() => { accountModal.classList.add('hidden'); requestPushPermission(); }, 700);
+      setTimeout(() => { accountModal.classList.add('hidden'); requestPushPermission(); }, 900);
       return;
     }
-    // New login (or "already registered" but no record on this device): details form is mandatory
+    // Not registered anywhere we can see -> register now (form is mandatory, once)
     formRequired = true;
-    formNote = (loginMode === 'existing')
-      ? 'We could not find your details on this device, so please fill the form once.'
-      : '';
-    fillForm(saved, user);
+    formNote = loginMode === 'existing' ? 'You have not registered yet. Please register by filling in this form.' : '';
+    if (serverError) formNote += ' (Could not reach the registration server to check for an earlier registration.)';
+    fillForm(null, user);
     renderAccountUI();
   }
 
@@ -1064,7 +1110,7 @@ Examinations- 2026-27- reg
   const pfMobile = document.getElementById('pf-mobile');
   pfMobile.addEventListener('input', () => { pfMobile.value = pfMobile.value.replace(/\D/g, '').slice(0, 10); });
 
-  document.getElementById('pf-save-btn').addEventListener('click', () => {
+  document.getElementById('pf-save-btn').addEventListener('click', async () => {
     const val = id => document.getElementById(id).value.trim();
     const profile = {
       name: val('pf-name'), role: val('pf-role'), school: val('pf-school'),
@@ -1080,16 +1126,28 @@ Examinations- 2026-27- reg
     else if (!/^[6-9]\d{9}$/.test(profile.mobile)) err = 'Enter a valid 10-digit mobile number.';
     msg.textContent = err;
     if (err) return;
-    localStorage.setItem(profileKey(getUser().email), JSON.stringify(profile));
+
+    const btn = document.getElementById('pf-save-btn');
+    btn.disabled = true; msg.textContent = 'Saving…';
+    const user = getUser();
+    localStorage.setItem(profileKey(user.email), JSON.stringify(profile));
+    if (REGISTRY_URL) {
+      try {
+        const r = await registryCall('register', lastCredential, profile);
+        if (!r || !r.ok) throw new Error((r && r.error) || 'registry rejected');
+      } catch (e) { console.warn('Registry save failed:', e); } // still saved on this device
+    }
+    msg.textContent = '';
+    btn.disabled = false;
     formRequired = false; formNote = '';
-    logSignIn(getUser(), profile);
+    logSignIn(user, profile);
     renderAccountUI();
     accountModal.classList.add('hidden');
     requestPushPermission();
   });
 
   renderAccountUI(); // reflect saved progress after a page refresh
-  if (getUser() && !getProfile()) { formRequired = true; fillForm(null, getUser()); renderAccountUI(); accountModal.classList.remove('hidden'); } // signed in but details missing
+  if (getUser() && !getProfile()) { localStorage.removeItem('classx_user'); renderAccountUI(); accountModal.classList.remove('hidden'); } // half-finished sign-in: start again
 
   // ---- fullscreen image lightbox (opened by attached photo thumbnails) ----
   const imgLightbox = document.getElementById('img-lightbox');

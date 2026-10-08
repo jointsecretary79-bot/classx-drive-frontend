@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Send an update — Class X Drive</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   body{ font-family:'IBM Plex Sans', Arial, sans-serif; background:#0c1730; color:#eef1f6; display:flex; flex-direction:column; align-items:center; gap:24px; padding:40px 16px; }
   .card{ background:#142645; padding:28px; border-radius:8px; max-width:420px; width:100%; }
@@ -38,6 +39,10 @@
   .li-checks input{ width:auto; }
   .li-actions{ display:flex; gap:8px; margin-top:10px; }
   .empty-note{ font-size:12.5px; color:#8b93ab; margin-top:10px; }
+
+  button.remove-btn{ background:#8B2E2E; color:#fff; }
+  #rmGsi{ display:flex; margin-top:6px; }
+  .rm-ok{ color:#7fd6a0; } .rm-err{ color:#ff9b9b; }
 </style>
 </head>
 <body>
@@ -202,6 +207,34 @@
 
     <button class="load-btn" style="margin-top:16px;" id="loadFolders">Load existing added folders</button>
     <div id="foldersList"></div>
+  </div>
+
+  <div class="card" id="removeUserCard">
+    <h1>Remove a user</h1>
+    <p class="sub">Type a student's email to block that profile. A blocked Gmail can't sign in or register again, and is signed out the next time they open the site. You can restore anyone below.</p>
+
+    <div id="rmAuth">
+      <label>Admin sign-in (the Gmail listed as admin in the Apps Script)</label>
+      <div id="rmGsi"></div>
+    </div>
+    <p class="hint" id="rmAuthMsg"></p>
+
+    <div id="rmTools" style="display:none;">
+      <p class="hint" id="rmWho" style="margin-top:0;"></p>
+
+      <label for="rmEmail">Student's email</label>
+      <input id="rmEmail" type="email" placeholder="student@gmail.com" autocomplete="off" />
+
+      <label for="rmReason">Reason (optional)</label>
+      <input id="rmReason" placeholder="e.g. Fake profile" maxlength="200" autocomplete="off" />
+
+      <button class="remove-btn" id="rmBtn">Remove user</button>
+      <div id="rmStatus" class="hint"></div>
+
+      <h1 style="font-size:16px; margin:26px 0 0;">Blocked users</h1>
+      <div id="rmList"></div>
+      <button class="load-btn" style="margin-top:14px;" id="rmRefresh">Refresh blocked list</button>
+    </div>
   </div>
 
 <script>
@@ -751,6 +784,109 @@
       $('send').disabled = false;
     }
   });
+</script>
+
+<script>
+// ---- Remove a user (block by email) — talks to the Google Sheet registry, verified by Google sign-in ----
+(function () {
+  const RM_CLIENT_ID = '67192974879-m1ff3lvj5jmql8ljg345uhbroghs0v29.apps.googleusercontent.com';
+  // Same Web app URL as REGISTRY_URL in index.html. Update both if you ever create a new deployment.
+  const RM_URL = 'https://script.google.com/macros/s/AKfycbxkzEL0UPjF-n46IegHzz7E3o1rM8HnDCuJooa80E7B9jfO6BySvdcf3MeY_2HRR2vd/exec';
+
+  const $ = id => document.getElementById(id);
+  let credential = '';
+
+  function say(el, text, cls) { el.textContent = text || ''; el.className = 'hint' + (cls ? ' ' + cls : ''); }
+
+  async function call(action, extra) {
+    const res = await fetch(RM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },        // plain text avoids a CORS pre-flight
+      body: JSON.stringify(Object.assign({ action, credential, light: true }, extra || {})),
+    });
+    return res.json();
+  }
+
+  function showSignIn(msg) {
+    credential = '';
+    $('rmTools').style.display = 'none';
+    $('rmAuth').style.display = '';
+    say($('rmAuthMsg'), msg || '', msg ? 'rm-err' : '');
+  }
+
+  function renderList(blocked) {
+    const box = $('rmList'); box.innerHTML = '';
+    if (!blocked.length) {
+      const d = document.createElement('div'); d.className = 'empty-note'; d.textContent = 'No one is blocked.'; box.appendChild(d); return;
+    }
+    blocked.forEach(b => {
+      const item = document.createElement('div'); item.className = 'list-item';
+      const t = document.createElement('div'); t.className = 'li-title'; t.textContent = b.email;
+      const sub = document.createElement('div'); sub.className = 'li-sub';
+      sub.textContent = [b.reason || 'No reason given', 'by ' + (b.by || '—'), b.at || ''].filter(Boolean).join(' · ');
+      const act = document.createElement('div'); act.className = 'li-actions';
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'small-btn'; btn.textContent = 'Restore';
+      btn.addEventListener('click', async () => {
+        if (!confirm('Restore ' + b.email + '? They will be able to sign in again.')) return;
+        btn.disabled = true;
+        const ok = await run('admin_unblock', { email: b.email }, $('rmStatus'));
+        if (ok) say($('rmStatus'), b.email + ' has been restored.', 'rm-ok');
+      });
+      act.appendChild(btn); item.append(t, sub, act); box.appendChild(item);
+    });
+  }
+
+  // Runs an admin action; refreshes the list on success, returns to sign-in if the server refuses.
+  async function run(action, extra, statusEl) {
+    try {
+      const d = await call(action, extra);
+      if (!d || !d.ok) {
+        const err = (d && d.error) || 'Something went wrong.';
+        if (/verified|not an admin/i.test(err)) { showSignIn(err + ' Please sign in again.'); return null; }
+        say(statusEl, err, 'rm-err');
+        return null;
+      }
+      $('rmAuth').style.display = 'none';
+      $('rmTools').style.display = '';
+      say($('rmAuthMsg'), '');
+      $('rmWho').textContent = 'Signed in as ' + (d.admin || '');
+      renderList(d.blocked || []);
+      return d;
+    } catch (e) {
+      say(statusEl, 'Could not reach the server. Check your internet and try again.', 'rm-err');
+      return null;
+    }
+  }
+
+  $('rmBtn').addEventListener('click', async () => {
+    const email = $('rmEmail').value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say($('rmStatus'), 'Enter a valid email address.', 'rm-err'); return; }
+    if (!confirm('Remove ' + email + '?\nThis profile will be blocked from signing in or registering.')) return;
+    $('rmBtn').disabled = true; say($('rmStatus'), 'Blocking…');
+    const ok = await run('admin_block', { email, reason: $('rmReason').value.trim() }, $('rmStatus'));
+    $('rmBtn').disabled = false;
+    if (ok) { say($('rmStatus'), email + ' has been removed (blocked).', 'rm-ok'); $('rmEmail').value = ''; $('rmReason').value = ''; }
+  });
+  $('rmEmail').addEventListener('keydown', e => { if (e.key === 'Enter') $('rmBtn').click(); });
+  $('rmRefresh').addEventListener('click', async () => {
+    say($('rmStatus'), 'Refreshing…');
+    const ok = await run('admin_list', {}, $('rmStatus'));
+    if (ok) say($('rmStatus'), '');
+  });
+
+  async function onCredential(resp) {
+    credential = resp.credential;
+    say($('rmAuthMsg'), 'Checking admin access…');
+    await run('admin_list', {}, $('rmAuthMsg'));
+  }
+
+  function initGoogle() {
+    if (!(window.google && google.accounts && google.accounts.id)) { setTimeout(initGoogle, 200); return; }
+    google.accounts.id.initialize({ client_id: RM_CLIENT_ID, callback: onCredential });
+    google.accounts.id.renderButton($('rmGsi'), { theme: 'outline', size: 'large', text: 'signin_with' });
+  }
+  initGoogle();
+})();
 </script>
 </body>
 </html>

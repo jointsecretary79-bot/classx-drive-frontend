@@ -338,12 +338,6 @@
   .translate-widget .goog-te-gadget span{ display:none; }
 
   /* ---- login mode switch, notice, profile button ---- */
-  .mode-switch{ display:flex; gap:8px; margin:12px 0 4px; }
-  .mode-btn{ flex:1; text-align:left; padding:10px 11px; border:1px solid var(--line); background:#fff;
-    border-radius:var(--radius); cursor:pointer; font-family:'IBM Plex Sans', sans-serif; }
-  .mode-btn b{ display:block; font-size:13px; color:var(--ink); }
-  .mode-btn span{ display:block; font-size:11px; color:var(--text-soft); margin-top:2px; line-height:1.3; }
-  .mode-btn.active{ border-color:var(--ink); box-shadow:0 0 0 3px var(--marigold); }
   .pf-notice{ background:#fff7e6; border-left:3px solid var(--marigold); padding:8px 10px; margin:10px 0 4px;
     font-size:12px; line-height:1.45; color:var(--text); text-align:left; }
   .profile-btn{ color:var(--ink); background:var(--marigold); border:none; border-radius:14px;
@@ -877,7 +871,7 @@ Examinations- 2026-27- reg
         fetch(REGISTRY_URL, {
           method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, keepalive: true,
           body: JSON.stringify({ action: 'visit', credential: lastCredential, email: returning.email }),
-        }).catch(() => {});
+        }).then(r => r.json()).then(d => { if (d && d.blocked) blockUserLocally(); }).catch(() => {});
       }
       requestPushPermission();
     }
@@ -921,17 +915,22 @@ Examinations- 2026-27- reg
   const getProfile = () => { const u = getUser(); return u ? readJSON(profileKey(u.email)) : null; };
   const isOnboarded = () => !!(getUser() && getProfile());
 
-  // One-time migration of a profile saved by the previous version (single global key).
-  (function migrateOldProfile() {
-    const old = readJSON('classx_profile'), u = getUser();
-    if (old && u && u.email) { localStorage.setItem(profileKey(u.email), JSON.stringify(old)); }
-    localStorage.removeItem('classx_profile');
-  })();
+  localStorage.removeItem('classx_profile');   // clear the old single-profile key from earlier versions
 
   let formRequired = false;   // true right after a "New login" until the form is saved
   let formNote = '';
   let checking = false;       // true while we look the Gmail up in the registry
   let doneNote = '';
+  let blockedMsg = '';        // shown on the sign-in step when the admin has blocked this Gmail
+
+  // Admin blocked this Gmail: remove the local sign-in and show the sign-in step with a message.
+  function blockUserLocally() {
+    localStorage.removeItem('classx_user');
+    blockedMsg = 'This account has been blocked by the admin. Please contact your teacher / admin.';
+    checking = false; formRequired = false;
+    renderAccountUI();
+    accountModal.classList.remove('hidden');
+  }
   let lastCredential = '';    // Google ID token from this sign-in, needed to register
 
 
@@ -966,7 +965,7 @@ Examinations- 2026-27- reg
       accountNotice.classList.remove('hidden');
       profileForm.classList.add('hidden'); signedInView.classList.add('hidden');
       title.textContent = 'Sign in required';
-      desc.textContent = 'Sign in with your Google account. If you are already registered you go straight in; if not, you will be asked to fill a short form once.';
+      desc.textContent = blockedMsg || 'Sign in with your Google account. If you are already registered you go straight in; if not, you will be asked to fill a short form once.';
       closeBtn.style.display = 'none';
     } else if (!done) {                            // step 2: details form (mandatory)
       gsiButtonContainer.style.display = 'none';
@@ -997,29 +996,10 @@ Examinations- 2026-27- reg
     }
   }
 
-  // Once you've created a free form at https://formspree.io, paste its endpoint
-  // here (looks like "https://formspree.io/f/xxxxabcd") to get an email/dashboard
-  // entry every time someone signs in. Left as a placeholder until then — the
-  // sign-in flow itself works fine either way, this step is just silently skipped.
-  const SIGNIN_LOG_ENDPOINT = 'https://formspree.io/f/xqpabogn';
-
-  function logSignIn(user, profile) {
-    if (!SIGNIN_LOG_ENDPOINT) return;
-    fetch(SIGNIN_LOG_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        name: profile.name, role: profile.role, school: profile.school, state: profile.state,
-        district: profile.district, mobile: profile.mobile, email: user.email,
-        signedInAt: new Date().toISOString(),
-      }),
-    }).catch(err => console.warn('Sign-in log not sent:', err));
-  }
-
   // ---- registration registry (Google Sheet via Apps Script — see registry-apps-script.gs) ----
   // Paste the deployed Web app URL here. While empty, "already registered" is remembered
   // only on the same phone/browser. With it set, a Gmail is recognised on ANY device.
-  const REGISTRY_URL = 'https://script.google.com/macros/s/AKfycbx239GerYFd7uNiOll-OxtgQYeBNPVyDvEodI1IZy35-vctP9Xe48hqhRa0A9BGyYNz/exec';
+  const REGISTRY_URL = 'https://script.google.com/macros/s/AKfycbxkzEL0UPjF-n46IegHzz7E3o1rM8HnDCuJooa80E7B9jfO6BySvdcf3MeY_2HRR2vd/exec';
 
   async function registryCall(action, credential, profile) {
     if (!REGISTRY_URL) return null;
@@ -1042,15 +1022,17 @@ Examinations- 2026-27- reg
     const user = { name: payload.name, email: payload.email, picture: payload.picture };
     localStorage.setItem('classx_user', JSON.stringify(user));
     lastCredential = response.credential;
-    formRequired = false; formNote = ''; doneNote = '';
+    formRequired = false; formNote = ''; doneNote = ''; blockedMsg = '';
     checking = true; renderAccountUI();
 
     let profile = readJSON(profileKey(user.email));   // remembered on this device?
-    let serverError = false;
+    let serverError = false, blocked = false;
     if (REGISTRY_URL) {                                // remembered anywhere? (verified by Gmail on the server)
       try {
         const r = await registryCall('lookup', lastCredential);
-        if (r && r.ok && r.registered && r.profile) {
+        if (r && r.ok && r.blocked) {
+          blocked = true;
+        } else if (r && r.ok && r.registered && r.profile) {
           profile = r.profile;
           localStorage.setItem(profileKey(user.email), JSON.stringify(profile));
         } else if (r && r.ok && !r.registered && profile) {
@@ -1059,6 +1041,8 @@ Examinations- 2026-27- reg
       } catch (err) { console.warn('Registry lookup failed:', err); serverError = true; }
     }
     checking = false;
+
+    if (blocked) { blockUserLocally(); return; }   // admin has blocked this Gmail
 
     if (profile) {                                     // registered -> straight in, never asks the form again
       doneNote = 'Verified — you are registered. Welcome back!';
@@ -1143,7 +1127,6 @@ Examinations- 2026-27- reg
     msg.textContent = '';
     btn.disabled = false;
     formRequired = false; formNote = '';
-    logSignIn(user, profile);
     renderAccountUI();
     accountModal.classList.add('hidden');
     requestPushPermission();

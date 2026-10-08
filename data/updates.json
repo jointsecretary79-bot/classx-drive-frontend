@@ -9,7 +9,7 @@
     "files": [],
     "showInTicker": true,
     "showInList": true,
-    "flash": false,
+    "flash": true,
     "folderCbse": false,
     "folderApp": true,
     "ts": 1791468921126

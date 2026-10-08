@@ -923,10 +923,27 @@ Examinations- 2026-27- reg
   let doneNote = '';
   let blockedMsg = '';        // shown on the sign-in step when the admin has blocked this Gmail
 
+  // Live check: while someone is signed in, ask the server every minute (and whenever they come back
+  // to the tab) whether the admin has blocked them. If so they are signed out straight away.
+  async function checkBlockedNow() {
+    const u = getUser();
+    if (!u || !REGISTRY_URL || checking) return;
+    try {
+      const r = await registryCall('status', '', null, { email: u.email });
+      if (r && r.ok && r.blocked && getUser()) blockUserLocally();
+    } catch (e) { /* offline or server busy — try again next time */ }
+  }
+  function startBlockWatch() {
+    setInterval(() => { if (!document.hidden) checkBlockedNow(); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkBlockedNow(); });
+    window.addEventListener('focus', checkBlockedNow);
+    checkBlockedNow();
+  }
+
   // Admin blocked this Gmail: remove the local sign-in and show the sign-in step with a message.
   function blockUserLocally() {
     localStorage.removeItem('classx_user');
-    blockedMsg = 'This account has been blocked by the admin. Please contact your teacher / admin.';
+    blockedMsg = 'Your profile has been blocked. Please contact your teacher / admin if you think this is a mistake.';
     checking = false; formRequired = false;
     renderAccountUI();
     accountModal.classList.remove('hidden');
@@ -964,7 +981,7 @@ Examinations- 2026-27- reg
       gsiButtonContainer.style.display = 'flex';
       accountNotice.classList.remove('hidden');
       profileForm.classList.add('hidden'); signedInView.classList.add('hidden');
-      title.textContent = 'Sign in required';
+      title.textContent = blockedMsg ? 'Admin blocked you' : 'Sign in required';
       desc.textContent = blockedMsg || 'Sign in with your Google account. If you are already registered you go straight in; if not, you will be asked to fill a short form once.';
       closeBtn.style.display = 'none';
     } else if (!done) {                            // step 2: details form (mandatory)
@@ -999,9 +1016,9 @@ Examinations- 2026-27- reg
   // ---- registration registry (Google Sheet via Apps Script — see registry-apps-script.gs) ----
   // Paste the deployed Web app URL here. While empty, "already registered" is remembered
   // only on the same phone/browser. With it set, a Gmail is recognised on ANY device.
-  const REGISTRY_URL = 'https://script.google.com/macros/s/AKfycbxkzEL0UPjF-n46IegHzz7E3o1rM8HnDCuJooa80E7B9jfO6BySvdcf3MeY_2HRR2vd/exec';
+  const REGISTRY_URL = 'https://script.google.com/macros/s/AKfycby286mFrMBOOW6q1i2JcojobfR-RmcUqxtGSGGlsiiZ7CfnRxy9PYEhiUszlkVGNncU/exec';
 
-  async function registryCall(action, credential, profile) {
+  async function registryCall(action, credential, profile, extra) {
     if (!REGISTRY_URL) return null;
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 15000);
@@ -1009,7 +1026,7 @@ Examinations- 2026-27- reg
       const res = await fetch(REGISTRY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // plain text avoids a CORS pre-flight
-        body: JSON.stringify({ action, credential, profile }),
+        body: JSON.stringify(Object.assign({ action, credential, profile }, extra || {})),
         signal: ctrl.signal,
       });
       return await res.json();
@@ -1133,6 +1150,7 @@ Examinations- 2026-27- reg
   });
 
   renderAccountUI(); // reflect saved progress after a page refresh
+  startBlockWatch();  // signs out anyone the admin blocks while they are using the site
   if (getUser() && !getProfile()) { localStorage.removeItem('classx_user'); renderAccountUI(); accountModal.classList.remove('hidden'); } // half-finished sign-in: start again
 
   // ---- fullscreen image lightbox (opened by attached photo thumbnails) ----

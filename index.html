@@ -387,6 +387,15 @@
   .tx-status{ margin-top:8px; min-height:18px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-soft); }
   .tx-bar{ display:none; height:4px; margin-top:8px; background:var(--line); }
   .tx-bar i{ display:block; height:100%; width:0; background:var(--marigold); }
+  .tx-note{ max-width:200px; }
+  .tx-note b{ display:block; color:var(--marigold); font-size:9.5px; letter-spacing:0.1em; font-weight:600; margin-bottom:2px; }
+  .tx-note .tx-note-title{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .tx-note small{ display:block; margin-top:3px; font-size:9.5px; color:#aeb8d4; }
+  .tx-note.is-new{ background:#1b3560; box-shadow:0 0 0 2px var(--marigold), 0 8px 18px rgba(0,0,0,0.35); animation:tx-pulse 1.6s ease-in-out infinite; }
+  .tx-note.is-new::after{ background:#1b3560; }
+  @keyframes tx-pulse{ 50%{ box-shadow:0 0 0 6px rgba(231,162,60,0.35), 0 8px 18px rgba(0,0,0,0.35); } }
+  .tx-panel label.tx-check{ display:flex; align-items:center; gap:8px; margin-top:12px; cursor:pointer; color:var(--text); font-size:11.5px; }
+  .tx-check input{ width:auto; margin:0; accent-color:var(--ink); }
   /* On a real phone the page itself scrolls, so keep the widget fixed to the screen */
   @media (max-width:519px){
     .fab{ position:fixed; bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); }
@@ -819,7 +828,7 @@ Examinations- 2026-27- reg
 
   <!-- Yellow floating button: scan the page, translate, and listen (WhatsApp link moved inside the panel) -->
   <div class="notranslate" translate="no" id="tx-root">
-    <button class="tx-note" id="tx-note" type="button">Scan this page · hear it in your language</button>
+    <button class="tx-note" id="tx-note" type="button" aria-live="polite">Scan this page · hear it in your language</button>
     <button class="fab" id="tx-fab" type="button" aria-label="Scan, translate and listen" aria-expanded="false" aria-controls="tx-panel">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" stroke="#142645" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
@@ -862,6 +871,8 @@ Examinations- 2026-27- reg
         <option value="ta">தமிழ் (Tamil)</option>
         <option value="en">English</option>
       </select>
+
+      <label class="tx-check" for="tx-auto"><input type="checkbox" id="tx-auto"> Speak new notices aloud when they arrive</label>
 
       <textarea id="tx-text" placeholder="The text found on the page appears here. You can also type or paste text."></textarea>
       <div class="tx-bar" id="tx-bar"><i></i></div>
@@ -1599,33 +1610,53 @@ Examinations- 2026-27- reg
   })();
 </script>
 
-<!-- ===== Scan / Translate / Listen widget ===== -->
+<!-- ===== Scan / Translate / Listen widget + spoken notice alerts ===== -->
 <script>
 (function(){
+  /* ==================== SETTINGS ==================== */
+  // Gujarati, Kannada, Malayalam, Telugu and Tamil need a voice. Many PCs have none.
+  // Paste a Google Cloud Text-to-Speech API key here to make them speak on every device
+  // (restrict the key to your site, see the notes). Leave '' to use device voices only.
+  const GOOGLE_TTS_KEY = '';
+  const NOTICE_URL = './data/updates.json';   // where your posted notices live
+  const POLL_MS = 60000;                      // check for new notices every 60 seconds
+  /* ================================================== */
+
   const LOCALE = { en:'en-IN', hi:'hi-IN', gu:'gu-IN', kn:'kn-IN', ml:'ml-IN', te:'te-IN', ta:'ta-IN' };
+  const NAMES  = { en:'English', hi:'Hindi', gu:'Gujarati', kn:'Kannada', ml:'Malayalam', te:'Telugu', ta:'Tamil' };
   const OCRLANG = { en:'eng', hi:'hin', gu:'guj', kn:'kan', ml:'mal', te:'tel', ta:'tam' };
   const $ = id => document.getElementById(id);
   const panel=$('tx-panel'), fab=$('tx-fab'), note=$('tx-note'), box=$('tx-text'),
-        statusEl=$('tx-status'), srcSel=$('tx-src'), langSel=$('tx-lang'), bar=$('tx-bar');
-  let audioEl=null, stopped=false;
+        statusEl=$('tx-status'), srcSel=$('tx-src'), langSel=$('tx-lang'), bar=$('tx-bar'), autoBox=$('tx-auto');
+  const DEFAULT_NOTE = 'Scan this page · hear it in your language';
+  let audioEl=null, stopped=false, latest=null, pending=null;
 
+  const store = {
+    get:(k)=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+    set:(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} }
+  };
   const say = m => { statusEl.textContent = m; };
   const progress = p => { bar.style.display = p==null ? 'none' : 'block'; if(p!=null) bar.firstElementChild.style.width = Math.round(p*100)+'%'; };
+  const hasActivation = () => !!(navigator.userActivation && navigator.userActivation.hasBeenActive);
 
-  // Screen capture only exists on desktop browsers
+  // remembered choices
+  const savedLang = store.get('tx_lang'); if (savedLang && LOCALE[savedLang]) langSel.value = savedLang;
+  langSel.addEventListener('change', () => store.set('tx_lang', langSel.value));
+  autoBox.checked = store.get('tx_auto') !== '0';
+  autoBox.addEventListener('change', () => store.set('tx_auto', autoBox.checked ? '1' : '0'));
+
   if (!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) $('tx-screen').style.display = 'none';
 
   function setOpen(open){
     panel.classList.toggle('open', open);
     fab.setAttribute('aria-expanded', open);
-    note.hidden = open;   // the label is always visible while the panel is closed
+    note.hidden = open;
   }
   fab.addEventListener('click', () => setOpen(!panel.classList.contains('open')));
-  note.addEventListener('click', () => setOpen(true));
   $('tx-close').addEventListener('click', () => setOpen(false));
   document.addEventListener('keydown', e => { if(e.key==='Escape') setOpen(false); });
 
-  // ---- load OCR / PDF libraries only when first needed ----
+  /* ---------------- libraries (loaded only when needed) ---------------- */
   const loaded = {};
   const loadScript = src => loaded[src] || (loaded[src] = new Promise((res, rej) => {
     const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('load '+src)); document.head.appendChild(s);
@@ -1644,10 +1675,10 @@ Examinations- 2026-27- reg
     return r.data.text.replace(/\n{3,}/g,'\n\n').trim();
   }
 
-  // ---- 1. Scan this screen (desktop) ----
+  /* ---------------- scan the screen / file / page text ---------------- */
   $('tx-screen').addEventListener('click', async () => {
     try{
-      setOpen(false);                       // so the panel is not in the picture
+      setOpen(false);
       await new Promise(r => setTimeout(r, 150));
       const stream = await navigator.mediaDevices.getDisplayMedia({ video:true, preferCurrentTab:true });
       const v = document.createElement('video'); v.srcObject = stream; v.muted = true;
@@ -1661,7 +1692,6 @@ Examinations- 2026-27- reg
     }catch(e){ setOpen(true); progress(null); say('Screen scan was cancelled or not allowed.'); }
   });
 
-  // ---- 2. Photo / PDF / image ----
   $('tx-file').addEventListener('click', () => $('tx-input').click());
   $('tx-input').addEventListener('change', async e => {
     const f = e.target.files[0]; if(!f) return;
@@ -1682,7 +1712,7 @@ Examinations- 2026-27- reg
       say('Reading page '+i+' of '+pages+'…'); progress(i/pages);
       const page = await pdf.getPage(i);
       let t = (await page.getTextContent()).items.map(x => x.str).join(' ').trim();
-      if (t.length < 25){                      // scanned page: read it with OCR
+      if (t.length < 25){
         const vp = page.getViewport({ scale:2 });
         const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
         await page.render({ canvasContext:c.getContext('2d'), viewport:vp }).promise;
@@ -1695,8 +1725,7 @@ Examinations- 2026-27- reg
     return out.trim();
   }
 
-  // ---- 3. Read this page's text (the screen you are on) ----
-  function googleTarget(){            // language the top-bar Google Translate has applied, if any
+  function googleTarget(){
     try{
       const m = document.cookie.match(/googtrans=\/[^/]+\/([a-zA-Z-]+)/);
       return (m && /translated/.test(document.documentElement.className)) ? m[1] : null;
@@ -1714,23 +1743,32 @@ Examinations- 2026-27- reg
     else say(sel ? 'Selected text added.' : 'Page text added. Tap Translate or Listen.');
   });
 
-  // ---- helpers ----
+  /* ---------------- helpers ---------------- */
   function chunk(text, max){
-    const parts = text.match(/[^.!?।\n]+[.!?।\n]*/g) || [text];
+    const parts = (text.match(/[^.!?।\n]+[.!?।\n]*/g) || [text]).flatMap(p => {
+      const a=[]; for (let i=0;i<p.length;i+=max) a.push(p.slice(i,i+max)); return a;
+    });
     const out=[]; let cur='';
-    for (const p of parts){ if ((cur+p).length > max && cur){ out.push(cur.trim()); cur=''; } cur += p; }
+    for (const p of parts){
+      if ((cur+p).length > max && cur){ out.push(cur.trim()); cur=''; }
+      cur += p;
+    }
     if (cur.trim()) out.push(cur.trim());
     return out;
   }
 
-  // ---- Translate ----
+  /* ---------------- translate ---------------- */
   async function translate(text, from, to){
     const res=[]; const pieces=chunk(text,450);
     for (let i=0;i<pieces.length;i++){
       say('Translating '+(i+1)+' of '+pieces.length+'…');
       const r = await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(pieces[i])+'&langpair='+from+'|'+to);
-      if(!r.ok) throw new Error('service');
-      res.push((await r.json()).responseData.translatedText);
+      if (!r.ok) throw new Error('service');
+      const j = await r.json();
+      const t = (j.responseData && j.responseData.translatedText) || '';
+      // the free service returns a warning sentence instead of a translation when its daily limit is used up
+      if (String(j.responseStatus) !== '200' || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(t)) throw new Error('limit');
+      res.push(t);
     }
     return res.join(' ');
   }
@@ -1738,40 +1776,172 @@ Examinations- 2026-27- reg
     const src = box.value.trim(); if(!src){ say('Scan or add some text first.'); return; }
     if (srcSel.value === langSel.value){ say('Both languages are the same. Change one of them.'); return; }
     try{ box.value = await translate(src, srcSel.value, langSel.value); say('Done. Tap Listen to hear it.'); }
-    catch(e){ say('Could not translate. Check your internet and try again.'); }
+    catch(e){ say(e.message==='limit' ? 'The free translation limit for today is used up. Try again tomorrow.' : 'Could not translate. Check your internet and try again.'); }
   });
 
-  // ---- Listen ----
+  /* ---------------- speak: device voice -> Google voice key -> online voice ---------------- */
   function findVoice(locale){
     const vs = speechSynthesis.getVoices();
     return vs.find(v => v.lang.replace('_','-')===locale) || vs.find(v => v.lang.toLowerCase().startsWith(locale.slice(0,2)));
   }
-  async function speakOnline(text, lang){
-    stopped=false;
-    for (const p of chunk(text,180)){
-      if (stopped) break;
-      await new Promise(res => {
-        audioEl = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+lang+'&q='+encodeURIComponent(p));
-        audioEl.onended=res; audioEl.onerror=res; audioEl.play().catch(res);
+  function trySpeech(text, lang){
+    return new Promise(resolve => {
+      if (!('speechSynthesis' in window)) return resolve(false);
+      const locale = LOCALE[lang], voice = findVoice(locale);
+      // voices exist but none for this language: the device would read it in the wrong voice
+      if (!voice && speechSynthesis.getVoices().length > 0 && lang !== 'en') return resolve(false);
+      let done=false; const finish = v => { if(!done){ done=true; resolve(v); } };
+      speechSynthesis.cancel();
+      chunk(text,180).forEach((p,i) => {
+        const u = new SpeechSynthesisUtterance(p);
+        u.lang = locale; if (voice) u.voice = voice; u.rate = 0.95;
+        if (i===0) u.onstart = () => finish(true);
+        u.onerror = e => { if (e.error!=='interrupted' && e.error!=='canceled') finish(false); };
+        speechSynthesis.speak(u);
       });
+      setTimeout(() => { if(!done){ speechSynthesis.cancel(); finish(false); } }, 3000);
+    });
+  }
+  function playAudio(src){
+    return new Promise((res, rej) => {
+      audioEl = new Audio(src);
+      audioEl.onended = res; audioEl.onerror = () => rej(new Error('audio'));
+      audioEl.play().catch(rej);
+    });
+  }
+  async function speakCloud(text, lang, started){
+    let first = true;
+    for (const p of chunk(text,400)){
+      if (stopped) return;
+      const r = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key='+encodeURIComponent(GOOGLE_TTS_KEY), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ input:{ text:p }, voice:{ languageCode:LOCALE[lang] }, audioConfig:{ audioEncoding:'MP3' } })
+      });
+      if (!r.ok) throw new Error('tts '+r.status);
+      const j = await r.json();
+      if (first){ first=false; started(); }
+      await playAudio('data:audio/mp3;base64,'+j.audioContent);
     }
+  }
+  async function speakOnline(text, lang, started){
+    const parts = chunk(text,180);
+    for (let i=0;i<parts.length;i++){
+      if (stopped) return true;
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+lang+'&q='+encodeURIComponent(parts[i]);
+      try{ if (i===0) started(); await playAudio(url); }
+      catch(e){ return stopped || i>0; }
+    }
+    return true;
+  }
+  function stopAll(){
+    stopped = true;
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (audioEl){ try{ audioEl.pause(); }catch(e){} }
+  }
+  function helpText(lang){
+    const n = NAMES[lang];
+    return 'No '+n+' voice found on this device. Android: Settings → Google text-to-speech → Install voice data → '+n+'. Computer: open this app in Microsoft Edge, which has '+n+' voices.';
+  }
+  async function speak(text, lang){
+    stopAll(); stopped = false;
+    say('Starting audio…');
+    if (await trySpeech(text, lang)){ say('Playing audio…'); return true; }
+    if (GOOGLE_TTS_KEY){
+      try{ await speakCloud(text, lang, () => say('Playing audio…')); return true; }
+      catch(e){ if (stopped) return true; }
+    }
+    say('Trying online voice…');
+    const ok = await speakOnline(text, lang, () => say('Playing audio (online voice)…'));
+    if (!ok) say(helpText(lang));
+    return ok;
   }
   $('tx-listen').addEventListener('click', () => {
     const text = box.value.trim(); if(!text){ say('Nothing to read yet.'); return; }
-    const lang = langSel.value, locale = LOCALE[lang];
-    const voice = ('speechSynthesis' in window) ? findVoice(locale) : null;
-    if (voice){
-      say('Playing audio…'); speechSynthesis.cancel();
-      chunk(text,180).forEach(p => { const u=new SpeechSynthesisUtterance(p); u.lang=locale; u.voice=voice; u.rate=0.95; speechSynthesis.speak(u); });
-    } else { say('Playing audio (online voice)…'); speakOnline(text, lang); }
+    speak(text, langSel.value);
   });
-  $('tx-stop').addEventListener('click', () => {
-    stopped=true; if('speechSynthesis' in window) speechSynthesis.cancel(); if(audioEl) audioEl.pause(); say('Stopped.');
-  });
+  $('tx-stop').addEventListener('click', () => { stopAll(); say('Stopped.'); });
   $('tx-copy').addEventListener('click', async () => {
     try{ await navigator.clipboard.writeText(box.value); say('Copied.'); }catch(e){ say('Could not copy.'); }
   });
-  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+  if ('speechSynthesis' in window){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => {}; }
+
+  /* ---------------- permanent notification: latest notice, spoken when new ---------------- */
+  const noticeText = e => ((e.title || '') + (e.note ? '. ' + e.note : '')).trim();
+
+  function markPill(e, isNew){
+    note.textContent = '';
+    note.classList.toggle('is-new', !!isNew);
+    const tag = document.createElement('b'); tag.textContent = isNew ? 'NEW NOTICE' : 'LATEST NOTICE';
+    const title = document.createElement('span'); title.className = 'tx-note-title'; title.textContent = e.title || '';
+    const tap = document.createElement('small'); tap.textContent = 'Tap to translate & listen';
+    note.append(tag, title, tap);
+  }
+
+  async function translateAndSpeak(text, speakNow){
+    const to = langSel.value; let out = text;
+    if (to !== 'en'){
+      try{ say('Translating…'); out = await translate(text, 'en', to); }
+      catch(e){ say(e.message==='limit' ? 'The free translation limit for today is used up.' : 'Could not translate. Check your internet.'); return; }
+    }
+    box.value = out;
+    if (speakNow) await speak(out, to); else say('Done. Tap Listen to hear it.');
+  }
+
+  async function openNotice(speakNow){
+    setOpen(true);
+    if (!latest) return;
+    pending = null;
+    store.set('tx_seen_ts', String(latest.ts || 0));
+    store.set('tx_announced_ts', String(latest.ts || 0));
+    markPill(latest, false);
+    srcSel.value = 'en';
+    const text = noticeText(latest);
+    box.value = text;
+    await translateAndSpeak(text, speakNow && hasActivation());
+  }
+  note.addEventListener('click', () => {
+    if (latest) openNotice(true); else setOpen(true);
+  });
+
+  async function announce(entry){
+    store.set('tx_announced_ts', String(entry.ts || 0));
+    pending = null;
+    srcSel.value = 'en';
+    await translateAndSpeak('New notice. ' + noticeText(entry), true);
+  }
+
+  async function checkNotices(){
+    try{
+      const r = await fetch(NOTICE_URL + '?t=' + Date.now(), { cache:'no-store' });
+      if (!r.ok) return;
+      const list = await r.json();
+      if (!Array.isArray(list) || !list.length) return;
+      list.sort((a,b) => (b.ts||0) - (a.ts||0));
+      latest = list[0];
+      const ts = latest.ts || 0;
+      if (store.get('tx_seen_ts') === null && store.get('tx_announced_ts') === null){
+        // very first visit: do not announce old notices
+        store.set('tx_seen_ts', String(ts)); store.set('tx_announced_ts', String(ts));
+      }
+      const isNew = ts > Number(store.get('tx_seen_ts') || 0);
+      if (!panel.classList.contains('open') || isNew) markPill(latest, isNew);
+      if (isNew && ts > Number(store.get('tx_announced_ts') || 0) && autoBox.checked){
+        if (hasActivation()) announce(latest); else pending = latest;   // browsers need one tap before speaking
+      }
+    }catch(e){ /* offline: keep what is shown */ }
+  }
+
+  // the first tap anywhere unlocks speech, then a waiting new notice is read out
+  document.addEventListener('pointerdown', e => {
+    if (!pending || e.target.closest('#tx-root')) return;
+    setTimeout(() => { if (pending && autoBox.checked) announce(pending); }, 400);
+  }, { once:false });
+
+  checkNotices().then(() => {
+    if (/[?&]translate=1/.test(location.search)) openNotice(false);   // opened from a notification
+  });
+  setInterval(checkNotices, POLL_MS);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkNotices(); });
 })();
 </script>
 

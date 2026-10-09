@@ -347,6 +347,52 @@
   .acc-details div:last-child{ border-bottom:none; }
   .acc-details dt{ color:var(--text-soft); font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; }
   .acc-details dd{ margin:0; font-weight:600; text-align:right; word-break:break-word; }
+
+  /* ===== Scan / Translate / Listen widget (yellow floating button) ===== */
+  button.fab{ cursor:pointer; }
+  .tx-note{
+    position:absolute; right:78px; bottom:calc(var(--nav-h) + 26px); z-index:25;
+    max-width:176px; padding:7px 11px; cursor:pointer;
+    background:var(--ink); color:#fff; border:1px solid var(--marigold); border-radius:var(--radius);
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; line-height:1.35; letter-spacing:0.02em;
+    box-shadow:0 8px 18px rgba(0,0,0,0.3); text-align:left;
+  }
+  .tx-note::after{
+    content:""; position:absolute; right:-6px; top:50%; width:10px; height:10px; margin-top:-5px;
+    background:var(--ink); border-top:1px solid var(--marigold); border-right:1px solid var(--marigold);
+    transform:rotate(45deg);
+  }
+  .tx-note[hidden]{ display:none; }
+  .tx-panel{
+    position:absolute; right:12px; bottom:calc(var(--nav-h) + 78px); z-index:40;
+    width:min(364px, calc(100% - 24px)); max-height:min(560px, calc(100% - var(--bar-h) - var(--nav-h) - 96px));
+    overflow-y:auto; display:none; padding:14px 14px 16px;
+    background:var(--paper-card); color:var(--text); border:1px solid var(--ink); border-top:5px solid var(--marigold);
+    border-radius:var(--radius); box-shadow:0 18px 40px rgba(0,0,0,0.45);
+  }
+  .tx-panel.open{ display:block; animation:fade-in 0.2s ease; }
+  .tx-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .tx-head h3{ font-size:17px; }
+  .tx-close{ background:none; border:1px solid var(--line); width:30px; height:30px; cursor:pointer; color:var(--ink); font-size:18px; line-height:1; border-radius:var(--radius); }
+  .tx-panel label{ display:block; margin-top:10px; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--text-soft); }
+  .tx-panel select, .tx-panel textarea{
+    width:100%; margin-top:4px; padding:9px 10px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--paper); color:var(--text); font:inherit; font-size:14px;
+  }
+  .tx-panel textarea{ min-height:120px; margin-top:12px; resize:vertical; }
+  .tx-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .tx-row .btn{ flex:1 1 calc(50% - 8px); justify-content:center; padding:10px 8px; font-size:12px; text-align:center; }
+  .tx-row .btn-gold{ background:var(--marigold); border-color:var(--marigold); color:var(--ink); font-weight:600; }
+  .tx-row .btn-wa{ background:#1d8a4e; border-color:#1d8a4e; color:#fff; }
+  .tx-status{ margin-top:8px; min-height:18px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-soft); }
+  .tx-bar{ display:none; height:4px; margin-top:8px; background:var(--line); }
+  .tx-bar i{ display:block; height:100%; width:0; background:var(--marigold); }
+  /* On a real phone the page itself scrolls, so keep the widget fixed to the screen */
+  @media (max-width:519px){
+    .fab{ position:fixed; bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); }
+    .tx-note{ position:fixed; bottom:calc(var(--nav-h) + 26px + env(safe-area-inset-bottom)); }
+    .tx-panel{ position:fixed; bottom:calc(var(--nav-h) + 78px + env(safe-area-inset-bottom)); max-height:calc(100vh - var(--bar-h) - var(--nav-h) - 110px); }
+  }
 </style>
 </head>
 <body>
@@ -771,12 +817,65 @@ Examinations- 2026-27- reg
 
   </div>
 
-  <a class="fab" href="https://whatsapp.com/channel/0029VbDKUk9BVJkx1zao703t" target="_blank" rel="noopener" aria-label="Join WhatsApp channel">
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 12a8 8 0 1 1-3.6-6.7" stroke="#142645" stroke-width="1.8" stroke-linecap="round"/>
-      <path d="M20 4l-4.5 8L20 12" stroke="#142645" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </a>
+  <!-- Yellow floating button: scan the page, translate, and listen (WhatsApp link moved inside the panel) -->
+  <div class="notranslate" translate="no" id="tx-root">
+    <button class="tx-note" id="tx-note" type="button">Scan this page · hear it in your language</button>
+    <button class="fab" id="tx-fab" type="button" aria-label="Scan, translate and listen" aria-expanded="false" aria-controls="tx-panel">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" stroke="#142645" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M15.5 9a4.2 4.2 0 0 1 0 6" stroke="#142645" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M18 6.5a7.6 7.6 0 0 1 0 11" stroke="#142645" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="tx-panel" id="tx-panel" role="dialog" aria-label="Scan, translate and listen">
+      <div class="tx-head">
+        <h3>Scan, translate &amp; listen</h3>
+        <button class="tx-close" id="tx-close" type="button" aria-label="Close">×</button>
+      </div>
+
+      <div class="tx-row">
+        <button class="btn tx-gold-btn btn-gold" id="tx-screen" type="button">Scan this screen</button>
+        <button class="btn btn-gold" id="tx-file" type="button">Photo / PDF / image</button>
+        <button class="btn btn-solid" id="tx-dom" type="button" style="flex-basis:100%">Read this page’s text</button>
+      </div>
+      <input id="tx-input" type="file" accept="image/*,application/pdf" hidden>
+
+      <label for="tx-src">Language written in the document</label>
+      <select id="tx-src">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="gu">ગુજરાતી (Gujarati)</option>
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        <option value="ml">മലയാളം (Malayalam)</option>
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+      </select>
+
+      <label for="tx-lang">Translate and listen in</label>
+      <select id="tx-lang">
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="gu">ગુજરાતી (Gujarati)</option>
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        <option value="ml">മലയാളം (Malayalam)</option>
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+        <option value="en">English</option>
+      </select>
+
+      <textarea id="tx-text" placeholder="The text found on the page appears here. You can also type or paste text."></textarea>
+      <div class="tx-bar" id="tx-bar"><i></i></div>
+      <div class="tx-status" id="tx-status" role="status"></div>
+
+      <div class="tx-row">
+        <button class="btn btn-gold" id="tx-go" type="button">Translate</button>
+        <button class="btn btn-solid" id="tx-listen" type="button">Listen</button>
+        <button class="btn" id="tx-stop" type="button">Stop</button>
+        <button class="btn" id="tx-copy" type="button">Copy</button>
+        <a class="btn btn-wa" style="flex-basis:100%" href="https://whatsapp.com/channel/0029VbDKUk9BVJkx1zao703t" target="_blank" rel="noopener">Join the WhatsApp channel →</a>
+      </div>
+    </div>
+  </div>
 
   <nav class="bottom-nav" aria-label="Primary">
     <button class="nav-btn active" data-target="home">
@@ -1498,6 +1597,182 @@ Examinations- 2026-27- reg
     loadExtraFolders();
     loadDynamicUpdates(settings);
   })();
+</script>
+
+<!-- ===== Scan / Translate / Listen widget ===== -->
+<script>
+(function(){
+  const LOCALE = { en:'en-IN', hi:'hi-IN', gu:'gu-IN', kn:'kn-IN', ml:'ml-IN', te:'te-IN', ta:'ta-IN' };
+  const OCRLANG = { en:'eng', hi:'hin', gu:'guj', kn:'kan', ml:'mal', te:'tel', ta:'tam' };
+  const $ = id => document.getElementById(id);
+  const panel=$('tx-panel'), fab=$('tx-fab'), note=$('tx-note'), box=$('tx-text'),
+        statusEl=$('tx-status'), srcSel=$('tx-src'), langSel=$('tx-lang'), bar=$('tx-bar');
+  let audioEl=null, stopped=false;
+
+  const say = m => { statusEl.textContent = m; };
+  const progress = p => { bar.style.display = p==null ? 'none' : 'block'; if(p!=null) bar.firstElementChild.style.width = Math.round(p*100)+'%'; };
+
+  // Screen capture only exists on desktop browsers
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) $('tx-screen').style.display = 'none';
+
+  function setOpen(open){
+    panel.classList.toggle('open', open);
+    fab.setAttribute('aria-expanded', open);
+    note.hidden = open;   // the label is always visible while the panel is closed
+  }
+  fab.addEventListener('click', () => setOpen(!panel.classList.contains('open')));
+  note.addEventListener('click', () => setOpen(true));
+  $('tx-close').addEventListener('click', () => setOpen(false));
+  document.addEventListener('keydown', e => { if(e.key==='Escape') setOpen(false); });
+
+  // ---- load OCR / PDF libraries only when first needed ----
+  const loaded = {};
+  const loadScript = src => loaded[src] || (loaded[src] = new Promise((res, rej) => {
+    const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('load '+src)); document.head.appendChild(s);
+  }));
+  const TESS='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js';
+  const PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  const PDFW='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  async function ocr(image){
+    say('Loading text reader…'); await loadScript(TESS);
+    const code = OCRLANG[srcSel.value] + (srcSel.value==='en' ? '' : '+eng');
+    const r = await Tesseract.recognize(image, code, {
+      logger: m => { if(m.status==='recognizing text'){ progress(m.progress); say('Reading text… '+Math.round(m.progress*100)+'%'); } }
+    });
+    progress(null);
+    return r.data.text.replace(/\n{3,}/g,'\n\n').trim();
+  }
+
+  // ---- 1. Scan this screen (desktop) ----
+  $('tx-screen').addEventListener('click', async () => {
+    try{
+      setOpen(false);                       // so the panel is not in the picture
+      await new Promise(r => setTimeout(r, 150));
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video:true, preferCurrentTab:true });
+      const v = document.createElement('video'); v.srcObject = stream; v.muted = true;
+      await v.play(); await new Promise(r => setTimeout(r, 500));
+      const c = document.createElement('canvas'); c.width=v.videoWidth; c.height=v.videoHeight;
+      c.getContext('2d').drawImage(v,0,0);
+      stream.getTracks().forEach(t => t.stop());
+      setOpen(true);
+      const text = await ocr(c);
+      box.value = text; say(text ? 'Text found. Tap Translate or Listen.' : 'No text found on the screen.');
+    }catch(e){ setOpen(true); progress(null); say('Screen scan was cancelled or not allowed.'); }
+  });
+
+  // ---- 2. Photo / PDF / image ----
+  $('tx-file').addEventListener('click', () => $('tx-input').click());
+  $('tx-input').addEventListener('change', async e => {
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const text = f.type === 'application/pdf' ? await readPdf(f) : await ocr(f);
+      box.value = text; say(text ? 'Text found. Tap Translate or Listen.' : 'No text found in that file.');
+    }catch(err){ progress(null); say('Could not read that file. Try a clearer photo.'); }
+    e.target.value = '';
+  });
+
+  async function readPdf(file){
+    say('Opening PDF…'); await loadScript(PDFJS);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFW;
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const pages = Math.min(pdf.numPages, 10);
+    let out = '';
+    for (let i=1; i<=pages; i++){
+      say('Reading page '+i+' of '+pages+'…'); progress(i/pages);
+      const page = await pdf.getPage(i);
+      let t = (await page.getTextContent()).items.map(x => x.str).join(' ').trim();
+      if (t.length < 25){                      // scanned page: read it with OCR
+        const vp = page.getViewport({ scale:2 });
+        const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+        await page.render({ canvasContext:c.getContext('2d'), viewport:vp }).promise;
+        t = await ocr(c);
+      }
+      out += t + '\n\n';
+    }
+    progress(null);
+    if (pdf.numPages > pages) out += '(Only the first '+pages+' pages were read.)';
+    return out.trim();
+  }
+
+  // ---- 3. Read this page's text (the screen you are on) ----
+  function googleTarget(){            // language the top-bar Google Translate has applied, if any
+    try{
+      const m = document.cookie.match(/googtrans=\/[^/]+\/([a-zA-Z-]+)/);
+      return (m && /translated/.test(document.documentElement.className)) ? m[1] : null;
+    }catch(e){ return null; }
+  }
+  $('tx-dom').addEventListener('click', () => {
+    const sel = String(window.getSelection() || '').trim();
+    const el = document.querySelector('.screen.active') || document.querySelector('.screens');
+    const t = (sel || (el ? el.innerText : '')).replace(/\n{3,}/g,'\n\n').trim().slice(0, 6000);
+    box.value = t;
+    if (!t){ say('No text found on this page.'); return; }
+    const g = googleTarget();
+    if (g && LOCALE[g]){ srcSel.value = g; langSel.value = g; say('This page is already translated. Tap Listen to hear it.'); }
+    else if (g){ say('Set the top-bar language back to English, then read the page again.'); }
+    else say(sel ? 'Selected text added.' : 'Page text added. Tap Translate or Listen.');
+  });
+
+  // ---- helpers ----
+  function chunk(text, max){
+    const parts = text.match(/[^.!?।\n]+[.!?।\n]*/g) || [text];
+    const out=[]; let cur='';
+    for (const p of parts){ if ((cur+p).length > max && cur){ out.push(cur.trim()); cur=''; } cur += p; }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+
+  // ---- Translate ----
+  async function translate(text, from, to){
+    const res=[]; const pieces=chunk(text,450);
+    for (let i=0;i<pieces.length;i++){
+      say('Translating '+(i+1)+' of '+pieces.length+'…');
+      const r = await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(pieces[i])+'&langpair='+from+'|'+to);
+      if(!r.ok) throw new Error('service');
+      res.push((await r.json()).responseData.translatedText);
+    }
+    return res.join(' ');
+  }
+  $('tx-go').addEventListener('click', async () => {
+    const src = box.value.trim(); if(!src){ say('Scan or add some text first.'); return; }
+    if (srcSel.value === langSel.value){ say('Both languages are the same. Change one of them.'); return; }
+    try{ box.value = await translate(src, srcSel.value, langSel.value); say('Done. Tap Listen to hear it.'); }
+    catch(e){ say('Could not translate. Check your internet and try again.'); }
+  });
+
+  // ---- Listen ----
+  function findVoice(locale){
+    const vs = speechSynthesis.getVoices();
+    return vs.find(v => v.lang.replace('_','-')===locale) || vs.find(v => v.lang.toLowerCase().startsWith(locale.slice(0,2)));
+  }
+  async function speakOnline(text, lang){
+    stopped=false;
+    for (const p of chunk(text,180)){
+      if (stopped) break;
+      await new Promise(res => {
+        audioEl = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+lang+'&q='+encodeURIComponent(p));
+        audioEl.onended=res; audioEl.onerror=res; audioEl.play().catch(res);
+      });
+    }
+  }
+  $('tx-listen').addEventListener('click', () => {
+    const text = box.value.trim(); if(!text){ say('Nothing to read yet.'); return; }
+    const lang = langSel.value, locale = LOCALE[lang];
+    const voice = ('speechSynthesis' in window) ? findVoice(locale) : null;
+    if (voice){
+      say('Playing audio…'); speechSynthesis.cancel();
+      chunk(text,180).forEach(p => { const u=new SpeechSynthesisUtterance(p); u.lang=locale; u.voice=voice; u.rate=0.95; speechSynthesis.speak(u); });
+    } else { say('Playing audio (online voice)…'); speakOnline(text, lang); }
+  });
+  $('tx-stop').addEventListener('click', () => {
+    stopped=true; if('speechSynthesis' in window) speechSynthesis.cancel(); if(audioEl) audioEl.pause(); say('Stopped.');
+  });
+  $('tx-copy').addEventListener('click', async () => {
+    try{ await navigator.clipboard.writeText(box.value); say('Copied.'); }catch(e){ say('Could not copy.'); }
+  });
+  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+})();
 </script>
 
 <!-- ===== Google Translate: Hindi, Kannada, Gujarati, Telugu, Tamil, English, Sanskrit ===== -->

@@ -175,6 +175,24 @@
   </div>
 
   <div class="card">
+    <h1>Home banners</h1>
+    <p class="sub">Rectangle images (Thought of the Day, events, etc.) shown on the home screen just above the NOTIFICATION strip. Several images slide automatically. Uses the same GitHub connection as above.</p>
+
+    <label for="bFile">Banner image</label>
+    <input id="bFile" type="file" accept="image/*" />
+    <p class="hint">Best size: landscape 16:9 (e.g. 1280×720). Large images are shrunk automatically before upload.</p>
+    <label for="bCaption">Caption (optional)</label>
+    <input id="bCaption" placeholder="e.g. Thought of the day" maxlength="80" />
+    <label for="bLink">Link when tapped (optional)</label>
+    <input id="bLink" placeholder="Leave blank to just enlarge the image" />
+    <button id="addBanner">Upload banner</button>
+    <div id="bStatus" class="hint"></div>
+
+    <button class="load-btn" style="margin-top:16px;" id="loadBanners">Load current banners</button>
+    <div id="bannersList"></div>
+  </div>
+
+  <div class="card">
     <h1>Manage posted updates</h1>
     <p class="sub">Edit or remove updates you've already posted — choose exactly where each one should keep showing.</p>
     <button class="load-btn" id="loadEntries">Load posted updates</button>
@@ -782,6 +800,134 @@
       status.textContent = `Error: ${err.message}`;
     } finally {
       $('send').disabled = false;
+    }
+  });
+</script>
+
+<script>
+  // ============ Home banners ============
+  const BANNERS_PATH = 'data/banners.json';
+
+  // Shrink big photos (max 1280px wide) and save as JPEG so uploads stay light.
+  function shrinkImage(file, maxW = 1280) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxW / img.width);
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.88).split(',')[1]);
+      };
+      img.onerror = () => reject(new Error('Could not read that image.'));
+      img.src = url;
+    });
+  }
+
+  async function readBanners(owner, repo, branch, token) {
+    const existing = await ghGetFile(owner, repo, BANNERS_PATH, branch, token);
+    let list = [], sha;
+    if (existing) {
+      sha = existing.sha;
+      try { list = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); } catch { list = []; }
+    }
+    return { list, sha };
+  }
+
+  gh('addBanner').addEventListener('click', async () => {
+    const status = gh('bStatus');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    const { owner, repo, branch, token } = creds;
+    const file = gh('bFile').files[0];
+    if (!file) { status.textContent = 'Choose an image first.'; return; }
+    const caption = gh('bCaption').value.trim();
+    const link = gh('bLink').value.trim();
+
+    gh('addBanner').disabled = true;
+    try {
+      status.textContent = 'Preparing image…';
+      const b64 = await shrinkImage(file);
+      const base = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') || 'banner';
+      const path = `uploads/${Date.now()}-banner-${base}.jpg`;
+      status.textContent = 'Uploading image…';
+      await ghPutFile(owner, repo, path, branch, token, b64, 'Upload banner via admin portal');
+      const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+
+      status.textContent = 'Saving banner list…';
+      const { list, sha } = await readBanners(owner, repo, branch, token);
+      list.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, url, path, caption, link, ts: Date.now() });
+      await ghPutFile(owner, repo, BANNERS_PATH, branch, token, b64EncodeUnicode(JSON.stringify(list, null, 2)), 'Add banner via admin portal', sha);
+
+      status.textContent = 'Uploaded! It will appear on the home screen within a minute or two.';
+      gh('bFile').value = ''; gh('bCaption').value = ''; gh('bLink').value = '';
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    } finally {
+      gh('addBanner').disabled = false;
+    }
+  });
+
+  gh('loadBanners').addEventListener('click', async () => {
+    const status = gh('bStatus');
+    const listEl = gh('bannersList');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    const { owner, repo, branch, token } = creds;
+    status.textContent = 'Loading…';
+    listEl.innerHTML = '';
+    try {
+      const { list } = await readBanners(owner, repo, branch, token);
+      if (!list.length) { status.textContent = 'No banners yet.'; return; }
+      status.textContent = `${list.length} banner(s).`;
+      list.forEach(b => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        const img = document.createElement('img');
+        img.src = b.url; img.alt = '';
+        img.style.cssText = 'width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:4px;display:block;';
+        const t = document.createElement('div');
+        t.className = 'li-title'; t.style.marginTop = '8px';
+        t.textContent = b.caption || '(no caption)';
+        const sub = document.createElement('div');
+        sub.className = 'li-sub';
+        sub.textContent = 'Added ' + new Date(b.ts || 0).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const actions = document.createElement('div');
+        actions.className = 'li-actions';
+        const del = document.createElement('button');
+        del.className = 'small-btn danger'; del.textContent = 'Remove';
+        const st = document.createElement('div'); st.className = 'hint';
+        actions.appendChild(del);
+        div.append(img, t, sub, actions, st);
+        del.addEventListener('click', async () => {
+          if (!confirm('Remove this banner from the home screen?')) return;
+          del.disabled = true; st.textContent = 'Removing…';
+          try {
+            // 1. take it out of the list (re-read first so nothing else is overwritten)
+            const fresh = await readBanners(owner, repo, branch, token);
+            const next = fresh.list.filter(x => x.id !== b.id);
+            await ghPutFile(owner, repo, BANNERS_PATH, branch, token, b64EncodeUnicode(JSON.stringify(next, null, 2)), 'Remove banner via admin portal', fresh.sha);
+            // 2. delete the image file too (best effort)
+            if (b.path) {
+              try {
+                const f = await ghGetFile(owner, repo, b.path, branch, token);
+                if (f) await ghDeleteFile(owner, repo, b.path, branch, token, f.sha, 'Delete banner image via admin portal');
+              } catch (e) { /* list is already updated; leftover file can be deleted under "Manage uploaded files" */ }
+            }
+            div.remove();
+          } catch (err) {
+            del.disabled = false; st.textContent = `Error: ${err.message}`;
+          }
+        });
+        listEl.appendChild(div);
+      });
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
     }
   });
 </script>

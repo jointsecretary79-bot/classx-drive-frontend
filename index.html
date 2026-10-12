@@ -110,7 +110,7 @@
   }
   .ticker-vertical .trow:first-child{ border-top:none; }
 
-  /* ---- home banner images (quotes / events) — posted from admin.html ---- */
+  /* ---- home banners: images + videos — posted from admin.html ---- */
   .banner-wrap{ background:var(--ink); padding:14px 18px 6px; }
   .banner-track{
     display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory;
@@ -131,6 +131,75 @@
   .banner-dots{ display:flex; justify-content:center; gap:6px; margin-top:8px; }
   .banner-dots span{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.3); transition:background .2s; }
   .banner-dots span.on{ background:var(--marigold); }
+
+  /* ---- video slides: custom play / pause / sound / settings controls ---- */
+  .banner-slide.is-video{ cursor:default; background:#000; }
+  .banner-slide.is-video video{ width:100%; height:100%; object-fit:contain; display:block; background:#000; }
+  .banner-slide:fullscreen{ aspect-ratio:auto; border:0; border-radius:0; }
+  .banner-slide:-webkit-full-screen{ aspect-ratio:auto; border:0; border-radius:0; }
+  .vc{ position:absolute; inset:0; color:#fff; font-family:'IBM Plex Sans', sans-serif; }
+  .vc-hit{ position:absolute; inset:0; cursor:pointer; }
+  .vc .banner-cap.top{
+    top:0; bottom:auto; padding:8px 12px 22px; pointer-events:none; transition:opacity .25s;
+    background:linear-gradient(to bottom, rgba(12,23,48,0.85), transparent);
+  }
+  .vc.idle .banner-cap.top{ opacity:0; }
+  .vc-bigplay{
+    position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px;
+    border-radius:50%; border:2px solid var(--marigold); background:rgba(20,38,69,0.82); color:#fff;
+    display:grid; place-items:center; cursor:pointer; padding:0; transition:opacity .2s, transform .2s;
+  }
+  .vc-bigplay svg{ width:24px; height:24px; margin-left:3px; }
+  .vc:not(.paused) .vc-bigplay{ opacity:0; pointer-events:none; transform:scale(.85); }
+  .vc-err{
+    position:absolute; left:12px; right:12px; top:50%; transform:translateY(-50%); text-align:center;
+    font-size:12.5px; background:rgba(139,46,46,0.92); padding:8px 10px; border-radius:4px;
+  }
+  .vc-bar{
+    position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:4px;
+    padding:20px 8px 6px; background:linear-gradient(to top, rgba(12,23,48,0.92), transparent);
+    transition:opacity .25s;
+  }
+  .vc.idle .vc-bar{ opacity:0; pointer-events:none; }
+  .vc-btn{
+    flex:0 0 auto; width:32px; height:32px; border:0; border-radius:50%; background:none; color:#fff;
+    display:grid; place-items:center; cursor:pointer; padding:0;
+  }
+  .vc-btn:hover{ background:rgba(255,255,255,0.16); }
+  .vc-btn svg{ width:18px; height:18px; }
+  .vc-time{ flex:0 0 auto; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:#dfe5f3; padding:0 4px; white-space:nowrap; }
+  .vc-sound{ display:flex; align-items:center; flex:0 0 auto; }
+  .vc input[type=range]{
+    -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; margin:0; cursor:pointer;
+    background:linear-gradient(to right, var(--marigold) var(--p,0%), rgba(255,255,255,0.32) var(--p,0%));
+    touch-action:none; min-width:0;
+  }
+  .vc input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#fff; border:2px solid var(--marigold); }
+  .vc input[type=range]::-moz-range-thumb{ width:9px; height:9px; border-radius:50%; background:#fff; border:2px solid var(--marigold); }
+  .vc-seek{ flex:1 1 auto; }
+  .vc-vol{ width:0; opacity:0; transition:width .2s, opacity .2s; }
+  .vc-sound:hover .vc-vol, .vc-sound:focus-within .vc-vol{ width:54px; opacity:1; margin:0 6px 0 2px; }
+  @media (hover:none){ .vc-vol{ display:none; } }
+  .vc-menu{
+    display:none; position:absolute; right:8px; bottom:44px; width:206px; z-index:3;
+    background:var(--ink); border:1px solid var(--marigold); border-radius:6px; padding:4px 10px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.45); font-size:12px;
+  }
+  .vc-menu.open{ display:block; }
+  .vc-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+    padding:7px 0; border:0; border-top:1px solid rgba(255,255,255,0.12); background:none; color:#fff;
+    font:inherit; text-align:left; text-decoration:none; cursor:pointer;
+  }
+  .vc-menu > .vc-row:first-child{ border-top:0; }
+  .vc-row input[type=checkbox]{ accent-color:var(--marigold); width:16px; height:16px; margin:0; }
+  .vc-speeds{ display:flex; gap:3px; }
+  .vc-speeds button{
+    border:1px solid rgba(255,255,255,0.28); background:none; color:#fff; font:600 10.5px 'IBM Plex Mono', monospace;
+    padding:3px 5px; border-radius:3px; cursor:pointer;
+  }
+  .vc-speeds button.on{ background:var(--marigold); border-color:var(--marigold); color:var(--ink); }
+  .vc button:focus-visible, .vc input:focus-visible, .vc a:focus-visible{ outline:2px solid var(--marigold); outline-offset:1px; }
   .section-label{ display:flex; align-items:center; gap:8px; margin:22px 0 12px; }
   .section-label .num{ font-family:'IBM Plex Mono', monospace; color:var(--marigold-deep); font-size:12px; font-weight:600; }
   .section-label h3{ font-size:15px; text-transform:uppercase; letter-spacing:0.04em; }
@@ -1522,7 +1591,269 @@ Examinations- 2026-27- reg
   }
 
 
-  // -- home banner images: rectangle slides shown above the NOTIFICATION strip --
+  // ===== Home banner carousel (images + videos with play / pause / sound / settings) =====
+  // Used by the home screen and by the admin preview, so both always look and behave the same.
+  (function () {
+    const PREF_KEY = 'classx_banner_video_prefs';
+    const ICON = {
+      play:  '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+      pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+      vol:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
+      mute:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/><path d="m22 9-6 6M16 9l6 6"/></svg>',
+      cog:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg>'
+    };
+
+    function loadPrefs() {
+      try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}') || {}; } catch (e) { return {}; }
+    }
+    function fmt(t) {
+      if (!isFinite(t)) return '0:00';
+      const m = Math.floor(t / 60), s = Math.floor(t % 60);
+      return m + ':' + String(s).padStart(2, '0');
+    }
+    const safeUrl = (u) => /^https?:\/\//i.test(u || '') ? u : '';
+
+    function buildImageSlide(b, i, openImage) {
+      const slide = document.createElement('button');
+      slide.type = 'button';
+      slide.className = 'banner-slide';
+      slide.setAttribute('aria-label', b.caption || 'Banner ' + (i + 1));
+      const img = document.createElement('img');
+      img.src = b.url; img.alt = b.caption || ''; img.loading = i === 0 ? 'eager' : 'lazy';
+      slide.appendChild(img);
+      if (b.caption) {
+        const cap = document.createElement('div');
+        cap.className = 'banner-cap'; cap.textContent = b.caption;
+        slide.appendChild(cap);
+      }
+      slide.addEventListener('click', () => {
+        if (b.link) window.open(b.link, '_blank', 'noopener');
+        else if (openImage) openImage(b.url, b.caption || '');
+      });
+      return slide;
+    }
+
+    function buildVideoSlide(b, ctx) {
+      const prefs = ctx.prefs;
+      const autoplay = b.autoplay !== false;
+
+      const slide = document.createElement('div');
+      slide.className = 'banner-slide is-video';
+      slide.setAttribute('role', 'group');
+      slide.setAttribute('aria-label', b.caption ? 'Video: ' + b.caption : 'Video banner');
+
+      const v = document.createElement('video');
+      v.setAttribute('playsinline', ''); v.playsInline = true;
+      v.preload = autoplay ? 'auto' : 'metadata';
+      v.loop = !!b.loop;
+      v.muted = autoplay ? true : b.muted !== false;   // phones only allow autoplay when muted
+      if (b.poster) v.poster = b.poster;
+      v.src = b.url;
+      const speed = prefs.speed || 1;
+      v.defaultPlaybackRate = speed; v.playbackRate = speed;
+      slide.appendChild(v);
+
+      const ui = document.createElement('div');
+      ui.className = 'vc paused';
+      ui.innerHTML =
+        (b.caption ? '<div class="banner-cap top"></div>' : '') +
+        '<div class="vc-hit"></div>' +
+        '<button type="button" class="vc-bigplay" aria-label="Play video">' + ICON.play + '</button>' +
+        '<div class="vc-err" hidden>This video can’t be played right now.</div>' +
+        '<div class="vc-bar">' +
+          '<button type="button" class="vc-btn vc-play" aria-label="Play">' + ICON.play + '</button>' +
+          '<input class="vc-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek">' +
+          '<span class="vc-time">0:00</span>' +
+          '<span class="vc-sound"><button type="button" class="vc-btn vc-snd" aria-label="Sound">' + ICON.vol + '</button>' +
+          '<input class="vc-vol" type="range" min="0" max="100" value="100" aria-label="Volume"></span>' +
+          '<button type="button" class="vc-btn vc-gear" aria-label="Video settings" aria-expanded="false">' + ICON.cog + '</button>' +
+        '</div>' +
+        '<div class="vc-menu" role="group" aria-label="Video settings">' +
+          '<div class="vc-row"><span>Speed</span><span class="vc-speeds">' +
+            [0.5, 1, 1.5, 2].map(s => '<button type="button" data-speed="' + s + '">' + s + '×</button>').join('') +
+          '</span></div>' +
+          '<label class="vc-row"><span>Repeat</span><input type="checkbox" class="vc-loop"></label>' +
+          '<label class="vc-row"><span>Autoplay on this device</span><input type="checkbox" class="vc-auto"></label>' +
+          '<button type="button" class="vc-row vc-fs"><span>Full screen</span></button>' +
+          (safeUrl(b.link) ? '<a class="vc-row vc-open" target="_blank" rel="noopener"><span>Open link</span></a>' : '') +
+        '</div>';
+      slide.appendChild(ui);
+
+      const q = (s) => ui.querySelector(s);
+      const hit = q('.vc-hit'), big = q('.vc-bigplay'), playBtn = q('.vc-play'), seek = q('.vc-seek'),
+            time = q('.vc-time'), snd = q('.vc-snd'), vol = q('.vc-vol'), gear = q('.vc-gear'),
+            menu = q('.vc-menu'), errBox = q('.vc-err');
+      if (b.caption) q('.banner-cap').textContent = b.caption;
+      if (safeUrl(b.link)) q('.vc-open').href = b.link;
+
+      // ---- play / pause
+      const toggle = () => {
+        if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause();
+      };
+      let idleT;
+      const wake = () => {
+        ui.classList.remove('idle'); clearTimeout(idleT);
+        if (!v.paused && !menu.classList.contains('open')) idleT = setTimeout(() => ui.classList.add('idle'), 2600);
+      };
+      const syncPlay = () => {
+        const playing = !v.paused;
+        ui.classList.toggle('paused', !playing);
+        playBtn.innerHTML = playing ? ICON.pause : ICON.play;
+        playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+        big.setAttribute('aria-label', playing ? 'Pause video' : 'Play video');
+      };
+      v.addEventListener('play', () => { errBox.hidden = true; syncPlay(); wake(); });
+      v.addEventListener('pause', () => { syncPlay(); clearTimeout(idleT); ui.classList.remove('idle'); });
+      v.addEventListener('ended', () => { syncPlay(); if (ctx.onEnded) ctx.onEnded(); });
+      v.addEventListener('error', () => { errBox.hidden = false; syncPlay(); });
+      ['pointermove', 'pointerdown', 'keydown', 'focusin'].forEach(ev => ui.addEventListener(ev, wake));
+      const closeMenu = () => { menu.classList.remove('open'); gear.setAttribute('aria-expanded', 'false'); wake(); };
+      hit.addEventListener('click', () => { if (menu.classList.contains('open')) { closeMenu(); return; } toggle(); });
+      big.addEventListener('click', toggle);
+      playBtn.addEventListener('click', toggle);
+
+      // ---- progress
+      let seeking = false;
+      const setFill = (el) => el.style.setProperty('--p', (el.value / el.max * 100) + '%');
+      const upd = () => {
+        const d = v.duration;
+        if (!seeking && isFinite(d) && d > 0) { seek.value = String(Math.round(v.currentTime / d * 1000)); setFill(seek); }
+        time.textContent = fmt(v.currentTime) + ' / ' + fmt(d);
+      };
+      v.addEventListener('timeupdate', upd);
+      v.addEventListener('loadedmetadata', upd);
+      seek.addEventListener('input', () => {
+        seeking = true; setFill(seek);
+        if (isFinite(v.duration)) { v.currentTime = seek.value / 1000 * v.duration; upd(); }
+      });
+      seek.addEventListener('change', () => { seeking = false; });
+      setFill(seek);
+
+      // ---- sound
+      const syncSound = () => {
+        const off = v.muted || v.volume === 0;
+        snd.innerHTML = off ? ICON.mute : ICON.vol;
+        snd.setAttribute('aria-label', off ? 'Unmute' : 'Mute');
+        vol.value = String(off ? 0 : Math.round(v.volume * 100)); setFill(vol);
+      };
+      v.addEventListener('volumechange', syncSound);
+      snd.addEventListener('click', () => {
+        if (v.muted || v.volume === 0) { v.muted = false; if (v.volume === 0) v.volume = 0.7; }
+        else v.muted = true;
+      });
+      vol.addEventListener('input', () => { v.volume = vol.value / 100; v.muted = v.volume === 0; });
+      syncSound();
+
+      // ---- settings menu
+      const loopBox = q('.vc-loop'), autoBox = q('.vc-auto');
+      const syncSpeed = () => ui.querySelectorAll('.vc-speeds button').forEach(btn =>
+        btn.classList.toggle('on', Number(btn.dataset.speed) === v.playbackRate));
+      loopBox.checked = v.loop;
+      autoBox.checked = prefs.autoplay !== false;
+      syncSpeed();
+      gear.addEventListener('click', () => {
+        const open = !menu.classList.contains('open');
+        menu.classList.toggle('open', open);
+        gear.setAttribute('aria-expanded', String(open));
+        if (open) { ui.classList.remove('idle'); clearTimeout(idleT); } else wake();
+      });
+      ui.querySelectorAll('.vc-speeds button').forEach(btn => btn.addEventListener('click', () => {
+        const s = Number(btn.dataset.speed);
+        v.defaultPlaybackRate = s; v.playbackRate = s; prefs.speed = s; ctx.save(); syncSpeed();
+      }));
+      loopBox.addEventListener('change', () => { v.loop = loopBox.checked; });
+      autoBox.addEventListener('change', () => { prefs.autoplay = autoBox.checked; ctx.save(); });
+      q('.vc-fs').addEventListener('click', () => {
+        closeMenu();
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (slide.requestFullscreen) slide.requestFullscreen().catch(() => {});
+        else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();   // iPhone Safari
+      });
+      const outside = (e) => { if (menu.classList.contains('open') && !menu.contains(e.target) && !gear.contains(e.target)) closeMenu(); };
+      document.addEventListener('pointerdown', outside);
+      ctx.cleanups.push(() => document.removeEventListener('pointerdown', outside));
+
+      slide._vc = {
+        video: v,
+        isPlaying: () => !v.paused && !v.ended,
+        pause: () => v.pause(),
+        autoStart: () => {
+          if (!autoplay || prefs.autoplay === false) return;
+          const p = v.play();
+          if (p && p.catch) p.catch(() => { v.muted = true; const r = v.play(); if (r && r.catch) r.catch(() => {}); });
+        }
+      };
+      return slide;
+    }
+
+    // opts: { items, track, dots, openImage(url, caption), persist (default true), advanceMs }
+    window.mountBannerCarousel = function (opts) {
+      const items = opts.items || [];
+      const track = opts.track, dots = opts.dots;
+      const persist = opts.persist !== false;
+      const prefs = persist ? loadPrefs() : {};
+      const cleanups = [];
+      const slides = [];
+      let idx = 0, held = false, timer = null;
+
+      track.innerHTML = ''; if (dots) dots.innerHTML = '';
+      const goTo = (n) => { idx = n; track.scrollTo({ left: (track.clientWidth + 10) * n, behavior: 'smooth' }); };
+      const next = () => goTo((idx + 1) % items.length);
+      const ctx = {
+        prefs, cleanups,
+        save: () => { if (persist) { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) {} } },
+        onEnded: () => { if (items.length > 1 && !held) next(); }
+      };
+
+      items.forEach((b, i) => {
+        const s = b.type === 'video' ? buildVideoSlide(b, ctx) : buildImageSlide(b, i, opts.openImage);
+        slides.push(s); track.appendChild(s);
+        if (dots) { const d = document.createElement('span'); if (i === 0) d.className = 'on'; dots.appendChild(d); }
+      });
+      if (dots) dots.style.display = items.length > 1 ? '' : 'none';
+
+      // play a video when its slide is on screen, pause it when it leaves (or the Home tab is hidden)
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+          const vc = en.target._vc; if (!vc) return;
+          if (en.isIntersecting) vc.autoStart(); else vc.pause();
+        }), { threshold: 0.6 });
+        slides.forEach(s => { if (s._vc) io.observe(s); });
+        cleanups.push(() => io.disconnect());
+      }
+      const onVis = () => { if (document.hidden) slides.forEach(s => s._vc && s._vc.pause()); };
+      document.addEventListener('visibilitychange', onVis);
+      cleanups.push(() => document.removeEventListener('visibilitychange', onVis));
+
+      if (items.length > 1) {
+        const dotEls = dots ? Array.from(dots.children) : [];
+        track.addEventListener('scroll', () => {
+          const n = Math.round(track.scrollLeft / (track.clientWidth + 10));
+          idx = n;
+          dotEls.forEach((d, k) => d.classList.toggle('on', k === n));
+        }, { passive: true });
+        ['touchstart', 'mousedown'].forEach(ev => track.addEventListener(ev, () => { held = true; }, { passive: true }));
+        ['touchend', 'mouseup', 'mouseleave'].forEach(ev => track.addEventListener(ev, () => { setTimeout(() => { held = false; }, 4000); }, { passive: true }));
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          timer = setInterval(() => {
+            // a video that is playing (and not set to repeat) keeps its slide until it finishes
+            const watching = slides.some(s => s._vc && s._vc.isPlaying() && !s._vc.video.loop);
+            if (!held && !watching) next();
+          }, opts.advanceMs || 4500);
+        }
+      }
+
+      return {
+        destroy() {
+          clearInterval(timer);
+          cleanups.forEach(fn => { try { fn(); } catch (e) {} });
+          slides.forEach(s => { if (s._vc) { s._vc.pause(); s._vc.video.removeAttribute('src'); s._vc.video.load(); } });
+        }
+      };
+    };
+  })();
+
+  // -- home banners: images and videos, shown above the NOTIFICATION strip --
   async function loadBanners() {
     try {
       const res = await fetch('./data/banners.json', { cache: 'no-store' });
@@ -1535,54 +1866,16 @@ Examinations- 2026-27- reg
       const track = document.getElementById('banner-track');
       const dots = document.getElementById('banner-dots');
       if (!wrap || !track) return;
-      track.innerHTML = ''; dots.innerHTML = '';
-
-      items.forEach((b, i) => {
-        const slide = document.createElement('button');
-        slide.type = 'button';
-        slide.className = 'banner-slide';
-        slide.setAttribute('aria-label', b.caption || 'Banner ' + (i + 1));
-        const img = document.createElement('img');
-        img.src = b.url; img.alt = b.caption || ''; img.loading = i === 0 ? 'eager' : 'lazy';
-        slide.appendChild(img);
-        if (b.caption) {
-          const cap = document.createElement('div');
-          cap.className = 'banner-cap'; cap.textContent = b.caption;
-          slide.appendChild(cap);
-        }
-        slide.addEventListener('click', () => {
-          if (b.link) window.open(b.link, '_blank', 'noopener');
-          else openLightbox(b.url, b.caption || '');
-        });
-        track.appendChild(slide);
-        const d = document.createElement('span');
-        if (i === 0) d.className = 'on';
-        dots.appendChild(d);
-      });
       wrap.style.display = 'block';
-
-      if (items.length < 2) { dots.style.display = 'none'; return; }
-
-      const dotEls = Array.from(dots.children);
-      let idx = 0, paused = false;
-      const goTo = (n) => {
-        idx = n;
-        track.scrollTo({ left: track.clientWidth * n + (n * 10), behavior: 'smooth' });
-      };
-      track.addEventListener('scroll', () => {
-        const n = Math.round(track.scrollLeft / (track.clientWidth + 10));
-        if (n !== idx) { idx = n; }
-        dotEls.forEach((d, k) => d.classList.toggle('on', k === n));
-      }, { passive: true });
-      ['touchstart', 'mousedown'].forEach(ev => track.addEventListener(ev, () => { paused = true; }, { passive: true }));
-      ['touchend', 'mouseup', 'mouseleave'].forEach(ev => track.addEventListener(ev, () => { setTimeout(() => { paused = false; }, 4000); }, { passive: true }));
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        setInterval(() => { if (!paused) goTo((idx + 1) % items.length); }, 4500);
-      }
+      mountBannerCarousel({
+        items, track, dots,
+        openImage: (url, caption) => openLightbox(url, caption)
+      });
     } catch (err) {
       console.warn('Banners not loaded:', err);
     }
   }
+
 
   (async function initDynamicContent() {
     loadBanners();

@@ -1,259 +1,720 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Send an update — Class X Drive</title>
+<meta name="theme-color" content="#142645">
+<title>Admin — Class X Drive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  body{ font-family:'IBM Plex Sans', Arial, sans-serif; background:#0c1730; color:#eef1f6; display:flex; flex-direction:column; align-items:center; gap:24px; padding:40px 16px; }
-  .card{ background:#142645; padding:28px; border-radius:8px; max-width:420px; width:100%; }
-  h1{ font-size:20px; margin:0 0 6px; }
-  p.sub{ color:#aeb6cc; font-size:13px; margin:0 0 22px; }
-  label{ display:block; font-size:12px; color:#c7cee2; margin:14px 0 6px; }
-  input, textarea{ width:100%; padding:10px 12px; border-radius:4px; border:1px solid #28406b; background:#0c1730; color:#fff; font-family:inherit; font-size:14px; }
-  textarea{ min-height:70px; resize:vertical; }
-  button{ margin-top:20px; width:100%; padding:12px; background:#E7A23C; color:#142645; border:none; border-radius:4px; font-weight:700; font-size:14px; cursor:pointer; }
-  button:disabled{ opacity:0.6; cursor:not-allowed; }
-  #status{ margin-top:14px; font-size:13px; color:#aeb6cc; }
-  #backend{ margin-bottom:18px; }
+  :root{
+    --ink:#142645; --ink-2:#1b3158; --ink-soft:#28406b;
+    --paper:#EEF1F6; --card:#fff; --tint:#f5f7fb;
+    --marigold:#E7A23C; --marigold-deep:#c9821f; --maroon:#8B2E2E;
+    --text:#20263a; --text-soft:#5a6178; --line:#d3d8e4;
+    --ok:#1f7a4d; --err:#b3261e;
+    --side-w:268px;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--paper); color:var(--text);
+    font-family:'IBM Plex Sans', Arial, sans-serif; font-size:14px; line-height:1.5;
+    display:grid; grid-template-columns:var(--side-w) minmax(0,1fr); min-height:100vh;
+  }
+  h1,h2,h3{ font-family:'Fraunces', serif; color:var(--ink); margin:0; font-weight:600; }
+  a{ color:var(--ink-soft); }
+  button{ font-family:inherit; }
+  :focus-visible{ outline:3px solid var(--marigold); outline-offset:2px; }
+  [hidden]{ display:none !important; }
 
-  .checkrow{ display:flex; align-items:center; gap:8px; margin-top:16px; }
-  .checkrow input{ width:auto; }
-  .checkrow label{ margin:0; font-size:13px; color:#eef1f6; }
-  details.ghsettings{ margin-top:6px; border:1px solid #28406b; border-radius:4px; padding:2px 12px 12px; }
-  details.ghsettings summary{ cursor:pointer; padding:10px 0; font-size:13px; color:#c7cee2; }
-  .hint{ font-size:11px; color:#8b93ab; margin-top:4px; line-height:1.5; }
+  /* ---------- sidebar ---------- */
+  .side{
+    background:var(--ink); color:#dfe5f3; position:sticky; top:0; height:100vh; overflow-y:auto;
+    display:flex; flex-direction:column;
+  }
+  .brand{ padding:22px 20px 18px; border-bottom:6px solid var(--marigold); }
+  .brand b{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; color:#fff; display:block; }
+  .brand span{ font-size:12px; color:#9fb0d2; }
+  .nav{ padding:8px 12px 12px; flex:1; }
+  .nav-group{ padding:14px 0 2px; }
+  .nav-group h3{ font-family:'IBM Plex Sans', sans-serif; font-size:12px; font-weight:600; color:#8fa3cc; padding:0 10px 6px; letter-spacing:.02em; }
+  .nav button{
+    display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:9px 10px;
+    background:none; border:0; border-left:3px solid transparent; border-radius:2px 4px 4px 2px;
+    color:#dfe5f3; font-size:14px; cursor:pointer;
+  }
+  .nav button svg{ width:18px; height:18px; flex:0 0 auto; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; opacity:.85; }
+  .nav button:hover{ background:rgba(255,255,255,.07); }
+  .nav button[aria-current="page"]{ background:rgba(231,162,60,.14); border-left-color:var(--marigold); color:#fff; font-weight:600; }
+  .nav button[aria-current="page"] svg{ stroke:var(--marigold); opacity:1; }
+  .conn{ margin:0 12px 16px; padding:10px 12px; border:1px dashed rgba(255,255,255,.28); border-radius:4px; font-size:12px; color:#c7cee2; display:flex; gap:8px; align-items:flex-start; }
+  .conn i{ width:9px; height:9px; border-radius:50%; background:#8fa3cc; margin-top:5px; flex:0 0 auto; }
+  .conn[data-state="saved"] i{ background:var(--marigold); }
+  .conn[data-state="ok"] i{ background:#5fd596; }
+  .conn[data-state="bad"] i{ background:#ff8c84; }
 
-  .row2{ display:flex; gap:10px; }
-  .row2 > div{ flex:1; }
-  select{ width:100%; padding:10px 12px; border-radius:4px; border:1px solid #28406b; background:#0c1730; color:#fff; font-family:inherit; font-size:14px; }
-  .small-btn{ margin-top:0; width:auto; padding:6px 12px; font-size:12px; background:#28406b; color:#eef1f6; border:none; border-radius:4px; font-weight:600; cursor:pointer; }
-  .small-btn.danger{ background:#8B2E2E; color:#fff; }
-  .load-btn{ margin-top:0; width:auto; padding:9px 14px; font-size:13px; background:#28406b; color:#eef1f6; }
-  .list-item{ border:1px solid #28406b; border-radius:4px; padding:12px; margin-top:10px; }
-  .list-item .li-title{ font-size:13.5px; font-weight:700; color:#fff; }
-  .list-item .li-sub{ font-size:11.5px; color:#8b93ab; margin-top:2px; }
-  .li-checks{ display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; }
-  .li-checks label{ display:flex; align-items:center; gap:6px; margin:0; font-size:12px; color:#eef1f6; }
-  .li-checks input{ width:auto; }
-  .li-actions{ display:flex; gap:8px; margin-top:10px; }
-  .empty-note{ font-size:12.5px; color:#8b93ab; margin-top:10px; }
+  /* ---------- main ---------- */
+  main{ padding:34px 40px 80px; max-width:1060px; width:100%; }
+  .panel-head{ margin-bottom:22px; }
+  .panel-head h2{ font-size:28px; line-height:1.15; }
+  .panel-head p{ margin:8px 0 0; color:var(--text-soft); max-width:62ch; }
+  .stack{ display:grid; gap:18px; align-content:start; min-width:0; }
+  .split{ display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:18px; align-items:start; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:6px; padding:22px; min-width:0; }
+  .card-title{ font-size:17px; margin:0 0 4px; }
+  .card-sub{ margin:0 0 16px; color:var(--text-soft); font-size:13px; }
+  .card.sticky{ position:sticky; top:20px; }
+  .group-title{ font-size:13px; font-weight:700; color:var(--ink); margin:22px 0 8px; padding-top:16px; border-top:1px solid var(--line); }
+  .card > .group-title:first-child{ margin-top:0; padding-top:0; border-top:0; }
 
-  button.remove-btn{ background:#8B2E2E; color:#fff; }
-  #rmGsi{ display:flex; margin-top:6px; }
-  .rm-ok{ color:#7fd6a0; } .rm-err{ color:#ff9b9b; }
+  /* ---------- form controls ---------- */
+  label{ display:block; font-size:13px; font-weight:600; color:var(--ink); margin:14px 0 5px; }
+  .card > label:first-of-type{ margin-top:0; }
+  input, textarea, select{
+    width:100%; padding:10px 12px; border:1px solid #bcc4d6; border-radius:4px; background:#fff;
+    color:var(--text); font:inherit; font-size:14px;
+  }
+  input::placeholder, textarea::placeholder{ color:#98a0b6; }
+  input:focus, textarea:focus, select:focus{ border-color:var(--ink-soft); outline:3px solid rgba(231,162,60,.45); outline-offset:0; }
+  input[type=file]{ padding:8px; background:var(--tint); border-style:dashed; cursor:pointer; }
+  input[type=checkbox], input[type=radio]{ width:auto; accent-color:var(--ink); }
+  textarea{ min-height:84px; resize:vertical; }
+  .hint{ font-size:12px; color:var(--text-soft); margin:6px 0 0; line-height:1.55; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .row2 > div > label:first-child{ margin-top:14px; }
+  .row2 > div > label{ margin-top:14px; }
+
+  .opts{ display:grid; gap:8px; }
+  .opt{
+    display:flex; gap:12px; align-items:flex-start; margin:0; padding:11px 12px; font-weight:400;
+    border:1px solid var(--line); border-radius:4px; background:#fff; cursor:pointer;
+  }
+  .opt:has(input:checked){ border-color:var(--ink); background:var(--tint); }
+  .opt:has(input:disabled){ opacity:.6; cursor:not-allowed; }
+  .opt input{ margin-top:3px; width:16px; height:16px; flex:0 0 auto; }
+  .opt-title{ display:block; font-weight:600; color:var(--ink); font-size:13.5px; }
+  .opt-desc{ display:block; font-size:12px; color:var(--text-soft); margin-top:1px; }
+
+  .seg{ display:flex; border:1px solid var(--ink); border-radius:4px; overflow:hidden; margin-bottom:14px; }
+  .seg button{ flex:1; padding:10px 8px; border:0; border-right:1px solid var(--ink); background:#fff; color:var(--ink); font-size:13.5px; font-weight:600; cursor:pointer; }
+  .seg button:last-child{ border-right:0; }
+  .seg button[aria-pressed="true"]{ background:var(--ink); color:#fff; }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px;
+    border:1px solid transparent; border-radius:4px; font-size:14px; font-weight:700; cursor:pointer; text-decoration:none;
+  }
+  .btn:disabled{ opacity:.55; cursor:not-allowed; }
+  .btn-primary{ background:var(--marigold); color:var(--ink); }
+  .btn-primary:hover:not(:disabled){ background:#efae4f; }
+  .btn-secondary{ background:#fff; color:var(--ink); border-color:var(--ink); }
+  .btn-secondary:hover:not(:disabled){ background:var(--tint); }
+  .btn-danger{ background:var(--maroon); color:#fff; }
+  .actions{ display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .load-btn{ margin-top:0; }
+  .small-btn{
+    display:inline-flex; align-items:center; padding:7px 12px; font-size:12.5px; font-weight:600; background:#fff;
+    color:var(--ink); border:1px solid var(--ink-soft); border-radius:4px; cursor:pointer; text-decoration:none;
+  }
+  .small-btn:hover{ background:var(--tint); }
+  .small-btn.danger{ background:var(--maroon); border-color:var(--maroon); color:#fff; }
+  .small-btn:disabled{ opacity:.55; cursor:not-allowed; }
+  .icon-btn{ width:34px; height:34px; border:1px solid var(--line); background:#fff; border-radius:4px; font-size:20px; line-height:1; cursor:pointer; color:var(--ink); }
+
+  /* ---------- status text ---------- */
+  .status, .e-status{ margin-top:12px; font-size:13px; color:var(--text-soft); min-height:1.2em; }
+  .status.is-ok, .e-status.is-ok, .hint.rm-ok{ color:var(--ok); font-weight:600; }
+  .status.is-err, .e-status.is-err, .hint.rm-err{ color:var(--err); font-weight:600; }
+  .status.is-busy, .e-status.is-busy{ color:var(--ink-soft); }
+  .rm-ok{ color:var(--ok); } .rm-err{ color:var(--err); }
+
+  /* ---------- lists (manage panels) ---------- */
+  .list-item{ border:1px solid var(--line); border-radius:4px; padding:14px; margin-top:12px; background:#fff; }
+  .list-item .li-title{ font-size:14px; font-weight:700; color:var(--ink); }
+  .list-item .li-sub{ font-size:12px; color:var(--text-soft); margin-top:2px; }
+  .list-item label{ font-size:12px; margin:10px 0 4px; }
+  .list-item .row2 label{ margin-top:0; }
+  .li-checks{ display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; }
+  .li-checks label{ display:flex; align-items:center; gap:6px; margin:0; font-size:12.5px; font-weight:500; color:var(--text); }
+  .li-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .empty-note{ font-size:13px; color:var(--text-soft); margin-top:12px; }
+  .badge{ display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; background:var(--ink); color:#fff; margin-left:8px; vertical-align:2px; }
+  .badge.video{ background:var(--marigold); color:var(--ink); }
+
+  /* ---------- banners panel ---------- */
+  .live-empty{
+    aspect-ratio:16/9; border:1px dashed #9aa5c0; border-radius:6px; background:var(--tint);
+    display:grid; place-items:center; text-align:center; padding:16px; color:var(--text-soft); font-size:13px;
+  }
+  .live-frame{ background:var(--ink); border-radius:6px; overflow:hidden; }
+  .banner-thumb{ width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:4px; display:block; background:#0c1730; }
+  .edit-box{ margin-top:12px; padding-top:4px; border-top:1px dashed var(--line); }
+
+  /* ---------- downloader ---------- */
+  .drop{
+    border:2px dashed #9aa5c0; border-radius:6px; background:var(--tint); padding:26px 18px; text-align:center;
+    color:var(--text-soft); font-size:13.5px; transition:background .15s, border-color .15s;
+  }
+  .drop strong{ color:var(--ink); display:block; font-size:15px; margin-bottom:4px; font-family:'Fraunces', serif; }
+  .drop.over{ background:#fff7e8; border-color:var(--marigold-deep); }
+  .dl-row{ display:flex; gap:10px; }
+  .dl-row input{ flex:1; }
+  .dl-preview{ margin-top:16px; border:1px solid var(--line); border-radius:6px; overflow:hidden; background:#0c1730; }
+  .dl-preview img, .dl-preview video{ display:block; width:100%; max-height:420px; object-fit:contain; background:#0c1730; }
+  .dl-meta{ margin-top:12px; font-size:13px; }
+  .dl-meta b{ color:var(--ink); word-break:break-all; }
+  .cand-list{ display:grid; gap:6px; margin-top:12px; }
+  .cand{ display:flex; gap:10px; align-items:center; width:100%; text-align:left; padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:4px; cursor:pointer; font-size:12px; }
+  .cand:hover{ border-color:var(--ink); }
+  .cand em{ font-style:normal; font-weight:700; color:var(--ink); flex:0 0 auto; }
+  .cand span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-soft); }
+
+  /* ---------- preview dialog ---------- */
+  dialog.pv{ border:0; padding:12px; background:transparent; width:min(100%, 484px); max-height:96vh; overflow:auto; }
+  dialog.pv::backdrop{ background:rgba(8,16,34,.78); }
+  .pv-bar{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; color:#fff; }
+  .pv-bar b{ font-family:'Fraunces', serif; font-size:17px; font-weight:600; display:block; }
+  .pv-bar span{ font-size:12px; color:#b6c3df; }
+  .pv-phone{ background:var(--paper); border-radius:22px; overflow:hidden; box-shadow:0 0 0 7px #06101f, 0 30px 60px rgba(0,0,0,.5); }
+  .pv-appbar{ background:var(--ink); color:#fff; padding:14px 18px; border-bottom:6px solid var(--marigold); font-family:'Fraunces', serif; font-weight:600; font-size:15px; display:flex; justify-content:space-between; }
+  .pv-appbar span{ font:600 10.5px 'IBM Plex Mono', monospace; letter-spacing:.1em; color:var(--marigold); align-self:center; }
+  .pv-hero{ background:var(--ink); color:#fff; padding:16px 18px 12px; font-family:'Fraunces', serif; font-size:19px; line-height:1.15; }
+  .pv-strip{ background:var(--ink); color:var(--marigold); font:700 10.5px 'IBM Plex Mono', monospace; text-align:center; padding:4px 0; letter-spacing:.08em; }
+  .pv-row{ background:var(--marigold); color:var(--ink); padding:9px 18px; font:600 12.5px 'IBM Plex Mono', monospace; border-top:1px solid rgba(20,38,69,.25); }
+  .pv-rest{ padding:16px 18px 20px; display:grid; gap:8px; }
+  .pv-rest i{ display:block; height:10px; border-radius:2px; background:#d7dce8; }
+
+  /* banner + video styles (identical to the home screen) */
+
+  /* ---- home banners: images + videos — posted from admin.html ---- */
+  .banner-wrap{ background:var(--ink); padding:14px 18px 6px; }
+  .banner-track{
+    display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .banner-track::-webkit-scrollbar{ display:none; }
+  .banner-slide{
+    position:relative; flex:0 0 100%; aspect-ratio:16/9; scroll-snap-align:center;
+    border:1px solid rgba(231,162,60,0.55); border-radius:6px; overflow:hidden;
+    background:#0c1730; padding:0; cursor:pointer; display:block;
+  }
+  .banner-slide img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .banner-cap{
+    position:absolute; left:0; right:0; bottom:0; padding:22px 12px 8px; text-align:left;
+    background:linear-gradient(to top, rgba(12,23,48,0.85), transparent);
+    color:#fff; font-size:12.5px; font-weight:600;
+  }
+  .banner-dots{ display:flex; justify-content:center; gap:6px; margin-top:8px; }
+  .banner-dots span{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.3); transition:background .2s; }
+  .banner-dots span.on{ background:var(--marigold); }
+
+  /* ---- video slides: custom play / pause / sound / settings controls ---- */
+  .banner-slide.is-video{ cursor:default; background:#000; }
+  .banner-slide.is-video video{ width:100%; height:100%; object-fit:contain; display:block; background:#000; }
+  .banner-slide:fullscreen{ aspect-ratio:auto; border:0; border-radius:0; }
+  .banner-slide:-webkit-full-screen{ aspect-ratio:auto; border:0; border-radius:0; }
+  .vc{ position:absolute; inset:0; color:#fff; font-family:'IBM Plex Sans', sans-serif; }
+  .vc-hit{ position:absolute; inset:0; cursor:pointer; }
+  .vc .banner-cap.top{
+    top:0; bottom:auto; padding:8px 12px 22px; pointer-events:none; transition:opacity .25s;
+    background:linear-gradient(to bottom, rgba(12,23,48,0.85), transparent);
+  }
+  .vc.idle .banner-cap.top{ opacity:0; }
+  .vc-bigplay{
+    position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px;
+    border-radius:50%; border:2px solid var(--marigold); background:rgba(20,38,69,0.82); color:#fff;
+    display:grid; place-items:center; cursor:pointer; padding:0; transition:opacity .2s, transform .2s;
+  }
+  .vc-bigplay svg{ width:24px; height:24px; margin-left:3px; }
+  .vc:not(.paused) .vc-bigplay{ opacity:0; pointer-events:none; transform:scale(.85); }
+  .vc-err{
+    position:absolute; left:12px; right:12px; top:50%; transform:translateY(-50%); text-align:center;
+    font-size:12.5px; background:rgba(139,46,46,0.92); padding:8px 10px; border-radius:4px;
+  }
+  .vc-bar{
+    position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:4px;
+    padding:20px 8px 6px; background:linear-gradient(to top, rgba(12,23,48,0.92), transparent);
+    transition:opacity .25s;
+  }
+  .vc.idle .vc-bar{ opacity:0; pointer-events:none; }
+  .vc-btn{
+    flex:0 0 auto; width:32px; height:32px; border:0; border-radius:50%; background:none; color:#fff;
+    display:grid; place-items:center; cursor:pointer; padding:0;
+  }
+  .vc-btn:hover{ background:rgba(255,255,255,0.16); }
+  .vc-btn svg{ width:18px; height:18px; }
+  .vc-time{ flex:0 0 auto; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:#dfe5f3; padding:0 4px; white-space:nowrap; }
+  .vc-sound{ display:flex; align-items:center; flex:0 0 auto; }
+  .vc input[type=range]{
+    -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; margin:0; cursor:pointer;
+    background:linear-gradient(to right, var(--marigold) var(--p,0%), rgba(255,255,255,0.32) var(--p,0%));
+    touch-action:none; min-width:0;
+  }
+  .vc input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#fff; border:2px solid var(--marigold); }
+  .vc input[type=range]::-moz-range-thumb{ width:9px; height:9px; border-radius:50%; background:#fff; border:2px solid var(--marigold); }
+  .vc-seek{ flex:1 1 auto; }
+  .vc-vol{ width:0; opacity:0; transition:width .2s, opacity .2s; }
+  .vc-sound:hover .vc-vol, .vc-sound:focus-within .vc-vol{ width:54px; opacity:1; margin:0 6px 0 2px; }
+  @media (hover:none){ .vc-vol{ display:none; } }
+  .vc-menu{
+    display:none; position:absolute; right:8px; bottom:44px; width:206px; z-index:3;
+    background:var(--ink); border:1px solid var(--marigold); border-radius:6px; padding:4px 10px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.45); font-size:12px;
+  }
+  .vc-menu.open{ display:block; }
+  .vc-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+    padding:7px 0; border:0; border-top:1px solid rgba(255,255,255,0.12); background:none; color:#fff;
+    font:inherit; text-align:left; text-decoration:none; cursor:pointer;
+  }
+  .vc-menu > .vc-row:first-child{ border-top:0; }
+  .vc-row input[type=checkbox]{ accent-color:var(--marigold); width:16px; height:16px; margin:0; }
+  .vc-speeds{ display:flex; gap:3px; }
+  .vc-speeds button{
+    border:1px solid rgba(255,255,255,0.28); background:none; color:#fff; font:600 10.5px 'IBM Plex Mono', monospace;
+    padding:3px 5px; border-radius:3px; cursor:pointer;
+  }
+  .vc-speeds button.on{ background:var(--marigold); border-color:var(--marigold); color:var(--ink); }
+  .vc button:focus-visible, .vc input:focus-visible, .vc a:focus-visible{ outline:2px solid var(--marigold); outline-offset:1px; }
+
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1100px){
+    .split{ grid-template-columns:1fr; }
+    .card.sticky{ position:static; }
+  }
+  @media (max-width:900px){
+    body{ display:block; }
+    .side{ position:sticky; top:0; z-index:30; height:auto; flex-direction:row; align-items:stretch; overflow:visible; border-bottom:4px solid var(--marigold); }
+    .brand{ display:none; }
+    .conn{ display:none; }
+    .nav{ display:flex; gap:2px; overflow-x:auto; padding:6px 8px; scrollbar-width:none; }
+    .nav::-webkit-scrollbar{ display:none; }
+    .nav-group{ display:flex; gap:2px; padding:0; align-items:center; }
+    .nav-group + .nav-group{ margin-left:6px; padding-left:8px; border-left:1px solid rgba(255,255,255,.18); }
+    .nav-group h3{ display:none; }
+    .nav button{ width:auto; white-space:nowrap; padding:9px 12px; border-left:0; border-bottom:3px solid transparent; border-radius:4px; }
+    .nav button[aria-current="page"]{ border-bottom-color:var(--marigold); }
+    main{ padding:22px 16px 80px; }
+    .panel-head h2{ font-size:24px; }
+    .card{ padding:18px 16px; }
+  }
+  @media (max-width:520px){
+    .row2{ grid-template-columns:1fr; }
+    .dl-row{ flex-direction:column; }
+    .actions .btn{ flex:1 1 100%; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+  }
 </style>
 </head>
+
 <body>
-  <div class="card">
-    <h1>Send an update</h1>
-    <p class="sub">Broadcasts a notification to everyone who has enabled updates.</p>
 
-    <label for="backend">Backend URL</label>
-    <input id="backend" placeholder="https://your-backend.onrender.com" />
-
-    <label for="adminKey">Admin key</label>
-    <input id="adminKey" type="password" placeholder="matches ADMIN_KEY on the server" />
-
-    <label for="title">Title</label>
-    <input id="title" placeholder="e.g. New Maths PYQs uploaded" />
-
-    <label for="body">Message</label>
-    <textarea id="body" placeholder="Short description of the update"></textarea>
-
-    <label for="url">Link to open (optional)</label>
-    <input id="url" placeholder="https://drive.google.com/..." />
-
-    <button id="send">Send notification</button>
-    <div id="status"></div>
+<aside class="side">
+  <div class="brand">
+    <b>Class X Drive</b>
+    <span>Admin console</span>
   </div>
 
-  <div class="card">
-    <h1>Post a Drive update</h1>
-    <p class="sub">Adds an entry to the "Daily updates log" on index.html, and optionally to the scrolling yellow ticker. Can also attach a file, which gets uploaded straight into the GitHub repo.</p>
-
-    <details class="ghsettings">
-      <summary>GitHub connection settings</summary>
-      <label for="ghToken">GitHub token</label>
-      <input id="ghToken" type="password" placeholder="fine-grained token, Contents: read & write" />
-      <p class="hint">Create this at github.com → Settings → Developer settings → Fine-grained tokens. Scope it to only this one repo, permission "Contents: Read and write". Don't share this token — anyone with it can edit the site.</p>
-
-      <label for="ghRepo">Repository (owner/name)</label>
-      <input id="ghRepo" placeholder="jointsecretary79-bot/classx-drive-frontend" />
-
-      <label for="ghBranch">Branch</label>
-      <input id="ghBranch" placeholder="main" />
-    </details>
-
-    <div class="row2">
-      <div>
-        <label for="uDate">Date</label>
-        <input id="uDate" placeholder="e.g. 23 SEP" />
-      </div>
-      <div>
-        <label for="uTime">Time</label>
-        <input id="uTime" placeholder="e.g. 5:31 PM" />
-      </div>
+  <nav class="nav" aria-label="Admin sections">
+    <div class="nav-group">
+      <h3>Publish</h3>
+      <button type="button" data-panel="post"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Post an update</button>
+      <button type="button" data-panel="notify"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>Send notification</button>
     </div>
-
-    <label for="uTitle">Title</label>
-    <input id="uTitle" placeholder="e.g. New Science notes uploaded" />
-
-    <label for="uNote">Note / tag</label>
-    <input id="uNote" placeholder="e.g. SCIENCE CH.4 NOTES" />
-
-    <label for="uUrl">Link (optional — leave blank if attaching a file below)</label>
-    <input id="uUrl" placeholder="https://drive.google.com/..." />
-
-    <label for="uFile">Attach photo(s) and/or a PDF (optional)</label>
-    <input id="uFile" type="file" multiple accept="image/*,.pdf" />
-    <p class="hint">Select as many files as you like. On the app, photos show as a tappable, zoomable gallery; PDFs show as a separate "Open PDF" button — they never get mixed up. All files are stamped with today's date and time. If you don't set a link above, the update's link points to the first file.</p>
-
-    <div class="checkrow">
-      <input id="uTicker" type="checkbox" checked />
-      <label for="uTicker">Show on the home screen ticker banner</label>
+    <div class="nav-group">
+      <h3>Home screen</h3>
+      <button type="button" data-panel="banners"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Banners &amp; videos</button>
+      <button type="button" data-panel="site"><svg viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Ticker &amp; last updated</button>
+      <button type="button" data-panel="folders"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>Subject folders</button>
     </div>
-    <div class="checkrow">
-      <input id="uFlash" type="checkbox" />
-      <label for="uFlash">Make it flash red (urgent alert) — can be turned off anytime by re-saving without this checked</label>
+    <div class="nav-group">
+      <h3>Library</h3>
+      <button type="button" data-panel="updates"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Posted updates</button>
+      <button type="button" data-panel="files"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>Uploaded files</button>
     </div>
-    <div class="checkrow">
-      <input id="uShowList" type="checkbox" checked />
-      <label for="uShowList">Show in the Daily updates log list</label>
+    <div class="nav-group">
+      <h3>Tools</h3>
+      <button type="button" data-panel="downloader"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Photo &amp; video saver</button>
     </div>
-    <div class="checkrow">
-      <input id="uFolderCbse" type="checkbox" />
-      <label for="uFolderCbse">Also file under "CBSE latest official" folder</label>
+    <div class="nav-group">
+      <h3>People</h3>
+      <button type="button" data-panel="users"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17 8l5 5M22 8l-5 5"/></svg>Remove a user</button>
     </div>
-    <div class="checkrow">
-      <input id="uFolderApp" type="checkbox" />
-      <label for="uFolderApp">Also file under "App / website updates" folder</label>
+    <div class="nav-group">
+      <h3>Setup</h3>
+      <button type="button" data-panel="connection"><svg viewBox="0 0 24 24"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0V8zM12 18v4"/></svg>GitHub connection</button>
     </div>
+  </nav>
 
-    <button id="postUpdate">Post update</button>
-    <div id="uStatus"></div>
-    <p class="hint">Tip: an update needs at least one of "ticker" or "list" checked, or it won't be visible anywhere. Everything here — including which folders it's filed under — can be changed later in "Manage posted updates" below, without deleting and re-posting.</p>
+  <div class="conn" id="connPill" data-state="none" role="status">
+    <i></i><span id="connText">GitHub not connected</span>
   </div>
+</aside>
 
-  <div class="card">
-    <h1>Site settings</h1>
-    <p class="sub">Controls the home-screen ticker banner (a simple downward-stacking list — no layout choice needed) and the "Last updated" line shown at the bottom of every tab. Uses the same GitHub connection as above.</p>
+<main>
 
-    <label for="sTickerMode">Ticker content</label>
-    <select id="sTickerMode">
-      <option value="auto">Automatic — show whatever's posted with "ticker" checked (default)</option>
-      <option value="custom">Custom message — write your own text below</option>
-      <option value="hidden">Hidden — remove the ticker banner from the home screen entirely</option>
-    </select>
-    <p class="hint">The built-in "Registration for Class X Board Exam" text from the original file has been removed — the ticker is empty until you post something with "ticker" checked below, or write a custom message here.</p>
+  <!-- ================= Post an update ================= -->
+  <section class="panel" id="p-post" hidden>
+    <header class="panel-head">
+      <h2>Post an update</h2>
+      <p>Adds an entry to the Daily updates log on the app, and optionally to the yellow ticker. Photos and PDFs are uploaded straight into the GitHub repo.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <h3 class="group-title">What happened</h3>
+        <div class="row2">
+          <div><label for="uDate">Date</label><input id="uDate" placeholder="e.g. 23 SEP" /></div>
+          <div><label for="uTime">Time</label><input id="uTime" placeholder="e.g. 5:31 PM" /></div>
+        </div>
+        <label for="uTitle">Title</label>
+        <input id="uTitle" placeholder="e.g. New Science notes uploaded" />
+        <label for="uNote">Note / tag</label>
+        <input id="uNote" placeholder="e.g. SCIENCE CH.4 NOTES" />
 
-    <div id="sCustomTickerWrap" style="display:none;">
-      <label for="sTickerMsg1">Custom message — line 1</label>
-      <input id="sTickerMsg1" placeholder="e.g. School reopens 1 OCT — attendance compulsory" />
-      <label for="sTickerMsg2">Custom message — line 2 (optional)</label>
-      <input id="sTickerMsg2" placeholder="Leave blank to show only one message" />
-      <div class="checkrow">
-        <input id="sTickerFlash" type="checkbox" />
-        <label for="sTickerFlash">Flash these red</label>
+        <h3 class="group-title">Link and files</h3>
+        <label for="uUrl">Link (optional — leave blank if attaching a file)</label>
+        <input id="uUrl" placeholder="https://drive.google.com/..." />
+        <label for="uFile">Photos and/or a PDF (optional)</label>
+        <input id="uFile" type="file" multiple accept="image/*,.pdf" />
+        <p class="hint">Pick as many as you like. Photos show as a tappable, zoomable gallery; PDFs get their own “Open PDF” button. Every file is stamped with today’s date and time. If you don’t set a link, the update points to the first file.</p>
+
+        <h3 class="group-title">Where it shows</h3>
+        <div class="opts">
+          <label class="opt"><input id="uTicker" type="checkbox" checked /><span><span class="opt-title">Home screen ticker</span><span class="opt-desc">Adds a row to the yellow notification strip.</span></span></label>
+          <label class="opt"><input id="uFlash" type="checkbox" /><span><span class="opt-title">Flash red (urgent alert)</span><span class="opt-desc">Turn off anytime by re-saving the update without this checked.</span></span></label>
+          <label class="opt"><input id="uShowList" type="checkbox" checked /><span><span class="opt-title">Daily updates log</span><span class="opt-desc">Lists it in the Updates tab.</span></span></label>
+          <label class="opt"><input id="uFolderCbse" type="checkbox" /><span><span class="opt-title">“CBSE latest official” folder</span><span class="opt-desc">Also files it under that folder.</span></span></label>
+          <label class="opt"><input id="uFolderApp" type="checkbox" /><span><span class="opt-title">“App / website updates” folder</span><span class="opt-desc">Also files it under that folder.</span></span></label>
+        </div>
+        <p class="hint">Check at least “ticker” or “log”, or the update won’t be visible. You can change all of this later in Posted updates.</p>
+
+        <div class="actions"><button class="btn btn-primary" id="postUpdate">Post update</button></div>
+        <div id="uStatus" class="status"></div>
       </div>
     </div>
+  </section>
 
-    <div class="row2">
-      <div>
-        <label for="sDate">Last updated — date</label>
-        <input id="sDate" placeholder="e.g. 23 SEP 2026" />
+  <!-- ================= Send notification ================= -->
+  <section class="panel" id="p-notify" hidden>
+    <header class="panel-head">
+      <h2>Send notification</h2>
+      <p>Broadcasts a push notification to everyone who has enabled updates.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <h3 class="group-title">Server</h3>
+        <div class="row2">
+          <div><label for="backend">Backend URL</label><input id="backend" placeholder="https://your-backend.onrender.com" /></div>
+          <div><label for="adminKey">Admin key</label><input id="adminKey" type="password" placeholder="matches ADMIN_KEY on the server" /></div>
+        </div>
+        <h3 class="group-title">Message</h3>
+        <label for="title">Title</label>
+        <input id="title" placeholder="e.g. New Maths PYQs uploaded" />
+        <label for="body">Message</label>
+        <textarea id="body" placeholder="Short description of the update"></textarea>
+        <label for="url">Link to open (optional)</label>
+        <input id="url" placeholder="https://drive.google.com/..." />
+        <div class="actions"><button class="btn btn-primary" id="send">Send notification</button></div>
+        <div id="status" class="status"></div>
       </div>
-      <div>
-        <label for="sTime">Last updated — time</label>
-        <input id="sTime" placeholder="e.g. 5:31 PM IST" />
+    </div>
+  </section>
+
+  <!-- ================= Banners & videos ================= -->
+  <section class="panel" id="p-banners" hidden>
+    <header class="panel-head">
+      <h2>Banners &amp; videos</h2>
+      <p>Images and videos shown on the home screen above the notification strip. Several items slide automatically; a playing video holds its slide until it finishes.</p>
+    </header>
+
+    <div class="split">
+      <div class="stack">
+        <div class="card">
+          <h3 class="card-title">Add to the home screen</h3>
+          <p class="card-sub">Choose what you’re adding, then check the preview on the right.</p>
+
+          <div class="seg" id="bType" role="group" aria-label="Banner type">
+            <button type="button" data-type="image" aria-pressed="true">Image</button>
+            <button type="button" data-type="video" aria-pressed="false">Video file</button>
+            <button type="button" data-type="link" aria-pressed="false">Video link</button>
+          </div>
+
+          <div id="bImageWrap">
+            <label for="bFile">Banner image</label>
+            <input id="bFile" type="file" accept="image/*" />
+            <p class="hint">Best size: landscape 16:9 (e.g. 1280×720). Large images are shrunk automatically before upload.</p>
+          </div>
+          <div id="bVideoWrap" hidden>
+            <label for="bVideoFile">Video file</label>
+            <input id="bVideoFile" type="file" accept="video/*" />
+            <p class="hint">MP4 (H.264) plays on every phone. Up to 30 MB — short clips load fastest. For longer videos, host them elsewhere and use “Video link”.</p>
+          </div>
+          <div id="bLinkWrap" hidden>
+            <label for="bVideoUrl">Video link</label>
+            <input id="bVideoUrl" type="url" placeholder="https://example.com/clip.mp4" />
+            <p class="hint">A direct link to an .mp4 or .webm file. Page links (YouTube, Instagram) won’t play here.</p>
+          </div>
+          <div id="bCoverWrap" hidden>
+            <label for="bCover">Cover image (optional)</label>
+            <input id="bCover" type="file" accept="image/*" />
+            <p class="hint">Shown before the video plays. For uploaded videos, the first frame is used if you leave this empty.</p>
+          </div>
+
+          <label for="bCaption">Caption (optional)</label>
+          <input id="bCaption" placeholder="e.g. Thought of the day" maxlength="80" />
+          <label for="bLink">Link when tapped (optional)</label>
+          <input id="bLink" placeholder="https://…" />
+          <p class="hint" id="bLinkHint">Leave blank to just enlarge the image.</p>
+
+          <div id="bPlayWrap" hidden>
+            <h3 class="group-title">Playback on the home screen</h3>
+            <div class="opts">
+              <label class="opt"><input id="bAutoplay" type="checkbox" checked /><span><span class="opt-title">Play automatically</span><span class="opt-desc">Starts when the banner scrolls into view, muted (phones require this). Students can unmute.</span></span></label>
+              <label class="opt"><input id="bMuted" type="checkbox" checked disabled /><span><span class="opt-title">Start muted</span><span class="opt-desc">Always on while autoplay is on. Turn autoplay off to start with sound.</span></span></label>
+              <label class="opt"><input id="bLoop" type="checkbox" /><span><span class="opt-title">Repeat the video</span><span class="opt-desc">A repeating video no longer holds the slideshow in place.</span></span></label>
+            </div>
+            <p class="hint">Students always get play / pause, a seek bar, sound, speed and full screen in the video’s controls.</p>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" id="bPreview" type="button">Preview on home screen</button>
+            <button class="btn btn-primary" id="addBanner" type="button">Upload banner</button>
+          </div>
+          <div id="bStatus" class="status"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Current banners</h3>
+          <p class="card-sub">Preview, edit or remove what’s on the home screen now.</p>
+          <div class="actions" style="margin-top:0;">
+            <button class="btn btn-secondary load-btn" id="loadBanners" type="button">Load current banners</button>
+            <button class="btn btn-secondary load-btn" id="previewAllBanners" type="button" hidden>Preview all as slideshow</button>
+          </div>
+          <div id="bListStatus" class="status"></div>
+          <div id="bannersList"></div>
+        </div>
+      </div>
+
+      <div class="card sticky">
+        <h3 class="card-title">Live preview</h3>
+        <p class="card-sub">Updates as you choose a file and change settings. Try the video controls.</p>
+        <div id="bLive"></div>
       </div>
     </div>
+  </section>
 
-    <button id="saveSettings">Save site settings</button>
-    <div id="sStatus"></div>
-  </div>
+  <!-- ================= Ticker & site settings ================= -->
+  <section class="panel" id="p-site" hidden>
+    <header class="panel-head">
+      <h2>Ticker &amp; last updated</h2>
+      <p>Controls the home-screen ticker and the “Last updated” line shown at the bottom of every tab.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <h3 class="group-title">Ticker</h3>
+        <label for="sTickerMode">What the ticker shows</label>
+        <select id="sTickerMode">
+          <option value="auto">Automatic — whatever’s posted with “ticker” checked (default)</option>
+          <option value="custom">Custom message — write your own text below</option>
+          <option value="hidden">Hidden — remove the ticker from the home screen</option>
+        </select>
+        <p class="hint">The ticker stays empty until you post something with “ticker” checked, or write a custom message here.</p>
 
-  <div class="card">
-    <h1>Home banners</h1>
-    <p class="sub">Rectangle images (Thought of the Day, events, etc.) shown on the home screen just above the NOTIFICATION strip. Several images slide automatically. Uses the same GitHub connection as above.</p>
+        <div id="sCustomTickerWrap" style="display:none;">
+          <label for="sTickerMsg1">Custom message — line 1</label>
+          <input id="sTickerMsg1" placeholder="e.g. School reopens 1 OCT — attendance compulsory" />
+          <label for="sTickerMsg2">Custom message — line 2 (optional)</label>
+          <input id="sTickerMsg2" placeholder="Leave blank to show only one message" />
+          <div class="opts" style="margin-top:12px;">
+            <label class="opt"><input id="sTickerFlash" type="checkbox" /><span><span class="opt-title">Flash these red</span></span></label>
+          </div>
+        </div>
 
-    <label for="bFile">Banner image</label>
-    <input id="bFile" type="file" accept="image/*" />
-    <p class="hint">Best size: landscape 16:9 (e.g. 1280×720). Large images are shrunk automatically before upload.</p>
-    <label for="bCaption">Caption (optional)</label>
-    <input id="bCaption" placeholder="e.g. Thought of the day" maxlength="80" />
-    <label for="bLink">Link when tapped (optional)</label>
-    <input id="bLink" placeholder="Leave blank to just enlarge the image" />
-    <button id="addBanner">Upload banner</button>
-    <div id="bStatus" class="hint"></div>
+        <h3 class="group-title">“Last updated” line</h3>
+        <div class="row2">
+          <div><label for="sDate">Date</label><input id="sDate" placeholder="e.g. 23 SEP 2026" /></div>
+          <div><label for="sTime">Time</label><input id="sTime" placeholder="e.g. 5:31 PM IST" /></div>
+        </div>
 
-    <button class="load-btn" style="margin-top:16px;" id="loadBanners">Load current banners</button>
-    <div id="bannersList"></div>
-  </div>
-
-  <div class="card">
-    <h1>Manage posted updates</h1>
-    <p class="sub">Edit or remove updates you've already posted — choose exactly where each one should keep showing.</p>
-    <button class="load-btn" id="loadEntries">Load posted updates</button>
-    <div id="entriesStatus" class="hint"></div>
-    <div id="entriesList"></div>
-  </div>
-
-  <div class="card">
-    <h1>Manage uploaded files</h1>
-    <p class="sub">Files attached to updates live in the repo's "uploads" folder. Delete anything outdated or wrong here.</p>
-    <button class="load-btn" id="loadFiles">Load uploaded files</button>
-    <div id="filesStatus" class="hint"></div>
-    <div id="filesList"></div>
-  </div>
-
-  <div class="card">
-    <h1>Manage subject folders</h1>
-    <p class="sub">Add extra folders/buttons to the Subjects tab (beyond the built-in ones), or remove ones you added before.</p>
-
-    <label for="fCode">Short code</label>
-    <input id="fCode" placeholder="e.g. SANS" />
-    <label for="fTitle">Title</label>
-    <input id="fTitle" placeholder="e.g. Sanskrit" />
-    <label for="fPeriod">Label (optional)</label>
-    <input id="fPeriod" placeholder="e.g. Period 8" />
-    <label for="fUrl">Link</label>
-    <input id="fUrl" placeholder="https://drive.google.com/drive/folders/..." />
-    <button id="addFolder">Add folder</button>
-    <div id="folderStatus" class="hint"></div>
-
-    <button class="load-btn" style="margin-top:16px;" id="loadFolders">Load existing added folders</button>
-    <div id="foldersList"></div>
-  </div>
-
-  <div class="card" id="removeUserCard">
-    <h1>Remove a user</h1>
-    <p class="sub">Type a student's email to block that profile. A blocked Gmail can't sign in or register again, and is signed out the next time they open the site. You can restore anyone below.</p>
-
-    <div id="rmAuth">
-      <label>Admin sign-in (the Gmail listed as admin in the Apps Script)</label>
-      <div id="rmGsi"></div>
+        <div class="actions"><button class="btn btn-primary" id="saveSettings">Save site settings</button></div>
+        <div id="sStatus" class="status"></div>
+      </div>
     </div>
-    <p class="hint" id="rmAuthMsg"></p>
+  </section>
 
-    <div id="rmTools" style="display:none;">
-      <p class="hint" id="rmWho" style="margin-top:0;"></p>
-
-      <label for="rmEmail">Student's email</label>
-      <input id="rmEmail" type="email" placeholder="student@gmail.com" autocomplete="off" />
-
-      <label for="rmReason">Reason (optional)</label>
-      <input id="rmReason" placeholder="e.g. Fake profile" maxlength="200" autocomplete="off" />
-
-      <button class="remove-btn" id="rmBtn">Remove user</button>
-      <div id="rmStatus" class="hint"></div>
-
-      <h1 style="font-size:16px; margin:26px 0 0;">Blocked users</h1>
-      <div id="rmList"></div>
-      <button class="load-btn" style="margin-top:14px;" id="rmRefresh">Refresh blocked list</button>
+  <!-- ================= Subject folders ================= -->
+  <section class="panel" id="p-folders" hidden>
+    <header class="panel-head">
+      <h2>Subject folders</h2>
+      <p>Add extra folders (buttons) to the Subjects tab beyond the built-in ones, or remove ones you added before.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <h3 class="card-title">Add a folder</h3>
+        <div class="row2">
+          <div><label for="fCode">Short code</label><input id="fCode" placeholder="e.g. SANS" /></div>
+          <div><label for="fTitle">Title</label><input id="fTitle" placeholder="e.g. Sanskrit" /></div>
+        </div>
+        <label for="fPeriod">Label (optional)</label>
+        <input id="fPeriod" placeholder="e.g. Period 8" />
+        <label for="fUrl">Link</label>
+        <input id="fUrl" placeholder="https://drive.google.com/drive/folders/..." />
+        <div class="actions"><button class="btn btn-primary" id="addFolder">Add folder</button></div>
+        <div id="folderStatus" class="status"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Folders you’ve added</h3>
+        <div class="actions" style="margin-top:12px;"><button class="btn btn-secondary load-btn" id="loadFolders">Load added folders</button></div>
+        <div id="foldersList"></div>
+      </div>
     </div>
+  </section>
+
+  <!-- ================= Posted updates ================= -->
+  <section class="panel" id="p-updates" hidden>
+    <header class="panel-head">
+      <h2>Posted updates</h2>
+      <p>Edit or remove updates you’ve already posted — choose exactly where each one keeps showing.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <div class="actions" style="margin-top:0;"><button class="btn btn-secondary load-btn" id="loadEntries">Load posted updates</button></div>
+        <div id="entriesStatus" class="status"></div>
+        <div id="entriesList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Uploaded files ================= -->
+  <section class="panel" id="p-files" hidden>
+    <header class="panel-head">
+      <h2>Uploaded files</h2>
+      <p>Files attached to updates live in the repo’s “uploads” folder. Delete anything outdated or wrong here.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <div class="actions" style="margin-top:0;"><button class="btn btn-secondary load-btn" id="loadFiles">Load uploaded files</button></div>
+        <div id="filesStatus" class="status"></div>
+        <div id="filesList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Photo & video saver ================= -->
+  <section class="panel" id="p-downloader" hidden>
+    <header class="panel-head">
+      <h2>Photo &amp; video saver</h2>
+      <p>Bring in a photo or video you copied from another website, then download it or send it straight to a home banner or an update.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <div class="drop" id="dlDrop" tabindex="0">
+          <strong>Paste or drop it here</strong>
+          Press Ctrl+V (⌘V on Mac) after copying a photo, or drag a photo or video in from another tab.
+        </div>
+
+        <label for="dlUrl">Or paste a link</label>
+        <div class="dl-row">
+          <input id="dlUrl" type="url" placeholder="https://example.com/photo.jpg or …/clip.mp4" autocomplete="off" />
+          <button class="btn btn-primary" id="dlGo" type="button">Get media</button>
+        </div>
+        <p class="hint">Use a direct link to the file: right-click the photo or video on the site and choose “Copy image address” or “Copy video address”. Only save media you have permission to reuse.</p>
+
+        <div id="dlStatus" class="status"></div>
+        <div id="dlCands" class="cand-list"></div>
+        <div id="dlResult"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Proxy for blocked sites</h3>
+        <p class="card-sub">Many sites don’t let other web pages download their files. If you run your own server that fetches a link and returns it with CORS enabled, enter its address here and blocked links will go through it.</p>
+        <label for="dlProxy">Proxy address (optional)</label>
+        <input id="dlProxy" placeholder="https://your-backend.onrender.com/api/fetch?url=" />
+        <p class="hint">The link you paste is added to the end, URL-encoded. Leave blank to download directly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Remove a user ================= -->
+  <section class="panel" id="p-users" hidden>
+    <header class="panel-head">
+      <h2>Remove a user</h2>
+      <p>Type a student’s email to block that profile. A blocked Gmail can’t sign in or register again, and is signed out the next time they open the site. You can restore anyone below.</p>
+    </header>
+    <div class="stack">
+      <div class="card" id="removeUserCard">
+        <div id="rmAuth">
+          <label>Admin sign-in (the Gmail listed as admin in the Apps Script)</label>
+          <div id="rmGsi"></div>
+        </div>
+        <p class="hint" id="rmAuthMsg"></p>
+
+        <div id="rmTools" style="display:none;">
+          <p class="hint" id="rmWho" style="margin-top:0;"></p>
+
+          <h3 class="group-title">Block a profile</h3>
+          <label for="rmEmail">Student’s email</label>
+          <input id="rmEmail" type="email" placeholder="student@gmail.com" autocomplete="off" />
+          <label for="rmReason">Reason (optional)</label>
+          <input id="rmReason" placeholder="e.g. Fake profile" maxlength="200" autocomplete="off" />
+          <div class="actions"><button class="btn btn-danger" id="rmBtn">Remove user</button></div>
+          <div id="rmStatus" class="hint"></div>
+
+          <h3 class="group-title">Blocked users</h3>
+          <div id="rmList"></div>
+          <div class="actions"><button class="btn btn-secondary load-btn" id="rmRefresh">Refresh blocked list</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GitHub connection ================= -->
+  <section class="panel" id="p-connection" hidden>
+    <header class="panel-head">
+      <h2>GitHub connection</h2>
+      <p>One connection powers posting, banners, folders and file management. It’s saved in this browser only.</p>
+    </header>
+    <div class="stack">
+      <div class="card">
+        <label for="ghToken">GitHub token</label>
+        <input id="ghToken" type="password" placeholder="fine-grained token, Contents: read &amp; write" autocomplete="off" />
+        <p class="hint">Create it at github.com → Settings → Developer settings → Fine-grained tokens. Limit it to this one repo with “Contents: Read and write”. Don’t share it — anyone with it can edit the site.</p>
+        <div class="row2">
+          <div><label for="ghRepo">Repository (owner/name)</label><input id="ghRepo" placeholder="jointsecretary79-bot/classx-drive-frontend" /></div>
+          <div><label for="ghBranch">Branch</label><input id="ghBranch" placeholder="main" /></div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" id="ghTest" type="button">Save and test connection</button></div>
+        <div id="ghStatus" class="status"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Home screen preview (phone-size, same player as the real app) -->
+<dialog class="pv" id="pvDialog" aria-label="Home screen preview">
+  <div class="pv-bar">
+    <div><b id="pvTitle">Home screen preview</b><span>Shown at phone width, like the app</span></div>
+    <button class="icon-btn" id="pvClose" type="button" aria-label="Close preview">×</button>
   </div>
+  <div class="pv-phone">
+    <div class="pv-appbar">Class X Drive<span>HOME</span></div>
+    <div class="pv-hero">Everything for Class X, in one place</div>
+    <div class="banner-wrap"><div class="banner-track" id="pvTrack"></div><div class="banner-dots" id="pvDots"></div></div>
+    <div class="pv-strip">NOTIFICATION</div>
+    <div class="pv-row">23 SEP — Your latest update shows here</div>
+    <div class="pv-rest"><i style="width:40%"></i><i></i><i style="width:80%"></i></div>
+  </div>
+</dialog>
+
 
 <script>
   const gh = (id) => document.getElementById(id);
@@ -330,7 +791,7 @@
     const repoFull = gh('ghRepo').value.trim();
     const branch = gh('ghBranch').value.trim() || 'main';
     if (!token || !repoFull) {
-      if (statusEl) statusEl.textContent = 'Fill in the GitHub token and repository above first.';
+      if (statusEl) statusEl.textContent = 'Fill in the GitHub token and repository first (Setup → GitHub connection).';
       return null;
     }
     const [owner, repo] = repoFull.split('/');
@@ -417,7 +878,7 @@
       const newContent = b64EncodeUnicode(JSON.stringify(entries, null, 2));
       await ghPutFile(owner, repo, 'data/updates.json', branch, token, newContent, `Post update: ${title}`, sha);
 
-      status.textContent = 'Posted! It will appear on index.html within a minute or two.';
+      status.textContent = 'Posted! It will appear on the app within a minute or two.';
       gh('uTitle').value = '';
       gh('uNote').value = '';
       gh('uUrl').value = '';
@@ -803,10 +1264,360 @@
     }
   });
 </script>
+<script>
+  // ===== Home banner carousel (images + videos with play / pause / sound / settings) =====
+  // Used by the home screen and by the admin preview, so both always look and behave the same.
+  (function () {
+    const PREF_KEY = 'classx_banner_video_prefs';
+    const ICON = {
+      play:  '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+      pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+      vol:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
+      mute:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/><path d="m22 9-6 6M16 9l6 6"/></svg>',
+      cog:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg>'
+    };
+
+    function loadPrefs() {
+      try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}') || {}; } catch (e) { return {}; }
+    }
+    function fmt(t) {
+      if (!isFinite(t)) return '0:00';
+      const m = Math.floor(t / 60), s = Math.floor(t % 60);
+      return m + ':' + String(s).padStart(2, '0');
+    }
+    const safeUrl = (u) => /^https?:\/\//i.test(u || '') ? u : '';
+
+    function buildImageSlide(b, i, openImage) {
+      const slide = document.createElement('button');
+      slide.type = 'button';
+      slide.className = 'banner-slide';
+      slide.setAttribute('aria-label', b.caption || 'Banner ' + (i + 1));
+      const img = document.createElement('img');
+      img.src = b.url; img.alt = b.caption || ''; img.loading = i === 0 ? 'eager' : 'lazy';
+      slide.appendChild(img);
+      if (b.caption) {
+        const cap = document.createElement('div');
+        cap.className = 'banner-cap'; cap.textContent = b.caption;
+        slide.appendChild(cap);
+      }
+      slide.addEventListener('click', () => {
+        if (b.link) window.open(b.link, '_blank', 'noopener');
+        else if (openImage) openImage(b.url, b.caption || '');
+      });
+      return slide;
+    }
+
+    function buildVideoSlide(b, ctx) {
+      const prefs = ctx.prefs;
+      const autoplay = b.autoplay !== false;
+
+      const slide = document.createElement('div');
+      slide.className = 'banner-slide is-video';
+      slide.setAttribute('role', 'group');
+      slide.setAttribute('aria-label', b.caption ? 'Video: ' + b.caption : 'Video banner');
+
+      const v = document.createElement('video');
+      v.setAttribute('playsinline', ''); v.playsInline = true;
+      v.preload = autoplay ? 'auto' : 'metadata';
+      v.loop = !!b.loop;
+      v.muted = autoplay ? true : b.muted !== false;   // phones only allow autoplay when muted
+      if (b.poster) v.poster = b.poster;
+      v.src = b.url;
+      const speed = prefs.speed || 1;
+      v.defaultPlaybackRate = speed; v.playbackRate = speed;
+      slide.appendChild(v);
+
+      const ui = document.createElement('div');
+      ui.className = 'vc paused';
+      ui.innerHTML =
+        (b.caption ? '<div class="banner-cap top"></div>' : '') +
+        '<div class="vc-hit"></div>' +
+        '<button type="button" class="vc-bigplay" aria-label="Play video">' + ICON.play + '</button>' +
+        '<div class="vc-err" hidden>This video can’t be played right now.</div>' +
+        '<div class="vc-bar">' +
+          '<button type="button" class="vc-btn vc-play" aria-label="Play">' + ICON.play + '</button>' +
+          '<input class="vc-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek">' +
+          '<span class="vc-time">0:00</span>' +
+          '<span class="vc-sound"><button type="button" class="vc-btn vc-snd" aria-label="Sound">' + ICON.vol + '</button>' +
+          '<input class="vc-vol" type="range" min="0" max="100" value="100" aria-label="Volume"></span>' +
+          '<button type="button" class="vc-btn vc-gear" aria-label="Video settings" aria-expanded="false">' + ICON.cog + '</button>' +
+        '</div>' +
+        '<div class="vc-menu" role="group" aria-label="Video settings">' +
+          '<div class="vc-row"><span>Speed</span><span class="vc-speeds">' +
+            [0.5, 1, 1.5, 2].map(s => '<button type="button" data-speed="' + s + '">' + s + '×</button>').join('') +
+          '</span></div>' +
+          '<label class="vc-row"><span>Repeat</span><input type="checkbox" class="vc-loop"></label>' +
+          '<label class="vc-row"><span>Autoplay on this device</span><input type="checkbox" class="vc-auto"></label>' +
+          '<button type="button" class="vc-row vc-fs"><span>Full screen</span></button>' +
+          (safeUrl(b.link) ? '<a class="vc-row vc-open" target="_blank" rel="noopener"><span>Open link</span></a>' : '') +
+        '</div>';
+      slide.appendChild(ui);
+
+      const q = (s) => ui.querySelector(s);
+      const hit = q('.vc-hit'), big = q('.vc-bigplay'), playBtn = q('.vc-play'), seek = q('.vc-seek'),
+            time = q('.vc-time'), snd = q('.vc-snd'), vol = q('.vc-vol'), gear = q('.vc-gear'),
+            menu = q('.vc-menu'), errBox = q('.vc-err');
+      if (b.caption) q('.banner-cap').textContent = b.caption;
+      if (safeUrl(b.link)) q('.vc-open').href = b.link;
+
+      // ---- play / pause
+      const toggle = () => {
+        if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause();
+      };
+      let idleT;
+      const wake = () => {
+        ui.classList.remove('idle'); clearTimeout(idleT);
+        if (!v.paused && !menu.classList.contains('open')) idleT = setTimeout(() => ui.classList.add('idle'), 2600);
+      };
+      const syncPlay = () => {
+        const playing = !v.paused;
+        ui.classList.toggle('paused', !playing);
+        playBtn.innerHTML = playing ? ICON.pause : ICON.play;
+        playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+        big.setAttribute('aria-label', playing ? 'Pause video' : 'Play video');
+      };
+      v.addEventListener('play', () => { errBox.hidden = true; syncPlay(); wake(); });
+      v.addEventListener('pause', () => { syncPlay(); clearTimeout(idleT); ui.classList.remove('idle'); });
+      v.addEventListener('ended', () => { syncPlay(); if (ctx.onEnded) ctx.onEnded(); });
+      v.addEventListener('error', () => { errBox.hidden = false; syncPlay(); });
+      ['pointermove', 'pointerdown', 'keydown', 'focusin'].forEach(ev => ui.addEventListener(ev, wake));
+      const closeMenu = () => { menu.classList.remove('open'); gear.setAttribute('aria-expanded', 'false'); wake(); };
+      hit.addEventListener('click', () => { if (menu.classList.contains('open')) { closeMenu(); return; } toggle(); });
+      big.addEventListener('click', toggle);
+      playBtn.addEventListener('click', toggle);
+
+      // ---- progress
+      let seeking = false;
+      const setFill = (el) => el.style.setProperty('--p', (el.value / el.max * 100) + '%');
+      const upd = () => {
+        const d = v.duration;
+        if (!seeking && isFinite(d) && d > 0) { seek.value = String(Math.round(v.currentTime / d * 1000)); setFill(seek); }
+        time.textContent = fmt(v.currentTime) + ' / ' + fmt(d);
+      };
+      v.addEventListener('timeupdate', upd);
+      v.addEventListener('loadedmetadata', upd);
+      seek.addEventListener('input', () => {
+        seeking = true; setFill(seek);
+        if (isFinite(v.duration)) { v.currentTime = seek.value / 1000 * v.duration; upd(); }
+      });
+      seek.addEventListener('change', () => { seeking = false; });
+      setFill(seek);
+
+      // ---- sound
+      const syncSound = () => {
+        const off = v.muted || v.volume === 0;
+        snd.innerHTML = off ? ICON.mute : ICON.vol;
+        snd.setAttribute('aria-label', off ? 'Unmute' : 'Mute');
+        vol.value = String(off ? 0 : Math.round(v.volume * 100)); setFill(vol);
+      };
+      v.addEventListener('volumechange', syncSound);
+      snd.addEventListener('click', () => {
+        if (v.muted || v.volume === 0) { v.muted = false; if (v.volume === 0) v.volume = 0.7; }
+        else v.muted = true;
+      });
+      vol.addEventListener('input', () => { v.volume = vol.value / 100; v.muted = v.volume === 0; });
+      syncSound();
+
+      // ---- settings menu
+      const loopBox = q('.vc-loop'), autoBox = q('.vc-auto');
+      const syncSpeed = () => ui.querySelectorAll('.vc-speeds button').forEach(btn =>
+        btn.classList.toggle('on', Number(btn.dataset.speed) === v.playbackRate));
+      loopBox.checked = v.loop;
+      autoBox.checked = prefs.autoplay !== false;
+      syncSpeed();
+      gear.addEventListener('click', () => {
+        const open = !menu.classList.contains('open');
+        menu.classList.toggle('open', open);
+        gear.setAttribute('aria-expanded', String(open));
+        if (open) { ui.classList.remove('idle'); clearTimeout(idleT); } else wake();
+      });
+      ui.querySelectorAll('.vc-speeds button').forEach(btn => btn.addEventListener('click', () => {
+        const s = Number(btn.dataset.speed);
+        v.defaultPlaybackRate = s; v.playbackRate = s; prefs.speed = s; ctx.save(); syncSpeed();
+      }));
+      loopBox.addEventListener('change', () => { v.loop = loopBox.checked; });
+      autoBox.addEventListener('change', () => { prefs.autoplay = autoBox.checked; ctx.save(); });
+      q('.vc-fs').addEventListener('click', () => {
+        closeMenu();
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (slide.requestFullscreen) slide.requestFullscreen().catch(() => {});
+        else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();   // iPhone Safari
+      });
+      const outside = (e) => { if (menu.classList.contains('open') && !menu.contains(e.target) && !gear.contains(e.target)) closeMenu(); };
+      document.addEventListener('pointerdown', outside);
+      ctx.cleanups.push(() => document.removeEventListener('pointerdown', outside));
+
+      slide._vc = {
+        video: v,
+        isPlaying: () => !v.paused && !v.ended,
+        pause: () => v.pause(),
+        autoStart: () => {
+          if (!autoplay || prefs.autoplay === false) return;
+          const p = v.play();
+          if (p && p.catch) p.catch(() => { v.muted = true; const r = v.play(); if (r && r.catch) r.catch(() => {}); });
+        }
+      };
+      return slide;
+    }
+
+    // opts: { items, track, dots, openImage(url, caption), persist (default true), advanceMs }
+    window.mountBannerCarousel = function (opts) {
+      const items = opts.items || [];
+      const track = opts.track, dots = opts.dots;
+      const persist = opts.persist !== false;
+      const prefs = persist ? loadPrefs() : {};
+      const cleanups = [];
+      const slides = [];
+      let idx = 0, held = false, timer = null;
+
+      track.innerHTML = ''; if (dots) dots.innerHTML = '';
+      const goTo = (n) => { idx = n; track.scrollTo({ left: (track.clientWidth + 10) * n, behavior: 'smooth' }); };
+      const next = () => goTo((idx + 1) % items.length);
+      const ctx = {
+        prefs, cleanups,
+        save: () => { if (persist) { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) {} } },
+        onEnded: () => { if (items.length > 1 && !held) next(); }
+      };
+
+      items.forEach((b, i) => {
+        const s = b.type === 'video' ? buildVideoSlide(b, ctx) : buildImageSlide(b, i, opts.openImage);
+        slides.push(s); track.appendChild(s);
+        if (dots) { const d = document.createElement('span'); if (i === 0) d.className = 'on'; dots.appendChild(d); }
+      });
+      if (dots) dots.style.display = items.length > 1 ? '' : 'none';
+
+      // play a video when its slide is on screen, pause it when it leaves (or the Home tab is hidden)
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+          const vc = en.target._vc; if (!vc) return;
+          if (en.isIntersecting) vc.autoStart(); else vc.pause();
+        }), { threshold: 0.6 });
+        slides.forEach(s => { if (s._vc) io.observe(s); });
+        cleanups.push(() => io.disconnect());
+      }
+      const onVis = () => { if (document.hidden) slides.forEach(s => s._vc && s._vc.pause()); };
+      document.addEventListener('visibilitychange', onVis);
+      cleanups.push(() => document.removeEventListener('visibilitychange', onVis));
+
+      if (items.length > 1) {
+        const dotEls = dots ? Array.from(dots.children) : [];
+        track.addEventListener('scroll', () => {
+          const n = Math.round(track.scrollLeft / (track.clientWidth + 10));
+          idx = n;
+          dotEls.forEach((d, k) => d.classList.toggle('on', k === n));
+        }, { passive: true });
+        ['touchstart', 'mousedown'].forEach(ev => track.addEventListener(ev, () => { held = true; }, { passive: true }));
+        ['touchend', 'mouseup', 'mouseleave'].forEach(ev => track.addEventListener(ev, () => { setTimeout(() => { held = false; }, 4000); }, { passive: true }));
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          timer = setInterval(() => {
+            // a video that is playing (and not set to repeat) keeps its slide until it finishes
+            const watching = slides.some(s => s._vc && s._vc.isPlaying() && !s._vc.video.loop);
+            if (!held && !watching) next();
+          }, opts.advanceMs || 4500);
+        }
+      }
+
+      return {
+        destroy() {
+          clearInterval(timer);
+          cleanups.forEach(fn => { try { fn(); } catch (e) {} });
+          slides.forEach(s => { if (s._vc) { s._vc.pause(); s._vc.video.removeAttribute('src'); s._vc.video.load(); } });
+        }
+      };
+    };
+  })();
+</script>
 
 <script>
-  // ============ Home banners ============
+  // ============ Navigation ============
+  const PANELS = ['post', 'notify', 'banners', 'site', 'folders', 'updates', 'files', 'downloader', 'users', 'connection'];
+
+  function showPanel(name) {
+    if (!PANELS.includes(name)) name = 'post';
+    PANELS.forEach(p => { gh('p-' + p).hidden = p !== name; });
+    document.querySelectorAll('.nav button').forEach(b => {
+      if (b.dataset.panel === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+    window.scrollTo({ top: 0 });
+    const cur = document.querySelector('.nav button[aria-current]');
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+  document.querySelectorAll('.nav button').forEach(b => b.addEventListener('click', () => showPanel(b.dataset.panel)));
+  window.addEventListener('hashchange', () => showPanel(location.hash.slice(1)));
+
+  // ============ Connection pill + test ============
+  function setConn(state, text) {
+    gh('connPill').dataset.state = state;
+    gh('connText').textContent = text;
+  }
+  (function () {
+    const t = localStorage.getItem('classx_gh_token'), r = localStorage.getItem('classx_gh_repo');
+    if (t && r) setConn('saved', 'GitHub details saved — ' + r);
+  })();
+
+  gh('ghTest').addEventListener('click', async () => {
+    const st = gh('ghStatus');
+    const c = getGhCreds(st);
+    if (!c) { setConn('none', 'GitHub not connected'); return; }
+    st.textContent = 'Testing…';
+    gh('ghTest').disabled = true;
+    try {
+      const res = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}`, {
+        headers: { Authorization: `Bearer ${c.token}`, Accept: 'application/vnd.github+json' },
+      });
+      if (res.status === 401) throw new Error('GitHub rejected the token.');
+      if (res.status === 404) throw new Error('Repository not found, or the token can’t see it.');
+      if (!res.ok) throw new Error('GitHub answered ' + res.status + '.');
+      const d = await res.json();
+      if (d.permissions && !d.permissions.push) throw new Error('This token can read the repo but not write to it. Give it “Contents: Read and write”.');
+      st.textContent = 'Connected to ' + d.full_name + '.';
+      setConn('ok', 'Connected — ' + d.full_name);
+    } catch (e) {
+      st.textContent = 'Error: ' + e.message;
+      setConn('bad', 'GitHub connection failed');
+    } finally {
+      gh('ghTest').disabled = false;
+    }
+  });
+
+  // ============ Status messages pick up colour automatically ============
+  (function () {
+    const errRe = /^(error|fill in|choose|enter |could not|repository should|write at least|pick |that file|the video|please|nothing)/i;
+    const okRe = /^(posted|saved|added|sent|uploaded|removed|deleted|connected|copied|downloaded|ready|attached|\d+ (update|file|folder|banner)\(?s?\)?)/i;
+    function classify(el) {
+      const t = (el.textContent || '').trim();
+      const err = errRe.test(t), busy = !err && /…$/.test(t);
+      el.classList.toggle('is-err', err);
+      el.classList.toggle('is-busy', busy);
+      el.classList.toggle('is-ok', !err && !busy && okRe.test(t));
+    }
+    new MutationObserver((ms) => {
+      const seen = new Set();
+      ms.forEach(m => {
+        const el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
+        if (el && el.matches && el.matches('.status,.e-status') && !seen.has(el)) { seen.add(el); classify(el); }
+      });
+    }).observe(document.body, { childList: true, characterData: true, subtree: true });
+  })();
+
+  // Put a File into an <input type="file"> from code (used by the photo & video saver).
+  function sendFile(inputEl, file) {
+    try {
+      const dt = new DataTransfer(); dt.items.add(file);
+      inputEl.files = dt.files;
+      inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) { console.warn('Could not hand the file over:', e); }
+  }
+</script>
+
+<script>
+  // ============ Home banners (images + videos) ============
   const BANNERS_PATH = 'data/banners.json';
+  const MAX_VIDEO_MB = 30;
+  const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const baseName = (n) => (n || '').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'banner';
+  const rawUrl = (c, path) => `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${c.branch}/${path}`;
 
   // Shrink big photos (max 1280px wide) and save as JPEG so uploads stay light.
   function shrinkImage(file, maxW = 1280) {
@@ -829,6 +1640,31 @@
     });
   }
 
+  // First frame of an uploaded video, as a JPEG (base64) — used as the cover. Resolves null if the browser can't.
+  function captureFrame(file) {
+    return new Promise((resolve) => {
+      const v = document.createElement('video');
+      const u = URL.createObjectURL(file);
+      let finished = false;
+      const done = (b64) => { if (finished) return; finished = true; URL.revokeObjectURL(u); resolve(b64); };
+      v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = u;
+      v.onloadeddata = () => { try { v.currentTime = Math.min(0.5, (v.duration || 1) / 4); } catch (e) { done(null); } };
+      v.onseeked = () => {
+        try {
+          const w = v.videoWidth, h = v.videoHeight;
+          if (!w) { done(null); return; }
+          const sc = Math.min(1, 1280 / w);
+          const c = document.createElement('canvas');
+          c.width = Math.round(w * sc); c.height = Math.round(h * sc);
+          c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+          done(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        } catch (e) { done(null); }
+      };
+      v.onerror = () => done(null);
+      setTimeout(() => done(null), 8000);
+    });
+  }
+
   async function readBanners(owner, repo, branch, token) {
     const existing = await ghGetFile(owner, repo, BANNERS_PATH, branch, token);
     let list = [], sha;
@@ -839,33 +1675,184 @@
     return { list, sha };
   }
 
+  // ---- type switch (Image / Video file / Video link) ----
+  let bType = 'image';
+  function setBannerType(t) {
+    bType = t;
+    document.querySelectorAll('#bType button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.type === t)));
+    gh('bImageWrap').hidden = t !== 'image';
+    gh('bVideoWrap').hidden = t !== 'video';
+    gh('bLinkWrap').hidden = t !== 'link';
+    gh('bCoverWrap').hidden = t === 'image';
+    gh('bPlayWrap').hidden = t === 'image';
+    gh('bLinkHint').textContent = t === 'image'
+      ? 'Leave blank to just enlarge the image.'
+      : 'Tapping a video plays or pauses it. A link here adds an “Open link” option to the video’s settings.';
+    renderLive();
+  }
+  document.querySelectorAll('#bType button').forEach(b => b.addEventListener('click', () => setBannerType(b.dataset.type)));
+
+  function syncMuted() {
+    if (gh('bAutoplay').checked) { gh('bMuted').checked = true; gh('bMuted').disabled = true; }
+    else gh('bMuted').disabled = false;
+  }
+
+  // ---- live preview (same player as the app) ----
+  let liveCtl = null, liveUrls = [];
+  const objUrl = (f) => { const u = URL.createObjectURL(f); liveUrls.push(u); return u; };
+
+  function draftItem() {
+    const caption = gh('bCaption').value.trim(), link = gh('bLink').value.trim();
+    const play = { autoplay: gh('bAutoplay').checked, loop: gh('bLoop').checked, muted: gh('bMuted').checked };
+    if (bType === 'image') {
+      const f = gh('bFile').files[0];
+      return f ? { type: 'image', url: objUrl(f), caption, link } : null;
+    }
+    const cover = gh('bCover').files[0];
+    const poster = cover ? objUrl(cover) : '';
+    if (bType === 'video') {
+      const f = gh('bVideoFile').files[0];
+      return f ? Object.assign({ type: 'video', url: objUrl(f), poster, caption, link }, play) : null;
+    }
+    const u = gh('bVideoUrl').value.trim();
+    return /^https?:\/\//i.test(u) ? Object.assign({ type: 'video', url: u, poster, caption, link }, play) : null;
+  }
+
+  function renderLive() {
+    if (liveCtl) { liveCtl.destroy(); liveCtl = null; }
+    liveUrls.forEach(u => URL.revokeObjectURL(u)); liveUrls = [];
+    const mount = gh('bLive');
+    const item = draftItem();
+    if (!item) {
+      const what = bType === 'image' ? 'an image' : bType === 'video' ? 'a video file' : 'a video link';
+      mount.innerHTML = '<div class="live-empty"><span>Choose ' + what + ' to see it here.</span></div>';
+      return;
+    }
+    mount.innerHTML = '<div class="banner-wrap live-frame"><div class="banner-track"></div><div class="banner-dots"></div></div>';
+    liveCtl = mountBannerCarousel({
+      items: [item], persist: false,
+      track: mount.querySelector('.banner-track'), dots: mount.querySelector('.banner-dots'),
+    });
+  }
+
+  let liveTimer;
+  const liveSoon = () => { clearTimeout(liveTimer); liveTimer = setTimeout(renderLive, 450); };
+  ['bFile', 'bVideoFile', 'bCover'].forEach(id => gh(id).addEventListener('change', renderLive));
+  gh('bVideoUrl').addEventListener('input', liveSoon);
+  gh('bVideoUrl').addEventListener('change', renderLive);
+  gh('bLink').addEventListener('input', liveSoon);
+  gh('bAutoplay').addEventListener('change', () => { syncMuted(); renderLive(); });
+  ['bLoop', 'bMuted'].forEach(id => gh(id).addEventListener('change', renderLive));
+  gh('bCaption').addEventListener('input', () => {
+    const el = gh('bLive').querySelector('.banner-cap'), val = gh('bCaption').value.trim();
+    if (el && val) el.textContent = val; else liveSoon();   // edit in place so the video doesn't restart
+  });
+
+  // ---- preview dialog (full home-screen mock-up) ----
+  let pvCtl = null, pvUrls = [];
+  function openPreview(items, title) {
+    const dlg = gh('pvDialog');
+    if (pvCtl) pvCtl.destroy();
+    gh('pvTitle').textContent = title || 'Home screen preview';
+    pvCtl = mountBannerCarousel({ items, persist: false, track: gh('pvTrack'), dots: gh('pvDots') });
+    if (!dlg.open) dlg.showModal();
+  }
+  gh('pvDialog').addEventListener('close', () => {
+    if (pvCtl) { pvCtl.destroy(); pvCtl = null; }
+    gh('pvTrack').innerHTML = '';
+    pvUrls.forEach(u => URL.revokeObjectURL(u)); pvUrls = [];
+  });
+  gh('pvClose').addEventListener('click', () => gh('pvDialog').close());
+  gh('pvDialog').addEventListener('click', (e) => { if (e.target === gh('pvDialog')) gh('pvDialog').close(); });
+
+  gh('bPreview').addEventListener('click', () => {
+    const keep = liveUrls; liveUrls = [];
+    const item = draftItem();
+    pvUrls = liveUrls; liveUrls = keep;   // dialog keeps its own copies of the file URLs
+    if (!item) {
+      gh('bStatus').textContent = 'Choose ' + (bType === 'image' ? 'an image' : bType === 'video' ? 'a video file' : 'a video link') + ' first.';
+      return;
+    }
+    gh('bStatus').textContent = '';
+    openPreview([item], 'Preview — how it will look');
+  });
+
+  // ---- upload ----
   gh('addBanner').addEventListener('click', async () => {
     const status = gh('bStatus');
     const creds = getGhCreds(status);
     if (!creds) return;
     const { owner, repo, branch, token } = creds;
-    const file = gh('bFile').files[0];
-    if (!file) { status.textContent = 'Choose an image first.'; return; }
     const caption = gh('bCaption').value.trim();
     const link = gh('bLink').value.trim();
 
+    let vidFile = null, vidUrl = '';
+    if (bType === 'image') {
+      if (!gh('bFile').files[0]) { status.textContent = 'Choose an image first.'; return; }
+    } else if (bType === 'video') {
+      vidFile = gh('bVideoFile').files[0];
+      if (!vidFile) { status.textContent = 'Choose a video file first.'; return; }
+      if (!/^video\//.test(vidFile.type) && !/\.(mp4|webm|mov|m4v)$/i.test(vidFile.name)) { status.textContent = 'That file isn’t a video.'; return; }
+      if (vidFile.size > MAX_VIDEO_MB * 1048576) {
+        status.textContent = `The video is ${(vidFile.size / 1048576).toFixed(1)} MB — the limit is ${MAX_VIDEO_MB} MB. Compress it, or host it elsewhere and use “Video link”.`;
+        return;
+      }
+    } else {
+      vidUrl = gh('bVideoUrl').value.trim();
+      if (!/^https?:\/\/\S+$/i.test(vidUrl)) { status.textContent = 'Enter a direct video link that starts with https://'; return; }
+    }
+
     gh('addBanner').disabled = true;
     try {
-      status.textContent = 'Preparing image…';
-      const b64 = await shrinkImage(file);
-      const base = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') || 'banner';
-      const path = `uploads/${Date.now()}-banner-${base}.jpg`;
-      status.textContent = 'Uploading image…';
-      await ghPutFile(owner, repo, path, branch, token, b64, 'Upload banner via admin portal');
-      const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+      const ts = Date.now();
+      let item;
+      if (bType === 'image') {
+        const file = gh('bFile').files[0];
+        status.textContent = 'Preparing image…';
+        const b64 = await shrinkImage(file);
+        const path = `uploads/${ts}-banner-${baseName(file.name)}.jpg`;
+        status.textContent = 'Uploading image…';
+        await ghPutFile(owner, repo, path, branch, token, b64, 'Upload banner via admin portal');
+        item = { type: 'image', url: rawUrl(creds, path), path };
+      } else {
+        item = { type: 'video' };
+        const base = baseName(vidFile ? vidFile.name : 'video');
+        if (vidFile) {
+          const ext = ((vidFile.name.match(/\.(mp4|webm|mov|m4v)$/i) || [])[1] || 'mp4').toLowerCase();
+          status.textContent = 'Reading video…';
+          const b64 = await fileToBase64(vidFile);
+          const path = `uploads/${ts}-banner-${base}.${ext}`;
+          status.textContent = 'Uploading video… this can take a minute';
+          await ghPutFile(owner, repo, path, branch, token, b64, 'Upload banner video via admin portal');
+          item.url = rawUrl(creds, path); item.path = path;
+        } else {
+          item.url = vidUrl;
+        }
+        let posterB64 = null;
+        const cover = gh('bCover').files[0];
+        if (cover) { status.textContent = 'Preparing cover…'; posterB64 = await shrinkImage(cover); }
+        else if (vidFile) { status.textContent = 'Making a cover from the first frame…'; posterB64 = await captureFrame(vidFile); }
+        if (posterB64) {
+          const pp = `uploads/${ts}-banner-${base}-cover.jpg`;
+          status.textContent = 'Uploading cover…';
+          await ghPutFile(owner, repo, pp, branch, token, posterB64, 'Upload banner cover via admin portal');
+          item.poster = rawUrl(creds, pp); item.posterPath = pp;
+        }
+        const autoplay = gh('bAutoplay').checked;
+        item.autoplay = autoplay; item.loop = gh('bLoop').checked; item.muted = autoplay ? true : gh('bMuted').checked;
+      }
+      item.id = `${ts}-${Math.random().toString(36).slice(2, 8)}`;
+      item.caption = caption; item.link = link; item.ts = ts;
 
       status.textContent = 'Saving banner list…';
       const { list, sha } = await readBanners(owner, repo, branch, token);
-      list.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, url, path, caption, link, ts: Date.now() });
+      list.unshift(item);
       await ghPutFile(owner, repo, BANNERS_PATH, branch, token, b64EncodeUnicode(JSON.stringify(list, null, 2)), 'Add banner via admin portal', sha);
 
       status.textContent = 'Uploaded! It will appear on the home screen within a minute or two.';
-      gh('bFile').value = ''; gh('bCaption').value = ''; gh('bLink').value = '';
+      ['bFile', 'bVideoFile', 'bCover'].forEach(id => { gh(id).value = ''; });
+      gh('bVideoUrl').value = ''; gh('bCaption').value = ''; gh('bLink').value = '';
+      renderLive();
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
     } finally {
@@ -873,63 +1860,329 @@
     }
   });
 
+  // ---- current banners ----
+  let loadedBanners = [];
+  const fmtDate = (ts) => new Date(ts || 0).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  function bannerThumb(b) {
+    if (b.type === 'video') {
+      if (b.poster) return `<img class="banner-thumb" src="${escHtml(b.poster)}" alt="">`;
+      return `<video class="banner-thumb" src="${escHtml(b.url)}#t=0.1" preload="metadata" muted playsinline></video>`;
+    }
+    return `<img class="banner-thumb" src="${escHtml(b.url)}" alt="">`;
+  }
+
+  function playSummary(b) {
+    const bits = [b.autoplay === false ? 'tap to play' : 'autoplay (muted)'];
+    if (b.loop) bits.push('repeats');
+    return bits.join(', ');
+  }
+
+  function renderBannerItem(b, creds) {
+    const { owner, repo, branch, token } = creds;
+    const isVideo = b.type === 'video';
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `
+      ${bannerThumb(b)}
+      <div class="li-title" style="margin-top:10px;"><span class="t"></span>${isVideo ? '<span class="badge video">Video</span>' : ''}</div>
+      <div class="li-sub">Added ${fmtDate(b.ts)}${isVideo ? ' · ' + playSummary(b) : ''}</div>
+      <div class="li-actions">
+        <button class="small-btn b-prev" type="button">Preview</button>
+        <button class="small-btn b-edit" type="button">Edit</button>
+        <button class="small-btn danger b-del" type="button">Remove</button>
+      </div>
+      <div class="edit-box" hidden>
+        <label>Caption</label>
+        <input class="b-cap" maxlength="80" value="${escHtml(b.caption)}">
+        <label>Link when tapped</label>
+        <input class="b-lnk" value="${escHtml(b.link)}" placeholder="https://…">
+        ${isVideo ? `<div class="li-checks">
+          <label><input type="checkbox" class="b-auto" ${b.autoplay !== false ? 'checked' : ''}> Autoplay (muted)</label>
+          <label><input type="checkbox" class="b-loop" ${b.loop ? 'checked' : ''}> Repeat</label>
+          <label><input type="checkbox" class="b-mute" ${b.muted !== false ? 'checked' : ''}> Start muted</label>
+        </div>` : ''}
+        <div class="li-actions"><button class="small-btn b-save" type="button">Save changes</button></div>
+      </div>
+      <div class="hint e-status"></div>`;
+    div.querySelector('.t').textContent = b.caption || '(no caption)';
+    const st = div.querySelector('.e-status');
+    const box = div.querySelector('.edit-box');
+
+    if (isVideo) {
+      const auto = div.querySelector('.b-auto'), mute = div.querySelector('.b-mute');
+      const sync = () => { if (auto.checked) { mute.checked = true; mute.disabled = true; } else mute.disabled = false; };
+      auto.addEventListener('change', sync); sync();
+    }
+
+    div.querySelector('.b-prev').addEventListener('click', () => openPreview([b], b.caption || 'Banner preview'));
+    div.querySelector('.b-edit').addEventListener('click', () => { box.hidden = !box.hidden; });
+
+    div.querySelector('.b-save').addEventListener('click', async () => {
+      st.textContent = 'Saving…';
+      try {
+        const fresh = await readBanners(owner, repo, branch, token);
+        const target = fresh.list.find(x => x.id === b.id);
+        if (!target) throw new Error('This banner was already removed.');
+        target.caption = div.querySelector('.b-cap').value.trim();
+        target.link = div.querySelector('.b-lnk').value.trim();
+        if (isVideo) {
+          const a = div.querySelector('.b-auto').checked;
+          target.autoplay = a; target.loop = div.querySelector('.b-loop').checked;
+          target.muted = a ? true : div.querySelector('.b-mute').checked;
+        }
+        await ghPutFile(owner, repo, BANNERS_PATH, branch, token, b64EncodeUnicode(JSON.stringify(fresh.list, null, 2)), 'Edit banner via admin portal', fresh.sha);
+        Object.assign(b, target);
+        div.querySelector('.t').textContent = b.caption || '(no caption)';
+        div.querySelector('.li-sub').textContent = `Added ${fmtDate(b.ts)}${isVideo ? ' · ' + playSummary(b) : ''}`;
+        box.hidden = true;
+        st.textContent = 'Saved.';
+      } catch (err) { st.textContent = `Error: ${err.message}`; }
+    });
+
+    const del = div.querySelector('.b-del');
+    del.addEventListener('click', async () => {
+      if (!confirm('Remove this banner from the home screen?')) return;
+      del.disabled = true; st.textContent = 'Removing…';
+      try {
+        // 1. take it out of the list (re-read first so nothing else is overwritten)
+        const fresh = await readBanners(owner, repo, branch, token);
+        const next = fresh.list.filter(x => x.id !== b.id);
+        await ghPutFile(owner, repo, BANNERS_PATH, branch, token, b64EncodeUnicode(JSON.stringify(next, null, 2)), 'Remove banner via admin portal', fresh.sha);
+        // 2. delete its files too (best effort)
+        for (const p of [b.path, b.posterPath].filter(Boolean)) {
+          try {
+            const f = await ghGetFile(owner, repo, p, branch, token);
+            if (f) await ghDeleteFile(owner, repo, p, branch, token, f.sha, 'Delete banner file via admin portal');
+          } catch (e) { /* the list is already updated; a leftover file can be deleted under Uploaded files */ }
+        }
+        loadedBanners = loadedBanners.filter(x => x.id !== b.id);
+        gh('previewAllBanners').hidden = loadedBanners.length < 1;
+        div.remove();
+      } catch (err) {
+        del.disabled = false; st.textContent = `Error: ${err.message}`;
+      }
+    });
+    return div;
+  }
+
   gh('loadBanners').addEventListener('click', async () => {
-    const status = gh('bStatus');
+    const status = gh('bListStatus');
     const listEl = gh('bannersList');
     const creds = getGhCreds(status);
     if (!creds) return;
-    const { owner, repo, branch, token } = creds;
     status.textContent = 'Loading…';
     listEl.innerHTML = '';
     try {
-      const { list } = await readBanners(owner, repo, branch, token);
-      if (!list.length) { status.textContent = 'No banners yet.'; return; }
-      status.textContent = `${list.length} banner(s).`;
-      list.forEach(b => {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        const img = document.createElement('img');
-        img.src = b.url; img.alt = '';
-        img.style.cssText = 'width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:4px;display:block;';
-        const t = document.createElement('div');
-        t.className = 'li-title'; t.style.marginTop = '8px';
-        t.textContent = b.caption || '(no caption)';
-        const sub = document.createElement('div');
-        sub.className = 'li-sub';
-        sub.textContent = 'Added ' + new Date(b.ts || 0).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        const actions = document.createElement('div');
-        actions.className = 'li-actions';
-        const del = document.createElement('button');
-        del.className = 'small-btn danger'; del.textContent = 'Remove';
-        const st = document.createElement('div'); st.className = 'hint';
-        actions.appendChild(del);
-        div.append(img, t, sub, actions, st);
-        del.addEventListener('click', async () => {
-          if (!confirm('Remove this banner from the home screen?')) return;
-          del.disabled = true; st.textContent = 'Removing…';
-          try {
-            // 1. take it out of the list (re-read first so nothing else is overwritten)
-            const fresh = await readBanners(owner, repo, branch, token);
-            const next = fresh.list.filter(x => x.id !== b.id);
-            await ghPutFile(owner, repo, BANNERS_PATH, branch, token, b64EncodeUnicode(JSON.stringify(next, null, 2)), 'Remove banner via admin portal', fresh.sha);
-            // 2. delete the image file too (best effort)
-            if (b.path) {
-              try {
-                const f = await ghGetFile(owner, repo, b.path, branch, token);
-                if (f) await ghDeleteFile(owner, repo, b.path, branch, token, f.sha, 'Delete banner image via admin portal');
-              } catch (e) { /* list is already updated; leftover file can be deleted under "Manage uploaded files" */ }
-            }
-            div.remove();
-          } catch (err) {
-            del.disabled = false; st.textContent = `Error: ${err.message}`;
-          }
-        });
-        listEl.appendChild(div);
-      });
+      const { list } = await readBanners(creds.owner, creds.repo, creds.branch, creds.token);
+      loadedBanners = list.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      gh('previewAllBanners').hidden = loadedBanners.length < 1;
+      if (!loadedBanners.length) { status.textContent = 'No banners yet.'; return; }
+      status.textContent = `${loadedBanners.length} banner(s) loaded.`;
+      loadedBanners.forEach(b => listEl.appendChild(renderBannerItem(b, creds)));
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
     }
   });
+  gh('previewAllBanners').addEventListener('click', () => {
+    if (loadedBanners.length) openPreview(loadedBanners, 'All banners — as the slideshow runs');
+  });
+
+  syncMuted();
+  setBannerType('image');
+</script>
+
+<script>
+  // ============ Photo & video saver ============
+  (function () {
+    const input = gh('dlUrl'), go = gh('dlGo'), st = gh('dlStatus'), res = gh('dlResult'),
+          cands = gh('dlCands'), drop = gh('dlDrop'), proxyEl = gh('dlProxy');
+    proxyEl.value = localStorage.getItem('classx_dl_proxy') || '';
+    proxyEl.addEventListener('change', () => { try { localStorage.setItem('classx_dl_proxy', proxyEl.value.trim()); } catch (e) {} });
+
+    const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/svg+xml': 'svg', 'image/avif': 'avif', 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
+    const TYPE_BY_EXT = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', avif: 'image/avif', mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime' };
+    let objectUrl = null;
+
+    const setSt = (t) => { st.textContent = t; };
+    const extOfUrl = (u) => { try { const m = new URL(u).pathname.match(/\.([a-z0-9]{2,5})$/i); return m ? m[1].toLowerCase() : ''; } catch (e) { return ''; } };
+    const sizeText = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+    function nameFor(u, type) {
+      let n = '';
+      try { n = decodeURIComponent(new URL(u).pathname.split('/').pop() || ''); } catch (e) {}
+      n = n.replace(/[^\w.\-]+/g, '_');
+      return n && /\.[a-z0-9]{2,5}$/i.test(n) ? n : 'media-' + Date.now() + '.' + (EXT[type] || 'bin');
+    }
+    function clearResult() {
+      if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+      res.innerHTML = '';
+    }
+
+    function showBlob(blob, name) {
+      clearResult();
+      let type = blob.type;
+      if (!type || type === 'application/octet-stream') {
+        type = TYPE_BY_EXT[(name.split('.').pop() || '').toLowerCase()] || type;
+        if (type !== blob.type) blob = new Blob([blob], { type });
+      }
+      const isVideo = /^video\//.test(type), isImage = /^image\//.test(type);
+      if (!isVideo && !isImage) { setSt('That file is ' + (type || 'an unknown type') + ', not a photo or video.'); return; }
+
+      objectUrl = URL.createObjectURL(blob);
+      const file = new File([blob], name, { type });
+      res.innerHTML =
+        '<div class="dl-preview">' + (isVideo ? '<video controls playsinline></video>' : '<img alt="">') + '</div>' +
+        '<div class="dl-meta"><b></b><br><span class="dl-info"></span></div>' +
+        '<div class="actions">' +
+          '<a class="btn btn-primary dl-save">Download</a>' +
+          '<button class="btn btn-secondary dl-banner" type="button">Use as home banner</button>' +
+          '<button class="btn btn-secondary dl-attach" type="button">Attach to an update</button>' +
+        '</div>';
+      res.querySelector(isVideo ? 'video' : 'img').src = objectUrl;
+      res.querySelector('b').textContent = name;
+      res.querySelector('.dl-info').textContent = type + ' · ' + sizeText(blob.size);
+      const a = res.querySelector('.dl-save'); a.href = objectUrl; a.download = name;
+      res.querySelector('.dl-banner').addEventListener('click', () => {
+        setBannerType(isVideo ? 'video' : 'image');
+        sendFile(gh(isVideo ? 'bVideoFile' : 'bFile'), file);
+        showPanel('banners');
+        gh('bStatus').textContent = 'Added “' + name + '” — check the preview, then upload.';
+      });
+      res.querySelector('.dl-attach').addEventListener('click', () => {
+        sendFile(gh('uFile'), file);
+        showPanel('post');
+        gh('uStatus').textContent = 'Attached “' + name + '”. Fill in the details and post.';
+      });
+      setSt('Ready — ' + name);
+    }
+
+    function candidatesFromHtml(html, base) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const out = [];
+      const add = (u, kind) => {
+        if (!u) return;
+        try { const abs = new URL(u, base).href; if (!out.some(o => o.url === abs)) out.push({ url: abs, kind }); } catch (e) {}
+      };
+      doc.querySelectorAll('meta[property="og:video"],meta[property="og:video:url"],meta[property="og:video:secure_url"],meta[name="twitter:player:stream"]').forEach(m => add(m.content, 'video'));
+      doc.querySelectorAll('video[src],video source[src]').forEach(n => add(n.getAttribute('src'), 'video'));
+      doc.querySelectorAll('meta[property="og:image"],meta[name="twitter:image"]').forEach(m => add(m.content, 'image'));
+      doc.querySelectorAll('img[src]').forEach((n, i) => { if (i < 12) add(n.getAttribute('src'), 'image'); });
+      return out.slice(0, 16);
+    }
+    function renderCands(list) {
+      cands.innerHTML = '';
+      list.forEach(c => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'cand';
+        b.innerHTML = '<em></em><span></span>';
+        b.firstChild.textContent = c.kind === 'video' ? 'Video' : 'Photo';
+        b.lastChild.textContent = c.url;
+        b.addEventListener('click', () => { input.value = c.url; getFromUrl(c.url); });
+        cands.appendChild(b);
+      });
+    }
+
+    async function tryFetch(u) {
+      const proxy = proxyEl.value.trim();
+      const attempts = [u]; if (proxy) attempts.push(proxy + encodeURIComponent(u));
+      let lastErr = null;
+      for (const a of attempts) {
+        try {
+          const r = await fetch(a);
+          if (!r.ok) { lastErr = new Error('The site answered ' + r.status + '.'); continue; }
+          return r;
+        } catch (e) { lastErr = e; }
+      }
+      throw lastErr || new Error('Download failed.');
+    }
+
+    // When the browser blocks the download, still show what we can and explain the way round.
+    function blockedFallback(u, e) {
+      const ext = extOfUrl(u);
+      const kind = /^(mp4|m4v|webm|mov)$/.test(ext) ? 'video' : /^(jpe?g|png|gif|webp|avif|svg)$/.test(ext) ? 'image' : '';
+      const pageLike = /(youtube\.com|youtu\.be|instagram\.com|facebook\.com|fb\.watch|tiktok\.com|twitter\.com|x\.com)/i.test(u) && !kind;
+      setSt(e instanceof TypeError ? 'Error: that site doesn’t let other web pages download its files.' : 'Error: ' + e.message);
+      clearResult();
+      res.innerHTML =
+        (kind ? '<div class="dl-preview">' + (kind === 'video' ? '<video controls playsinline></video>' : '<img alt="">') + '</div>' : '') +
+        '<p class="hint"></p>' +
+        '<div class="actions"><a class="btn btn-secondary dl-open" target="_blank" rel="noopener">Open it in a new tab</a></div>';
+      if (kind) res.querySelector(kind === 'video' ? 'video' : 'img').src = u;
+      res.querySelector('.dl-open').href = u;
+      res.querySelector('.hint').textContent = pageLike
+        ? 'This is a page link, and video sites don’t hand out the file itself. If you’re allowed to use the video, get the file from its owner or the site’s own download option, then drop it in the box above.'
+        : 'You can still save it by hand: open it in a new tab, then right-click → Save as (on a phone, long-press → Download). Or copy the photo itself (right-click → Copy image) and paste it here with Ctrl+V — that works on any site. For one-click downloads, add a proxy below.';
+    }
+
+    async function getFromUrl(u) {
+      clearResult(); cands.innerHTML = '';
+      if (!/^https?:\/\//i.test(u)) { setSt('Enter a link that starts with http:// or https://'); return; }
+      go.disabled = true; setSt('Fetching…');
+      try {
+        const r = await tryFetch(u);
+        const ct = (r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        if (ct === 'text/html') {
+          const list = candidatesFromHtml(await r.text(), u);
+          if (!list.length) { setSt('That link is a web page with no photo or video I can read. Copy the address of the photo or video itself instead.'); return; }
+          setSt('Found ' + list.length + ' photo/video link(s) on that page — pick one.');
+          renderCands(list);
+          return;
+        }
+        const blob = await r.blob();
+        showBlob(blob, nameFor(u, ct || blob.type));
+      } catch (e) {
+        blockedFallback(u, e);
+      } finally {
+        go.disabled = false;
+      }
+    }
+
+    go.addEventListener('click', () => getFromUrl(input.value.trim()));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go.click(); });
+    input.addEventListener('paste', () => setTimeout(() => { if (/^https?:\/\/\S+$/i.test(input.value.trim())) go.click(); }, 0));
+
+    // Ctrl+V anywhere on this panel: a copied photo, or a copied link.
+    document.addEventListener('paste', (e) => {
+      if (gh('p-downloader').hidden || !e.clipboardData) return;
+      for (const it of (e.clipboardData.items || [])) {
+        if (it.kind === 'file' && /^(image|video)\//.test(it.type)) {
+          const f = it.getAsFile();
+          if (f) {
+            e.preventDefault();
+            showBlob(f, f.name && !/^image\.\w+$/.test(f.name) ? f.name : 'pasted-' + Date.now() + '.' + (EXT[f.type] || 'png'));
+            return;
+          }
+        }
+      }
+      const txt = (e.clipboardData.getData('text') || '').trim();
+      if (/^https?:\/\/\S+$/i.test(txt) && document.activeElement !== input) {
+        e.preventDefault(); input.value = txt; getFromUrl(txt);
+      }
+    });
+
+    // Drag a photo or video in from another tab or from the desktop.
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+    drop.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const f = Array.from(dt.files || []).find(x => /^(image|video)\//.test(x.type));
+      if (f) { showBlob(f, f.name); return; }
+      let u = (dt.getData('text/uri-list') || '').split('\n').find(l => l && !l.startsWith('#')) || '';
+      if (!u) { const m = (dt.getData('text/html') || '').match(/<(?:img|video|source)[^>]+src=["']([^"']+)["']/i); if (m) u = m[1]; }
+      if (!u) u = (dt.getData('text/plain') || '').trim();
+      if (/^https?:\/\//i.test(u)) { input.value = u; getFromUrl(u); }
+      else setSt('Nothing I could read in that drop. Try pasting the photo or its link instead.');
+    });
+  })();
+</script>
+
+<script>
+  // ============ Start-up ============
+  (function () {
+    const fromHash = location.hash.slice(1);
+    const hasCreds = localStorage.getItem('classx_gh_token') && localStorage.getItem('classx_gh_repo');
+    showPanel(PANELS.includes(fromHash) ? fromHash : (hasCreds ? 'post' : 'connection'));
+  })();
 </script>
 
 <script>

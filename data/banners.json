@@ -1,19 +1,5 @@
 [
   {
-    "type": "video",
-    "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1791869874211-banner-mg0IqXZzALymoCTQ.mp4",
-    "path": "uploads/1791869874211-banner-mg0IqXZzALymoCTQ.mp4",
-    "poster": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1791869874211-banner-mg0IqXZzALymoCTQ-cover.jpg",
-    "posterPath": "uploads/1791869874211-banner-mg0IqXZzALymoCTQ-cover.jpg",
-    "autoplay": true,
-    "loop": false,
-    "muted": true,
-    "id": "1791869874211-89pwpv",
-    "caption": "TESTING",
-    "link": "",
-    "ts": 1791869874211
-  },
-  {
     "type": "image",
     "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1791849104498-banner-1791848921581.jpg",
     "path": "uploads/1791849104498-banner-1791848921581.jpg",

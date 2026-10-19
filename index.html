@@ -1786,6 +1786,14 @@ Examinations- 2026-27- reg
       return slide;
     }
 
+
+    // A banner is "live" when now is inside its optional schedule window (startAt / endAt, epoch ms).
+    window.bannerIsLive = function (b, now) {
+      now = now || Date.now();
+      if (b.startAt && now < b.startAt) return false;
+      if (b.endAt && now > b.endAt) return false;
+      return true;
+    };
     // opts: { items, track, dots, openImage(url, caption), persist (default true), advanceMs }
     window.mountBannerCarousel = function (opts) {
       const items = opts.items || [];
@@ -1835,17 +1843,30 @@ Examinations- 2026-27- reg
         ['touchstart', 'mousedown'].forEach(ev => track.addEventListener(ev, () => { held = true; }, { passive: true }));
         ['touchend', 'mouseup', 'mouseleave'].forEach(ev => track.addEventListener(ev, () => { setTimeout(() => { held = false; }, 4000); }, { passive: true }));
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          timer = setInterval(() => {
+          // each photo stays for its own time (item.duration, in seconds); default 5 s
+          const durOf = (n) => {
+            const d = Number(items[n] && items[n].duration);
+            return Math.min(300, Math.max(2, d > 0 ? d : (opts.advanceMs ? opts.advanceMs / 1000 : 5))) * 1000;
+          };
+          const arm = () => { clearTimeout(timer); timer = setTimeout(tick, durOf(idx)); };
+          const tick = () => {
             // a video that is playing (and not set to repeat) keeps its slide until it finishes
             const watching = slides.some(s => s._vc && s._vc.isPlaying() && !s._vc.video.loop);
             if (!held && !watching) next();
-          }, opts.advanceMs || 4500);
+            arm();
+          };
+          let shown = 0;
+          track.addEventListener('scroll', () => {
+            const n = Math.round(track.scrollLeft / (track.clientWidth + 10));
+            if (n !== shown) { shown = n; arm(); }   // new slide on screen: restart its own countdown
+          }, { passive: true });
+          arm();
         }
       }
 
       return {
         destroy() {
-          clearInterval(timer);
+          clearTimeout(timer);
           cleanups.forEach(fn => { try { fn(); } catch (e) {} });
           slides.forEach(s => { if (s._vc) { s._vc.pause(); s._vc.video.removeAttribute('src'); s._vc.video.load(); } });
         }
@@ -1855,22 +1876,49 @@ Examinations- 2026-27- reg
 
   // -- home banners: images and videos, shown above the NOTIFICATION strip --
   async function loadBanners() {
-    try {
-      const res = await fetch('./data/banners.json', { cache: 'no-store' });
-      if (!res.ok) return;
-      const items = await res.json();
-      if (!Array.isArray(items) || !items.length) return;
-      items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    let all = [], ctl = null, sig = null;
+    const wrap = document.getElementById('banner-wrap');
+    const track = document.getElementById('banner-track');
+    const dots = document.getElementById('banner-dots');
+    if (!wrap || !track) return;
 
-      const wrap = document.getElementById('banner-wrap');
-      const track = document.getElementById('banner-track');
-      const dots = document.getElementById('banner-dots');
-      if (!wrap || !track) return;
+    // show only the photos whose scheduled window includes right now
+    function render() {
+      const live = all.filter(b => bannerIsLive(b));
+      const next = live.map(b => b.id || b.url).join('|');
+      if (next === sig) return;              // nothing started or ended since last check
+      sig = next;
+      if (ctl) { ctl.destroy(); ctl = null; }
+      if (!live.length) { wrap.style.display = 'none'; track.innerHTML = ''; return; }
       wrap.style.display = 'block';
-      mountBannerCarousel({
-        items, track, dots,
+      ctl = mountBannerCarousel({
+        items: live, track, dots,
         openImage: (url, caption) => openLightbox(url, caption)
       });
+    }
+
+    async function fetchList() {
+      const res = await fetch('./data/banners.json', { cache: 'no-store' });
+      if (!res.ok) return null;
+      const items = await res.json();
+      return Array.isArray(items) ? items : null;
+    }
+
+    try {
+      const items = await fetchList();
+      if (!items || !items.length) return;
+      items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      all = items;
+      render();
+      // every 30 s: scheduled photos appear / disappear on time without reloading the app
+      setInterval(render, 30000);
+      // every 5 min: pick up newly posted photos
+      setInterval(async () => {
+        try {
+          const fresh = await fetchList();
+          if (fresh) { fresh.sort((a, b) => (b.ts || 0) - (a.ts || 0)); all = fresh; render(); }
+        } catch (e) {}
+      }, 300000);
     } catch (err) {
       console.warn('Banners not loaded:', err);
     }

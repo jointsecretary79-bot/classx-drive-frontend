@@ -152,6 +152,7 @@
     display:grid; place-items:center; text-align:center; padding:16px; color:var(--text-soft); font-size:13px;
   }
   .live-frame{ background:var(--ink); border-radius:6px; overflow:hidden; }
+  .html-thumb{ display:flex; align-items:center; justify-content:center; color:#f6c453; font:600 12px 'IBM Plex Mono',monospace; letter-spacing:.06em; border:1px dashed rgba(231,162,60,.6); }
   .banner-thumb{ width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:4px; display:block; background:#0c1730; }
   .edit-box{ margin-top:12px; padding-top:4px; border-top:1px dashed var(--line); }
 
@@ -216,6 +217,9 @@
   /* ---- video slides: custom play / pause / sound / settings controls ---- */
   .banner-slide.is-video{ cursor:default; background:#000; }
   .banner-slide.is-video video{ width:100%; height:100%; object-fit:contain; display:block; background:#000; }
+  .banner-slide.is-html{ cursor:default; background:#000; }
+  .banner-slide.is-html iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#000; }
+  .banner-slide.is-html .html-shield{ position:absolute; inset:0; }  /* lets swipes pass through to the slideshow */
   .banner-slide:fullscreen{ aspect-ratio:auto; border:0; border-radius:0; }
   .banner-slide:-webkit-full-screen{ aspect-ratio:auto; border:0; border-radius:0; }
   .vc{ position:absolute; inset:0; color:#fff; font-family:'IBM Plex Sans', sans-serif; }
@@ -445,6 +449,7 @@
             <button type="button" data-type="image" aria-pressed="true">Image</button>
             <button type="button" data-type="video" aria-pressed="false">Video file</button>
             <button type="button" data-type="link" aria-pressed="false">Video link</button>
+            <button type="button" data-type="html" aria-pressed="false">HTML slide</button>
           </div>
 
           <div id="bImageWrap">
@@ -461,6 +466,12 @@
             <label for="bVideoUrl">Video link</label>
             <input id="bVideoUrl" type="url" placeholder="https://example.com/clip.mp4" />
             <p class="hint">A direct link to an .mp4 or .webm file. Page links (YouTube, Instagram) won’t play here.</p>
+          </div>
+          <div id="bHtmlWrap" hidden>
+            <label for="bHtmlFile">HTML file</label>
+            <input id="bHtmlFile" type="file" accept=".html,.htm,text/html" />
+            <p class="hint"><b>Make it as a 16:9 frame</b> (like the Dussehra film) — it plays inside the same 16:9 home-screen frame, so it works for any festival or event. Single self-contained file, up to 2 MB. It restarts each time its slide comes into view, so set “Show for” to the length of its animation.</p>
+            <div class="opts"><label class="opt"><input id="bHtmlFit" type="checkbox" checked /><span><span class="opt-title">Fit to the 16:9 frame</span><span class="opt-desc">Shows only the top 16:9 stage and hides page text or buttons below it. Turn off to show the page exactly as it is.</span></span></label></div>
           </div>
           <div id="bCoverWrap" hidden>
             <label for="bCover">Cover image (optional)</label>
@@ -1471,6 +1482,44 @@
     }
 
 
+    // HTML slide: a festival / event page made as a 16:9 frame, shown in a sandboxed iframe.
+    // b.url = hosted .html file (or b.html = inline text for previews); b.fit !== false hides everything below the frame.
+    function buildHtmlSlide(b) {
+      const slide = document.createElement('div');
+      slide.className = 'banner-slide is-html';
+      slide.setAttribute('role', 'group');
+      slide.setAttribute('aria-label', b.caption || 'Festival slide');
+      const frame = document.createElement('iframe');
+      frame.setAttribute('sandbox', 'allow-scripts');      // runs its own animation, cannot touch the app
+      frame.setAttribute('title', b.caption || 'Festival slide');
+      frame.setAttribute('tabindex', '-1');
+      frame.setAttribute('scrolling', 'no');
+      const shield = document.createElement('div'); shield.className = 'html-shield';
+      slide.appendChild(frame); slide.appendChild(shield);
+      const BLANK = '<!doctype html><body style="margin:0;background:#000">';
+      const FIT = '<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important}</style>';
+      let text = typeof b.html === 'string' ? b.html : null, loading = false, active = false;
+      const prep = (t) => b.fit === false ? t : t + FIT;
+      async function start() {
+        active = true;
+        if (text === null) {
+          if (loading) return;
+          loading = true;
+          try {
+            const u = safeUrl(b.url); if (!u) throw new Error('bad url');
+            const r = await fetch(u); if (!r.ok) throw new Error('http ' + r.status);
+            text = await r.text();
+          } catch (e) { loading = false; return; }
+          loading = false;
+        }
+        if (active) frame.srcdoc = prep(text);              // a fresh srcdoc restarts the animation from the top
+      }
+      function stop() { active = false; frame.srcdoc = BLANK; }
+      frame.srcdoc = BLANK;
+      slide._html = { start, stop };
+      return slide;
+    }
+
     // A banner is "live" when now is inside its optional schedule window (startAt / endAt, epoch ms).
     window.bannerIsLive = function (b, now) {
       now = now || Date.now();
@@ -1498,7 +1547,7 @@
       };
 
       items.forEach((b, i) => {
-        const s = b.type === 'video' ? buildVideoSlide(b, ctx) : buildImageSlide(b, i, opts.openImage);
+        const s = b.type === 'html' ? buildHtmlSlide(b) : b.type === 'video' ? buildVideoSlide(b, ctx) : buildImageSlide(b, i, opts.openImage);
         slides.push(s); track.appendChild(s);
         if (dots) { const d = document.createElement('span'); if (i === 0) d.className = 'on'; dots.appendChild(d); }
       });
@@ -1507,11 +1556,15 @@
       // play a video when its slide is on screen, pause it when it leaves (or the Home tab is hidden)
       if ('IntersectionObserver' in window) {
         const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+          const h = en.target._html;
+          if (h) { if (en.isIntersecting) h.start(); else h.stop(); return; }
           const vc = en.target._vc; if (!vc) return;
           if (en.isIntersecting) vc.autoStart(); else vc.pause();
         }), { threshold: 0.6 });
-        slides.forEach(s => { if (s._vc) io.observe(s); });
+        slides.forEach(s => { if (s._vc || s._html) io.observe(s); });
         cleanups.push(() => io.disconnect());
+      } else {
+        slides.forEach(s => { if (s._html) s._html.start(); });
       }
       const onVis = () => { if (document.hidden) slides.forEach(s => s._vc && s._vc.pause()); };
       document.addEventListener('visibilitychange', onVis);
@@ -1551,6 +1604,7 @@
       return {
         destroy() {
           clearTimeout(timer);
+          slides.forEach(s => { if (s._html) s._html.stop(); });
           cleanups.forEach(fn => { try { fn(); } catch (e) {} });
           slides.forEach(s => { if (s._vc) { s._vc.pause(); s._vc.video.removeAttribute('src'); s._vc.video.load(); } });
         }
@@ -1646,6 +1700,7 @@
   // ============ Home banners (images + videos) ============
   const BANNERS_PATH = 'data/banners.json';
   const MAX_VIDEO_MB = 30;
+  const MAX_HTML_MB = 2;
   const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const baseName = (n) => (n || '').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'banner';
   const rawUrl = (c, path) => `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${c.branch}/${path}`;
@@ -1714,9 +1769,13 @@
     gh('bImageWrap').hidden = t !== 'image';
     gh('bVideoWrap').hidden = t !== 'video';
     gh('bLinkWrap').hidden = t !== 'link';
-    gh('bCoverWrap').hidden = t === 'image';
-    gh('bPlayWrap').hidden = t === 'image';
-    gh('bLinkHint').textContent = t === 'image'
+    gh('bHtmlWrap').hidden = t !== 'html';
+    gh('bCoverWrap').hidden = t === 'image' || t === 'html';
+    gh('bPlayWrap').hidden = t === 'image' || t === 'html';
+    { const d = gh('bDuration'); if (t === 'html' && Number(d.value) === 5) d.value = 60; else if (t !== 'html' && Number(d.value) === 60) d.value = 5; }
+    gh('bLinkHint').textContent = t === 'html'
+      ? 'Not used for HTML slides — the slide plays by itself.'
+      : t === 'image'
       ? 'Leave blank to just enlarge the image.'
       : 'Tapping a video plays or pauses it. A link here adds an “Open link” option to the video’s settings.';
     renderLive();
@@ -1730,11 +1789,15 @@
 
   // ---- live preview (same player as the app) ----
   let liveCtl = null, liveUrls = [];
+  let bHtmlText = '';
   const objUrl = (f) => { const u = URL.createObjectURL(f); liveUrls.push(u); return u; };
 
   function draftItem() {
     const caption = gh('bCaption').value.trim(), link = gh('bLink').value.trim(), duration = clampDur(gh('bDuration').value);
     const play = { autoplay: gh('bAutoplay').checked, loop: gh('bLoop').checked, muted: gh('bMuted').checked };
+    if (bType === 'html') {
+      return bHtmlText ? { type: 'html', html: bHtmlText, caption, fit: gh('bHtmlFit').checked, duration } : null;
+    }
     if (bType === 'image') {
       const f = gh('bFile').files[0];
       return f ? { type: 'image', url: objUrl(f), caption, link, duration } : null;
@@ -1755,7 +1818,7 @@
     const mount = gh('bLive');
     const item = draftItem();
     if (!item) {
-      const what = bType === 'image' ? 'an image' : bType === 'video' ? 'a video file' : 'a video link';
+      const what = bType === 'image' ? 'an image' : bType === 'html' ? 'an HTML file' : bType === 'video' ? 'a video file' : 'a video link';
       mount.innerHTML = '<div class="live-empty"><span>Choose ' + what + ' to see it here.</span></div>';
       return;
     }
@@ -1773,6 +1836,18 @@
   gh('bVideoUrl').addEventListener('change', renderLive);
   gh('bLink').addEventListener('input', liveSoon);
   gh('bDuration').addEventListener('input', liveSoon);
+  gh('bHtmlFit').addEventListener('change', renderLive);
+  gh('bHtmlFile').addEventListener('change', async () => {
+    const f = gh('bHtmlFile').files[0], status = gh('bStatus');
+    bHtmlText = '';
+    if (f) {
+      if (!/\.html?$/i.test(f.name) && !/html/.test(f.type)) { status.textContent = 'That file isn’t an HTML file.'; gh('bHtmlFile').value = ''; renderLive(); return; }
+      if (f.size > MAX_HTML_MB * 1048576) { status.textContent = `The file is ${(f.size / 1048576).toFixed(1)} MB — the limit is ${MAX_HTML_MB} MB.`; gh('bHtmlFile').value = ''; renderLive(); return; }
+      bHtmlText = await f.text();
+      status.textContent = '';
+    }
+    renderLive();
+  });
   gh('bAutoplay').addEventListener('change', () => { syncMuted(); renderLive(); });
   ['bLoop', 'bMuted'].forEach(id => gh(id).addEventListener('change', renderLive));
   gh('bCaption').addEventListener('input', () => {
@@ -1802,7 +1877,7 @@
     const item = draftItem();
     pvUrls = liveUrls; liveUrls = keep;   // dialog keeps its own copies of the file URLs
     if (!item) {
-      gh('bStatus').textContent = 'Choose ' + (bType === 'image' ? 'an image' : bType === 'video' ? 'a video file' : 'a video link') + ' first.';
+      gh('bStatus').textContent = 'Choose ' + (bType === 'image' ? 'an image' : bType === 'html' ? 'an HTML file' : bType === 'video' ? 'a video file' : 'a video link') + ' first.';
       return;
     }
     gh('bStatus').textContent = '';
@@ -1822,7 +1897,9 @@
     if (sched.error) { status.textContent = sched.error; return; }
 
     let vidFile = null, vidUrl = '';
-    if (bType === 'image') {
+    if (bType === 'html') {
+      if (!bHtmlText) { status.textContent = 'Choose an HTML file first.'; return; }
+    } else if (bType === 'image') {
       if (!gh('bFile').files[0]) { status.textContent = 'Choose an image first.'; return; }
     } else if (bType === 'video') {
       vidFile = gh('bVideoFile').files[0];
@@ -1841,7 +1918,15 @@
     try {
       const ts = Date.now();
       let item;
-      if (bType === 'image') {
+      if (bType === 'html') {
+        const hf = gh('bHtmlFile').files[0];
+        status.textContent = 'Reading HTML file…';
+        const hb64 = await fileToBase64(hf);
+        const hpath = `uploads/${ts}-banner-${baseName(hf.name)}.html`;
+        status.textContent = 'Uploading HTML slide…';
+        await ghPutFile(owner, repo, hpath, branch, token, hb64, 'Upload HTML banner via admin portal');
+        item = { type: 'html', url: rawUrl(creds, hpath), path: hpath, fit: gh('bHtmlFit').checked };
+      } else if (bType === 'image') {
         const file = gh('bFile').files[0];
         status.textContent = 'Preparing image…';
         const b64 = await shrinkImage(file);
@@ -1888,9 +1973,10 @@
       status.textContent = sched.startAt && sched.startAt > Date.now()
         ? `Uploaded! It is scheduled and will appear on the home screen on ${fmtWhen(sched.startAt)}.`
         : 'Uploaded! It will appear on the home screen within a minute or two.';
-      ['bFile', 'bVideoFile', 'bCover'].forEach(id => { gh(id).value = ''; });
+      ['bFile', 'bVideoFile', 'bCover', 'bHtmlFile'].forEach(id => { gh(id).value = ''; });
+      bHtmlText = '';
       gh('bVideoUrl').value = ''; gh('bCaption').value = ''; gh('bLink').value = '';
-      gh('bDuration').value = 5; gh('bStart').value = ''; gh('bEnd').value = '';
+      gh('bDuration').value = bType === 'html' ? 60 : 5; gh('bStart').value = ''; gh('bEnd').value = '';
       renderLive();
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
@@ -1904,6 +1990,7 @@
   const fmtDate = (ts) => new Date(ts || 0).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   function bannerThumb(b) {
+    if (b.type === 'html') return '<div class="banner-thumb html-thumb"><span>HTML slide · 16:9</span></div>';
     if (b.type === 'video') {
       if (b.poster) return `<img class="banner-thumb" src="${escHtml(b.poster)}" alt="">`;
       return `<video class="banner-thumb" src="${escHtml(b.url)}#t=0.1" preload="metadata" muted playsinline></video>`;
@@ -1943,12 +2030,12 @@
 
   function renderBannerItem(b, creds) {
     const { owner, repo, branch, token } = creds;
-    const isVideo = b.type === 'video';
+    const isVideo = b.type === 'video', isHtml = b.type === 'html';
     const div = document.createElement('div');
     div.className = 'list-item';
     div.innerHTML = `
       ${bannerThumb(b)}
-      <div class="li-title" style="margin-top:10px;"><span class="t"></span>${isVideo ? '<span class="badge video">Video</span>' : ''}</div>
+      <div class="li-title" style="margin-top:10px;"><span class="t"></span>${isVideo ? '<span class="badge video">Video</span>' : ''}${isHtml ? '<span class="badge video">HTML</span>' : ''}</div>
       <div class="li-sub">Added ${fmtDate(b.ts)}${isVideo ? ' · ' + playSummary(b) : ''}</div>
       <div class="li-sub sched-line"></div>
       <div class="li-actions">
@@ -1967,6 +2054,7 @@
         <input class="b-start" type="datetime-local" value="${toLocalInput(b.startAt)}">
         <label>Stop showing on</label>
         <input class="b-end" type="datetime-local" value="${toLocalInput(b.endAt)}">
+        ${isHtml ? `<div class="li-checks"><label><input type="checkbox" class="b-fit" ${b.fit !== false ? 'checked' : ''}> Fit to the 16:9 frame</label></div>` : ''}
         ${isVideo ? `<div class="li-checks">
           <label><input type="checkbox" class="b-auto" ${b.autoplay !== false ? 'checked' : ''}> Autoplay (muted)</label>
           <label><input type="checkbox" class="b-loop" ${b.loop ? 'checked' : ''}> Repeat</label>
@@ -2002,6 +2090,7 @@
         target.link = div.querySelector('.b-lnk').value.trim();
         target.duration = clampDur(div.querySelector('.b-dur').value);
         target.startAt = eStart; target.endAt = eEnd;
+        if (isHtml) target.fit = div.querySelector('.b-fit').checked;
         if (isVideo) {
           const a = div.querySelector('.b-auto').checked;
           target.autoplay = a; target.loop = div.querySelector('.b-loop').checked;

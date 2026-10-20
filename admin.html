@@ -522,6 +522,16 @@
           <div id="bListStatus" class="status"></div>
           <div id="bannersList"></div>
         </div>
+
+        <div class="card">
+          <h3 class="card-title">Festival archive</h3>
+          <p class="card-sub">Photos, videos and HTML slides you moved off the home screen. They appear in the app under <b>More → Festival archive</b>. Restore one to put it back on the home screen.</p>
+          <div class="actions" style="margin-top:0;">
+            <button class="btn btn-secondary load-btn" id="loadArchive" type="button">Load archive</button>
+          </div>
+          <div id="aListStatus" class="status"></div>
+          <div id="archiveList"></div>
+        </div>
       </div>
 
       <div class="card sticky">
@@ -1716,6 +1726,7 @@
 <script>
   // ============ Home banners (images + videos) ============
   const BANNERS_PATH = 'data/banners.json';
+  const ARCHIVE_PATH = 'data/archive.json';
   const MAX_VIDEO_MB = 30;
   const MAX_HTML_MB = 2;
   const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -1777,6 +1788,19 @@
     }
     return { list, sha };
   }
+
+  async function readArchive(owner, repo, branch, token) {
+    const existing = await ghGetFile(owner, repo, ARCHIVE_PATH, branch, token);
+    let list = [], sha;
+    if (existing) {
+      sha = existing.sha;
+      try { list = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); } catch { list = []; }
+      if (!Array.isArray(list)) list = [];
+    }
+    return { list, sha };
+  }
+  const writeJson = (owner, repo, path, branch, token, list, msg, sha) =>
+    ghPutFile(owner, repo, path, branch, token, b64EncodeUnicode(JSON.stringify(list, null, 2)), msg, sha);
 
   // ---- type switch (Image / Video file / Video link) ----
   let bType = 'image';
@@ -2063,6 +2087,7 @@
       <div class="li-actions">
         <button class="small-btn b-prev" type="button">Preview</button>
         <button class="small-btn b-edit" type="button">Edit</button>
+        <button class="small-btn b-arch" type="button">Move to archive</button>
         <button class="small-btn danger b-del" type="button">Remove</button>
       </div>
       <div class="edit-box" hidden>
@@ -2128,6 +2153,30 @@
       } catch (err) { st.textContent = `Error: ${err.message}`; }
     });
 
+    const archBtn = div.querySelector('.b-arch');
+    archBtn.addEventListener('click', async () => {
+      const fest = prompt('Festival / event name for the archive (optional — e.g. Dussehra 2026):', b.festival || '');
+      if (fest === null) return;
+      archBtn.disabled = true; st.textContent = 'Moving to the archive…';
+      try {
+        const fresh = await readBanners(owner, repo, branch, token);
+        const item = fresh.list.find(x => x.id === b.id);
+        if (!item) throw new Error('This banner was already removed.');
+        const arch = await readArchive(owner, repo, branch, token);
+        const moved = Object.assign({}, item, { festival: fest.trim(), archivedAt: Date.now() });
+        arch.list = arch.list.filter(x => x.id !== item.id);
+        arch.list.push(moved);
+        // archive first, then take it off the home screen — so nothing can get lost half-way
+        await writeJson(owner, repo, ARCHIVE_PATH, branch, token, arch.list, 'Add to festival archive via admin portal', arch.sha);
+        await writeJson(owner, repo, BANNERS_PATH, branch, token, fresh.list.filter(x => x.id !== item.id), 'Move banner to archive via admin portal', fresh.sha);
+        loadedBanners = loadedBanners.filter(x => x.id !== b.id);
+        gh('previewAllBanners').hidden = loadedBanners.length < 1;
+        gh('bListStatus').textContent = 'Moved to the Festival archive. It is off the home screen now.';
+        div.remove();
+        if (archiveLoaded) gh('loadArchive').click();
+      } catch (err) { archBtn.disabled = false; st.textContent = `Error: ${err.message}`; }
+    });
+
     const del = div.querySelector('.b-del');
     del.addEventListener('click', async () => {
       if (!confirm('Remove this banner from the home screen?')) return;
@@ -2174,6 +2223,110 @@
   });
   gh('previewAllBanners').addEventListener('click', () => {
     if (loadedBanners.length) openPreview(loadedBanners, 'All banners — as the slideshow runs');
+  });
+
+
+  // ================= Festival archive (admin) =================
+  let archiveLoaded = false;
+  function renderArchiveItem(b, creds) {
+    const { owner, repo, branch, token } = creds;
+    const isVideo = b.type === 'video', isHtml = b.type === 'html';
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `
+      ${bannerThumb(b)}
+      <div class="li-title" style="margin-top:10px;"><span class="t"></span>${isVideo ? '<span class="badge video">Video</span>' : ''}${isHtml ? '<span class="badge video">HTML</span>' : ''}</div>
+      <div class="li-sub a-sub"></div>
+      <div class="li-actions">
+        <button class="small-btn a-prev" type="button">Preview</button>
+        <button class="small-btn a-edit" type="button">Edit</button>
+        <button class="small-btn a-restore" type="button">Restore to home screen</button>
+        <button class="small-btn danger a-del" type="button">Delete forever</button>
+      </div>
+      <div class="edit-box" hidden>
+        <label>Festival / event name</label>
+        <input class="a-fest" maxlength="60" placeholder="e.g. Dussehra 2026">
+        <label>Caption</label>
+        <input class="a-cap" maxlength="80">
+        <div class="li-actions"><button class="small-btn a-save" type="button">Save changes</button></div>
+      </div>
+      <div class="hint e-status"></div>`;
+    const st = div.querySelector('.e-status'), box = div.querySelector('.edit-box');
+    const paint = () => {
+      div.querySelector('.t').textContent = b.caption || '(no caption)';
+      div.querySelector('.a-sub').textContent = `${b.festival ? b.festival + ' · ' : ''}Archived ${fmtDate(b.archivedAt || b.ts)}`;
+      div.querySelector('.a-fest').value = b.festival || '';
+      div.querySelector('.a-cap').value = b.caption || '';
+    };
+    paint();
+    div.querySelector('.a-prev').addEventListener('click', () => openPreview([Object.assign({}, b, { startAt: 0, endAt: 0 })], b.caption || 'Archive preview'));
+    div.querySelector('.a-edit').addEventListener('click', () => { box.hidden = !box.hidden; });
+
+    div.querySelector('.a-save').addEventListener('click', async () => {
+      st.textContent = 'Saving…';
+      try {
+        const arch = await readArchive(owner, repo, branch, token);
+        const t = arch.list.find(x => x.id === b.id);
+        if (!t) throw new Error('This item is no longer in the archive.');
+        t.festival = div.querySelector('.a-fest').value.trim();
+        t.caption = div.querySelector('.a-cap').value.trim();
+        await writeJson(owner, repo, ARCHIVE_PATH, branch, token, arch.list, 'Edit archive item via admin portal', arch.sha);
+        Object.assign(b, t); paint(); box.hidden = true; st.textContent = 'Saved.';
+      } catch (err) { st.textContent = `Error: ${err.message}`; }
+    });
+
+    const rest = div.querySelector('.a-restore');
+    rest.addEventListener('click', async () => {
+      if (!confirm('Put this back on the home screen? It will show straight away, with no schedule.')) return;
+      rest.disabled = true; st.textContent = 'Restoring…';
+      try {
+        const arch = await readArchive(owner, repo, branch, token);
+        const item = arch.list.find(x => x.id === b.id);
+        if (!item) throw new Error('This item is no longer in the archive.');
+        const cur = await readBanners(owner, repo, branch, token);
+        const back = Object.assign({}, item, { startAt: 0, endAt: 0, ts: Date.now() });
+        delete back.archivedAt;
+        cur.list = cur.list.filter(x => x.id !== item.id); cur.list.push(back);
+        // home screen first, then out of the archive — nothing can get lost half-way
+        await writeJson(owner, repo, BANNERS_PATH, branch, token, cur.list, 'Restore banner from archive via admin portal', cur.sha);
+        await writeJson(owner, repo, ARCHIVE_PATH, branch, token, arch.list.filter(x => x.id !== item.id), 'Restore from festival archive via admin portal', arch.sha);
+        gh('aListStatus').textContent = 'Restored to the home screen. Click “Load current banners” to see it there.';
+        div.remove();
+      } catch (err) { rest.disabled = false; st.textContent = `Error: ${err.message}`; }
+    });
+
+    const del = div.querySelector('.a-del');
+    del.addEventListener('click', async () => {
+      if (!confirm('Delete this from the archive for good? Its files are deleted too and this cannot be undone.')) return;
+      del.disabled = true; st.textContent = 'Deleting…';
+      try {
+        const arch = await readArchive(owner, repo, branch, token);
+        await writeJson(owner, repo, ARCHIVE_PATH, branch, token, arch.list.filter(x => x.id !== b.id), 'Delete archive item via admin portal', arch.sha);
+        for (const p of [b.path, b.posterPath].filter(Boolean)) {
+          try {
+            const f = await ghGetFile(owner, repo, p, branch, token);
+            if (f) await ghDeleteFile(owner, repo, p, branch, token, f.sha, 'Delete archive file via admin portal');
+          } catch (e) { /* the list is already updated */ }
+        }
+        div.remove();
+      } catch (err) { del.disabled = false; st.textContent = `Error: ${err.message}`; }
+    });
+    return div;
+  }
+
+  gh('loadArchive').addEventListener('click', async () => {
+    const status = gh('aListStatus'), listEl = gh('archiveList');
+    const creds = getGhCreds(status);
+    if (!creds) return;
+    status.textContent = 'Loading…'; listEl.innerHTML = '';
+    try {
+      const { list } = await readArchive(creds.owner, creds.repo, creds.branch, creds.token);
+      archiveLoaded = true;
+      const sorted = list.slice().sort((a, b) => (b.archivedAt || b.ts || 0) - (a.archivedAt || a.ts || 0));
+      if (!sorted.length) { status.textContent = 'The archive is empty. Use “Move to archive” on a banner above.'; return; }
+      status.textContent = `${sorted.length} item(s) in the archive.`;
+      sorted.forEach(b => listEl.appendChild(renderArchiveItem(b, creds)));
+    } catch (err) { status.textContent = `Error: ${err.message}`; }
   });
 
   syncMuted();

@@ -1495,8 +1495,8 @@
       frame.setAttribute('tabindex', '-1');
       frame.setAttribute('scrolling', 'no');
       const shield = document.createElement('div'); shield.className = 'html-shield';
-      const err = document.createElement('div'); err.hidden = true;
-      err.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;color:#f6c453;font:600 13px system-ui,sans-serif;pointer-events:none';
+      const err = document.createElement('div');
+      err.style.cssText = 'position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:12px;color:#f6c453;font:600 12px/1.5 system-ui,sans-serif;white-space:pre-wrap;word-break:break-all;pointer-events:none';
       err.textContent = 'Loading festival slide… (if this stays, the file is still publishing — retrying)';
       slide.appendChild(frame); slide.appendChild(err); slide.appendChild(shield);
       const BLANK = '<!doctype html><body style="margin:0;background:#000">';
@@ -1510,20 +1510,25 @@
           loading = true;
           // 1) GitHub raw address, 2) the same file served from this site (no CDN delay, no CORS)
           const tries = [safeUrl(b.url), b.path ? './' + String(b.path).replace(/^\/+/, '') : ''].filter(Boolean);
+          const why = [];
+          if (!tries.length) why.push('this slide has no file address saved — delete it and upload it again from admin');
           for (const u of tries) {
             try {
               const r = await fetch(u + (u.indexOf('?') < 0 ? '?v=' + Date.now() : ''), { cache: 'no-store' });
               if (r.ok) { text = await r.text(); break; }
-            } catch (e) { /* try the next address */ }
+              why.push(u.replace(/^https?:\/\/(raw\.githubusercontent\.com\/)?/, '').slice(0, 70) + ' → ' + r.status);
+            } catch (e) { why.push(u.replace(/^https?:\/\/(raw\.githubusercontent\.com\/)?/, '').slice(0, 70) + ' → blocked'); }
           }
           loading = false;
           if (text === null) {
-            err.hidden = false;
+            err.textContent = 'Couldn’t load this slide — retrying.\n' + why.join('\n');
+            err.style.display = 'flex';
             setTimeout(() => { if (active) start(); }, 15000);   // keep retrying — the file may still be publishing
             return;
           }
-          err.hidden = true;
+          err.style.display = 'none';
         }
+        err.style.display = 'none';
         if (active) frame.srcdoc = prep(text);              // a fresh srcdoc restarts the animation from the top
       }
       function stop() { active = false; frame.srcdoc = BLANK; }
@@ -1932,12 +1937,17 @@
       let item;
       if (bType === 'html') {
         const hf = gh('bHtmlFile').files[0];
-        status.textContent = 'Reading HTML file…';
-        const hb64 = await fileToBase64(hf);
-        const hpath = `uploads/${ts}-banner-${baseName(hf.name)}.html`;
-        status.textContent = 'Uploading HTML slide…';
-        await ghPutFile(owner, repo, hpath, branch, token, hb64, 'Upload HTML banner via admin portal');
-        item = { type: 'html', url: rawUrl(creds, hpath), path: hpath, fit: gh('bHtmlFit').checked };
+        if (hf.size <= 400 * 1024) {
+          // normal-sized slide: saved inside the banner list itself, so the home screen needs no second download
+          item = { type: 'html', html: bHtmlText, fit: gh('bHtmlFit').checked };
+        } else {
+          status.textContent = 'Reading HTML file…';
+          const hb64 = await fileToBase64(hf);
+          const hpath = `uploads/${ts}-banner-${baseName(hf.name)}.html`;
+          status.textContent = 'Uploading HTML slide…';
+          await ghPutFile(owner, repo, hpath, branch, token, hb64, 'Upload HTML banner via admin portal');
+          item = { type: 'html', url: rawUrl(creds, hpath), path: hpath, fit: gh('bHtmlFit').checked };
+        }
       } else if (bType === 'image') {
         const file = gh('bFile').files[0];
         status.textContent = 'Preparing image…';

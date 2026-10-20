@@ -1495,7 +1495,10 @@
       frame.setAttribute('tabindex', '-1');
       frame.setAttribute('scrolling', 'no');
       const shield = document.createElement('div'); shield.className = 'html-shield';
-      slide.appendChild(frame); slide.appendChild(shield);
+      const err = document.createElement('div'); err.hidden = true;
+      err.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;color:#f6c453;font:600 13px system-ui,sans-serif;pointer-events:none';
+      err.textContent = 'Loading festival slide… (if this stays, the file is still publishing — retrying)';
+      slide.appendChild(frame); slide.appendChild(err); slide.appendChild(shield);
       const BLANK = '<!doctype html><body style="margin:0;background:#000">';
       const FIT = '<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important}</style>';
       let text = typeof b.html === 'string' ? b.html : null, loading = false, active = false;
@@ -1505,12 +1508,21 @@
         if (text === null) {
           if (loading) return;
           loading = true;
-          try {
-            const u = safeUrl(b.url); if (!u) throw new Error('bad url');
-            const r = await fetch(u); if (!r.ok) throw new Error('http ' + r.status);
-            text = await r.text();
-          } catch (e) { loading = false; return; }
+          // 1) GitHub raw address, 2) the same file served from this site (no CDN delay, no CORS)
+          const tries = [safeUrl(b.url), b.path ? './' + String(b.path).replace(/^\/+/, '') : ''].filter(Boolean);
+          for (const u of tries) {
+            try {
+              const r = await fetch(u + (u.indexOf('?') < 0 ? '?v=' + Date.now() : ''), { cache: 'no-store' });
+              if (r.ok) { text = await r.text(); break; }
+            } catch (e) { /* try the next address */ }
+          }
           loading = false;
+          if (text === null) {
+            err.hidden = false;
+            setTimeout(() => { if (active) start(); }, 15000);   // keep retrying — the file may still be publishing
+            return;
+          }
+          err.hidden = true;
         }
         if (active) frame.srcdoc = prep(text);              // a fresh srcdoc restarts the animation from the top
       }

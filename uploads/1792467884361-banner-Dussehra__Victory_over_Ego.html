@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dussehra: Victory over Ego</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@500&display=swap">
+<style>
+:root{--bg:#faf6f0;--fg:#2a1230;--mut:#6b5a6e;--ch:#efe3ee;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17081a;--fg:#f3e6f5;--mut:#b9a3bd;--ch:#2d1531}}
+:root[data-theme="dark"]{--bg:#17081a;--fg:#f3e6f5;--mut:#b9a3bd;--ch:#2d1531}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif;padding:12px;display:flex;flex-direction:column;align-items:center}
+.wrap{width:100%;max-width:960px}
+.stage{position:relative;width:100%;aspect-ratio:16/9;background:#5b0a5e;overflow:hidden;border-radius:12px;container-type:inline-size;--rv:1;--rm:1;--big:0;--mo:0;--hd:1}
+[data-s="0"]{--rv:.4;--rm:.4}
+[data-s="1"],[data-s="2"]{--rm:0;--big:1}
+[data-s="5"]{--rv:.2;--rm:.2}
+[data-s="6"]{--rv:.25}
+[data-s="7"]{--mo:1;--hd:.3}
+[data-s="6"] #hl{opacity:.4}
+[data-s="8"]{--rv:.25;--rm:.25}
+svg{position:absolute;inset:0;width:100%;height:100%}
+#rv,#rm,#mo,#hs{transition:opacity 1s,transform 1.2s}
+#rv{opacity:var(--rv);transform-origin:122px 32px;transform:translate(calc(var(--big)*-42px)) scale(calc(1 + var(--big)))}
+#rm{opacity:var(--rm)}#mo{opacity:var(--mo)}#hs{opacity:var(--hd)}
+#ar,#bs,#rg,.lb,#hl{opacity:0}#hl{transition:opacity 1s}
+#nb,#bs,#rg,.hd{transform-box:fill-box;transform-origin:center}
+#nb{animation:pl 1.6s infinite}
+@keyframes pl{50%{opacity:.4}}
+[data-s="1"] .lb{animation:in .6s calc(var(--i)*.6s + .5s) both}
+[data-s="2"] .hd{animation:rg 1.8s calc(var(--i)*.35s + .4s) both}
+[data-s="3"] #rg{opacity:1;animation:pl 1s infinite}
+[data-s="4"] #ar{opacity:1;animation:fly .5s 2.2s both ease-in}
+[data-s="4"] #bs{animation:pop .8s 2.7s both}
+[data-s="4"] .hd{animation:fall 1s 3.2s both}
+@keyframes rg{0%{transform:scale(1)}30%,55%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes fly{to{transform:translateX(31px)}}
+@keyframes pop{0%{opacity:0;transform:scale(0)}40%{opacity:1;transform:scale(2)}100%{opacity:.9;transform:scale(1)}}
+@keyframes fall{to{opacity:.25}}
+.sc{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .6s;font-size:max(11px,2.4cqw);color:#fbe9b8}
+.sc.on{opacity:1}
+.a{opacity:0}
+.on .a{animation:in .8s var(--d,0s) both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.paused *{animation-play-state:paused!important}
+.dv{font-family:'Noto Serif Devanagari','Kohinoor Devanagari',serif;color:#f6c453;font-size:max(13px,3.2cqw);line-height:1.5}
+.ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1cqw;padding:0 6%}
+.big{font-size:max(34px,11cqw)}
+.h1{font-size:max(22px,6cqw);color:#f6c453;font-weight:500}
+.cap{position:absolute;left:4%;right:4%;bottom:4%;text-align:center;background:rgba(40,5,42,.78);padding:1cqw 1.6cqw;border-radius:8px}
+.box{position:absolute;left:3%;top:4%;width:56%;background:rgba(40,5,42,.78);padding:1.2cqw 1.8cqw;border-radius:8px}
+.src{font-size:max(11px,1.9cqw);color:#d9b8dc;margin-top:.4cqw}
+.cards{display:flex;gap:2cqw;width:90%;margin-top:2cqw}
+.card{flex:1;background:rgba(255,255,255,.08);border:1px solid #f6c453;border-radius:10px;padding:1.5cqw}
+.card b{display:block;color:#f6c453;font-weight:500;font-size:max(13px,3cqw);margin-bottom:.6cqw}
+.bar{display:flex;gap:6px;align-items:center;margin:12px 0}
+.bar button{font:inherit;font-size:14px;padding:6px 14px;border-radius:8px;border:1px solid var(--mut);background:var(--ch);color:var(--fg);cursor:pointer}
+#seg{display:flex;gap:4px;flex:1}
+#seg i{flex:1;height:6px;border-radius:3px;background:var(--ch);border:1px solid var(--mut);cursor:pointer}
+#seg i.on{background:#f6a21f;border-color:#f6a21f}
+h2{font-size:18px;font-weight:500;margin:20px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:0;list-style:none;margin:0}
+.chips li{background:var(--ch);padding:3px 10px;border-radius:14px;font-size:14px}
+p{margin:6px 0;color:var(--mut);font-size:15px}
+</style></head>
+<body><div class="wrap">
+<div class="stage" data-s="0" id="st">
+<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Shri Ram aims his arrow at the navel of ten-headed Ravan, guided by his mothers">
+<defs><g id="h"><circle r="2.3" fill="#c97b4a"/><path d="M-2.3 -.6L-1.6 -3.5 0 -2.3 1.6 -3.5 2.3 -.6Z" fill="#f6c453"/><circle cx="-.8" cy=".2" r=".3" fill="#2a1230"/><circle cx=".8" cy=".2" r=".3" fill="#2a1230"/><path d="M-1 1.3h2" stroke="#2a1230" stroke-width=".4"/></g></defs>
+<circle cx="30" cy="12" r=".4" fill="#f6d98a"/><circle cx="90" cy="8" r=".4" fill="#f6d98a"/><circle cx="150" cy="14" r=".4" fill="#f6d98a"/><circle cx="60" cy="20" r=".3" fill="#f6d98a"/>
+<path d="M0 62L20 50 40 60 62 46 90 58 115 46 160 60V90H0Z" fill="#7a1f7d"/><rect y="76" width="160" height="14" fill="#3d063f"/>
+<g id="mo"><circle cx="54" cy="60" r="36" fill="none" stroke="#f6c453" stroke-width=".4" stroke-dasharray="1.2 1.2"/>
+<circle cx="32" cy="40" r="9" fill="#c85fb0" opacity=".5"/><path d="M26 46h12l4 32H22Z" fill="#f2a21f"/><path d="M32 46h6l4 32h-6Z" fill="#fff3d6"/><circle cx="32" cy="40" r="3.2" fill="#e8b48a"/><path d="M28.8 39Q32 33 35.2 39Q32 36 28.8 39Z" fill="#2a1230"/><line x1="38" y1="50" x2="49" y2="48" stroke="#e8b48a" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="74" cy="40" r="9" fill="#c85fb0" opacity=".5"/><path d="M68 46h12l4 32H64Z" fill="#2e9e6a"/><path d="M68 46h4l-6 32h-2Z" fill="#d8321f"/><circle cx="74" cy="40" r="3.2" fill="#e8b48a"/><path d="M70.8 37L71.6 34 74 36 76.4 34 77.2 37Z" fill="#f6c453"/><line x1="68" y1="50" x2="59" y2="48" stroke="#e8b48a" stroke-width="2.2" stroke-linecap="round"/></g>
+<g id="rv"><path d="M110 60h24l2 16h-28Z" fill="#2d4a8a"/><path d="M108 40h28l-3 22h-22Z" fill="#c97b4a"/><path d="M110 41h24l-3 11h-18Z" fill="#f6c453"/><path d="M110 58h24v2h-24Z" fill="#f6c453"/>
+<line x1="108" y1="43" x2="102" y2="58" stroke="#c97b4a" stroke-width="4" stroke-linecap="round"/><line x1="136" y1="43" x2="142" y2="58" stroke="#c97b4a" stroke-width="4" stroke-linecap="round"/>
+<g id="hs"></g><g id="lbs"></g>
+<circle id="nb" cx="122" cy="56" r="1.4" fill="#fbe9b8"/><circle id="rg" cx="122" cy="56" r="4.2" fill="none" stroke="#f6c453" stroke-width=".5"/>
+<path id="bs" d="M122 51L123.2 54.8 127 56 123.2 57.2 122 61 120.8 57.2 117 56 120.8 54.8Z" fill="#fbe9b8"/></g>
+<circle id="hl" cx="54" cy="52" r="28" fill="#f6c453"/><g id="rm"><g transform="translate(14,0)"><path d="M34 63h12l3 15H31Z" fill="#f08a24"/><path d="M35 43h10l1 20H34Z" fill="#4d8fe0"/><circle cx="40" cy="38" r="3.4" fill="#4d8fe0"/><path d="M36.6 36L37.6 32 39 34.5 40 31 41 34.5 42.4 32 43.4 36Z" fill="#f6c453"/>
+<line x1="36" y1="50" x2="46" y2="56" stroke="#4d8fe0" stroke-width="2.2" stroke-linecap="round"/><line x1="44" y1="56" x2="60" y2="56" stroke="#4d8fe0" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M62 38Q74 56 62 74" fill="none" stroke="#f6c453" stroke-width="1.3" stroke-linecap="round"/><path d="M62 38L46 56 62 74" fill="none" stroke="#fbe9b8" stroke-width=".3"/>
+<g id="ar"><line x1="46" y1="56" x2="75" y2="56" stroke="#f6c453" stroke-width=".7"/><path d="M77 56l-3 -1.3v2.6Z" fill="#f6c453"/></g></g></g>
+</svg>
+
+<div class="sc on"><div class="ctr"><div class="dv big a" style="--d:.3s">दशहरा</div><div class="h1 a" style="--d:1.2s">Victory over Ego</div><div class="a" style="--d:2s">Jai Shri Ram</div></div></div>
+
+<div class="sc"><div class="cap a" style="--d:.2s">Ravan’s ten heads are the ten pulls of the mind, from lust and anger to pride and ego.</div></div>
+
+<div class="sc"><div class="cap a" style="--d:.2s">Cut one head and another grows back. Cutting symptoms never ends the problem, because the root is untouched.</div></div>
+
+<div class="sc"><div class="box a"><div class="dv">नाभिकुंड पियूष बस याकें।<br>नाथ जिअत रावनु बल ताकें॥</div>
+<div>Vibhishan tells Ram: “Lord, the nectar pool in his navel is what keeps Ravan alive and strong.”</div><div class="src">Ramcharitmanas · Lanka Kand</div></div><div class="cap a" style="--d:2.5s">The nectar fed Ravan’s Bhram: the delusion that he could never die.</div></div>
+
+<div class="sc"><div class="box"><div class="dv a" style="--d:.4s">ततो धनुषि संधाय ब्रह्मास्त्रं महाद्युतिः।</div><div class="dv a" style="--d:3.4s">सायक एक नाभि सर सोषा। अपर बीस भुज सिर कर कोषा॥</div></div>
+<div class="cap a" style="--d:3.8s">Ram fixed the Brahmastra to his bow and loosed it. The nectar dried up, and with it the Bhram that Ravan could never die.</div></div>
+
+<div class="sc"><div class="ctr" style="background:rgba(30,3,32,.82)"><div class="h1 a">What the arrow means</div><div class="a" style="--d:.4s">A symbolic reading</div>
+<div class="cards"><div class="card a" style="--d:1s"><b>Ten heads</b>The vices and pulls of the mind. These are only symptoms.</div><div class="card a" style="--d:2.4s"><b>Amrit in the navel</b>Bhram: the delusion of never dying, which feeds ego.</div><div class="card a" style="--d:3.8s"><b>The Brahmastra</b>The power of truth that dissolves Bhram.</div></div></div></div>
+
+<div class="sc"><div class="h1 a" style="position:absolute;top:5%;width:100%;text-align:center"><span class="dv" style="font-size:inherit">राम = परब्रह्म</span></div><div class="cap a" style="--d:1s">Ram is the Parabrahma, the Supreme Reality. Bhram cannot stand before Brahma, so the Brahmastra of truth breaks the delusion of ego.</div></div>
+<div class="sc"><div class="h1 a" style="position:absolute;top:5%;width:100%;text-align:center">Parents are the first guru</div><div class="cap a" style="--d:1s">Kaushalya Mata and Kaikeyi Mata stand behind Ram. The sanskar parents give is the quiet strength behind the arrow that destroys ego.</div></div>
+
+<div class="sc"><div class="ctr"><div class="h1 a" style="font-size:max(26px,8cqw)">Happy Dussehra</div><div class="a" style="--d:1s">May the arrow of knowledge destroy the ego within.</div></div></div>
+</div>
+
+<div class="bar"><button id="pp">Pause</button><button id="rs">Restart</button><div id="seg"></div></div>
+
+<h2>The ten heads</h2>
+<ul class="chips"><li>Kaam: lust</li><li>Krodha: anger</li><li>Moha: delusion</li><li>Lobha: greed</li><li>Mada: pride</li><li>Matsarya: envy</li><li>Manas: the mind</li><li>Buddhi: the intellect</li><li>Chitta: the will</li><li>Ahamkara: ego</li></ul>
+
+<h2>What the sources say</h2>
+<p>Vibhishan’s revelation of the nectar in the navel, and the arrow that dries it, are from Tulsidas’s Ramcharitmanas (Lanka Kand). The Brahmastra is from Valmiki’s Ramayana, where it strikes Ravan’s heart. This film joins the two in a devotional reading. The story of Hanuman taking the special arrow from Mandodari is in neither text and comes from later regional retellings.</p>
+<p>The Bhram reading of the Amrit, Ram as Parabrahma, and the scene about parents are interpretations, not lines from the scriptures. Please check the Sanskrit verse against your own edition of the Valmiki Ramayana.</p>
+</div>
+<script>
+const N=["Kaam","Krodha","Moha","Lobha","Mada","Matsarya","Manas","Buddhi","Chitta","Ahamkara"];
+let h="",l="";
+N.forEach((n,i)=>{const x=122+(i-4.5)*5,y=33-(4.5-Math.abs(i-4.5))*.45,ty=i%2?18.5:23.5;
+h+=`<g class="hd" style="--i:${i}"><use href="#h" x="${x}" y="${y}"/></g>`;
+l+=`<g class="lb" style="--i:${i}"><line x1="${x}" y1="${ty+1}" x2="${x}" y2="${y-4.2}" stroke="#f6d98a" stroke-width=".25"/><text x="${x}" y="${ty}" text-anchor="middle" font-size="1.9" fill="#f6d98a" font-family="system-ui,sans-serif">${n}</text></g>`});
+document.getElementById("hs").innerHTML=h;document.getElementById("lbs").innerHTML=l;
+const S=document.getElementById("st"),sc=[...S.querySelectorAll(".sc")],D=[4,9,6,8,9,9,8,8,4].map(x=>x*1000),sg=document.getElementById("seg"),pp=document.getElementById("pp");
+let cur=0,el=0,run=true;
+const dots=D.map((_,i)=>{const d=document.createElement("i");d.onclick=()=>{go(i);play(true)};sg.appendChild(d);return d});
+function go(i){cur=i;el=0;S.dataset.s=i;sc.forEach((e,k)=>e.classList.toggle("on",k==i));dots.forEach((d,k)=>d.classList.toggle("on",k<=i))}
+function play(on){run=on;S.classList.toggle("paused",!on);pp.textContent=on?"Pause":(cur==D.length-1&&el>=D[cur]?"Replay":"Play")}
+pp.onclick=()=>{if(!run&&cur==D.length-1&&el>=D[cur]){go(0);play(true)}else play(!run)};
+document.getElementById("rs").onclick=()=>{go(0);play(true)};
+setInterval(()=>{if(!run)return;el+=100;if(el>=D[cur]){if(cur<D.length-1)go(cur+1);else{el=D[cur];play(false)}}},100);
+go(0);
+</script></body></html>

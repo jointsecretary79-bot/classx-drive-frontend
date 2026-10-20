@@ -135,6 +135,9 @@
   /* ---- video slides: custom play / pause / sound / settings controls ---- */
   .banner-slide.is-video{ cursor:default; background:#000; }
   .banner-slide.is-video video{ width:100%; height:100%; object-fit:contain; display:block; background:#000; }
+  .banner-slide.is-html{ cursor:default; background:#000; }
+  .banner-slide.is-html iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#000; }
+  .banner-slide.is-html .html-shield{ position:absolute; inset:0; }  /* lets swipes pass through to the slideshow */
   .banner-slide:fullscreen{ aspect-ratio:auto; border:0; border-radius:0; }
   .banner-slide:-webkit-full-screen{ aspect-ratio:auto; border:0; border-radius:0; }
   .vc{ position:absolute; inset:0; color:#fff; font-family:'IBM Plex Sans', sans-serif; }
@@ -1787,6 +1790,44 @@ Examinations- 2026-27- reg
     }
 
 
+    // HTML slide: a festival / event page made as a 16:9 frame, shown in a sandboxed iframe.
+    // b.url = hosted .html file (or b.html = inline text for previews); b.fit !== false hides everything below the frame.
+    function buildHtmlSlide(b) {
+      const slide = document.createElement('div');
+      slide.className = 'banner-slide is-html';
+      slide.setAttribute('role', 'group');
+      slide.setAttribute('aria-label', b.caption || 'Festival slide');
+      const frame = document.createElement('iframe');
+      frame.setAttribute('sandbox', 'allow-scripts');      // runs its own animation, cannot touch the app
+      frame.setAttribute('title', b.caption || 'Festival slide');
+      frame.setAttribute('tabindex', '-1');
+      frame.setAttribute('scrolling', 'no');
+      const shield = document.createElement('div'); shield.className = 'html-shield';
+      slide.appendChild(frame); slide.appendChild(shield);
+      const BLANK = '<!doctype html><body style="margin:0;background:#000">';
+      const FIT = '<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important}</style>';
+      let text = typeof b.html === 'string' ? b.html : null, loading = false, active = false;
+      const prep = (t) => b.fit === false ? t : t + FIT;
+      async function start() {
+        active = true;
+        if (text === null) {
+          if (loading) return;
+          loading = true;
+          try {
+            const u = safeUrl(b.url); if (!u) throw new Error('bad url');
+            const r = await fetch(u); if (!r.ok) throw new Error('http ' + r.status);
+            text = await r.text();
+          } catch (e) { loading = false; return; }
+          loading = false;
+        }
+        if (active) frame.srcdoc = prep(text);              // a fresh srcdoc restarts the animation from the top
+      }
+      function stop() { active = false; frame.srcdoc = BLANK; }
+      frame.srcdoc = BLANK;
+      slide._html = { start, stop };
+      return slide;
+    }
+
     // A banner is "live" when now is inside its optional schedule window (startAt / endAt, epoch ms).
     window.bannerIsLive = function (b, now) {
       now = now || Date.now();
@@ -1814,7 +1855,7 @@ Examinations- 2026-27- reg
       };
 
       items.forEach((b, i) => {
-        const s = b.type === 'video' ? buildVideoSlide(b, ctx) : buildImageSlide(b, i, opts.openImage);
+        const s = b.type === 'html' ? buildHtmlSlide(b) : b.type === 'video' ? buildVideoSlide(b, ctx) : buildImageSlide(b, i, opts.openImage);
         slides.push(s); track.appendChild(s);
         if (dots) { const d = document.createElement('span'); if (i === 0) d.className = 'on'; dots.appendChild(d); }
       });
@@ -1823,11 +1864,15 @@ Examinations- 2026-27- reg
       // play a video when its slide is on screen, pause it when it leaves (or the Home tab is hidden)
       if ('IntersectionObserver' in window) {
         const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+          const h = en.target._html;
+          if (h) { if (en.isIntersecting) h.start(); else h.stop(); return; }
           const vc = en.target._vc; if (!vc) return;
           if (en.isIntersecting) vc.autoStart(); else vc.pause();
         }), { threshold: 0.6 });
-        slides.forEach(s => { if (s._vc) io.observe(s); });
+        slides.forEach(s => { if (s._vc || s._html) io.observe(s); });
         cleanups.push(() => io.disconnect());
+      } else {
+        slides.forEach(s => { if (s._html) s._html.start(); });
       }
       const onVis = () => { if (document.hidden) slides.forEach(s => s._vc && s._vc.pause()); };
       document.addEventListener('visibilitychange', onVis);
@@ -1867,6 +1912,7 @@ Examinations- 2026-27- reg
       return {
         destroy() {
           clearTimeout(timer);
+          slides.forEach(s => { if (s._html) s._html.stop(); });
           cleanups.forEach(fn => { try { fn(); } catch (e) {} });
           slides.forEach(s => { if (s._vc) { s._vc.pause(); s._vc.video.removeAttribute('src'); s._vc.video.load(); } });
         }

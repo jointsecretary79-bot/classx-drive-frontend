@@ -11,5 +11,20 @@
     "endAt": 1792434600000,
     "festival": "NAVARATI",
     "archivedAt": 1792476812113
+  },
+  {
+    "type": "html",
+    "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1792468822718-banner-Dussehra__Victory_over_Ego.html",
+    "path": "uploads/1792468822718-banner-Dussehra__Victory_over_Ego.html",
+    "fit": true,
+    "id": "1792468822718-72ws6f",
+    "caption": "",
+    "link": "",
+    "ts": 1792468822718,
+    "duration": 60,
+    "startAt": 0,
+    "endAt": 0,
+    "festival": "",
+    "archivedAt": 1792604603431
   }
 ]

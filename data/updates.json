@@ -24,7 +24,7 @@
     "files": [],
     "showInTicker": true,
     "showInList": true,
-    "flash": true,
+    "flash": false,
     "folderCbse": false,
     "folderApp": true,
     "ts": 1792748341052

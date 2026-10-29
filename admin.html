@@ -585,25 +585,35 @@
   <section class="panel" id="p-folders" hidden>
     <header class="panel-head">
       <h2>Subject folders</h2>
-      <p>Add extra folders (buttons) to the Subjects tab beyond the built-in ones, or remove ones you added before.</p>
+      <p>Add folder or file buttons: either as a new subject on the Subjects tab, or inside an existing subject (English, Social Science, Maths, Science…). Use Preview to check the button and link before adding.</p>
     </header>
     <div class="stack">
       <div class="card">
-        <h3 class="card-title">Add a folder</h3>
+        <h3 class="card-title">Add a folder or file button</h3>
         <div class="row2">
-          <div><label for="fCode">Short code</label><input id="fCode" placeholder="e.g. SANS" /></div>
-          <div><label for="fTitle">Title</label><input id="fTitle" placeholder="e.g. Sanskrit" /></div>
+          <div><label for="fPlace">Where should it appear?</label>
+            <select id="fPlace"><option value="top">Subjects tab (a new subject button)</option></select></div>
+          <div><label for="fKind">Type</label>
+            <select id="fKind"><option value="folder">Folder</option><option value="file">File (PDF / document / link)</option></select></div>
         </div>
-        <label for="fPeriod">Label (optional)</label>
-        <input id="fPeriod" placeholder="e.g. Period 8" />
+        <div class="row2" id="fTopRow">
+          <div><label for="fCode">Short code</label><input id="fCode" placeholder="e.g. SANS" /></div>
+          <div><label for="fPeriod">Label (optional)</label><input id="fPeriod" placeholder="e.g. Period 8" /></div>
+        </div>
+        <label for="fTitle">Button title</label>
+        <input id="fTitle" placeholder="e.g. Important Notes" />
         <label for="fUrl">Link</label>
-        <input id="fUrl" placeholder="https://drive.google.com/drive/folders/..." />
-        <div class="actions"><button class="btn btn-primary" id="addFolder">Add folder</button></div>
+        <input id="fUrl" placeholder="https://drive.google.com/..." />
+        <div class="actions">
+          <button class="btn btn-secondary" id="previewBtn" type="button">Preview</button>
+          <button class="btn btn-primary" id="addFolder">Add button</button>
+        </div>
+        <div id="fPreview" hidden style="margin-top:14px;"></div>
         <div id="folderStatus" class="status"></div>
       </div>
       <div class="card">
-        <h3 class="card-title">Folders you’ve added</h3>
-        <div class="actions" style="margin-top:12px;"><button class="btn btn-secondary load-btn" id="loadFolders">Load added folders</button></div>
+        <h3 class="card-title">Buttons you’ve added</h3>
+        <div class="actions" style="margin-top:12px;"><button class="btn btn-secondary load-btn" id="loadFolders">Load added buttons</button></div>
         <div id="foldersList"></div>
       </div>
     </div>
@@ -1160,40 +1170,92 @@
     }
   });
 
-  // ============ Manage subject folders ============
+  // ============ Manage subject folders, folder buttons & file buttons ============
+  const SUBJ = [
+    ['1LiSlPYiBGHBQlOY4rsi8EIuAl0mHLrhH','English'],
+    ['1wKru0b0MEZNGKF-o81KXIr2Zi7UhynEc','Social Science'],
+    ['1C3QsbTWAawWCZAFdVKD9FivxiRKR7ZwQ','Mathematics'],
+    ['1dnLPu8Lp8TPogB6acJchf0_2hfhzQBzk','Science'],
+    ['1SsUe4v4-sZuvK3Wq-3c5GaImwcK8RayZ','ಕನ್ನಡ (Kannada)'],
+    ['1jZvqfCARG8HSh-I5aclZAHsJLbprMaH4','हिंदी‑बी (Hindi‑B)'],
+    ['1ZChkwlVcqvIe4QIFbqSJjVBugdm8xFdH','IT 402']
+  ];
+  const SUBJ_NAME = Object.fromEntries(SUBJ);
+  const escH = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  SUBJ.forEach(([id, name]) => {
+    const o = document.createElement('option');
+    o.value = id; o.textContent = 'Inside: ' + name;
+    gh('fPlace').appendChild(o);
+  });
+  function syncPlace() { gh('fTopRow').style.display = gh('fPlace').value === 'top' ? '' : 'none'; }
+  gh('fPlace').addEventListener('change', syncPlace);
+  syncPlace();
+
+  async function readJson(owner, repo, path, branch, token) {
+    const existing = await ghGetFile(owner, repo, path, branch, token);
+    if (!existing) return { list: [], sha: undefined };
+    let list = [];
+    try { list = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); } catch { list = []; }
+    return { list: Array.isArray(list) ? list : [], sha: existing.sha };
+  }
+  const isHttps = (u) => /^https:\/\/\S+$/i.test(u);
+
+  // --- Preview: shows the button exactly as students will see it, plus a test link ---
+  gh('previewBtn').addEventListener('click', () => {
+    const box = gh('fPreview');
+    const top = gh('fPlace').value === 'top';
+    const kind = gh('fKind').value;
+    const title = gh('fTitle').value.trim() || '(no title yet)';
+    const url = gh('fUrl').value.trim();
+    const code = top ? (gh('fCode').value.trim() || '—') : (kind === 'folder' ? 'DIR' : 'FILE');
+    const sub = top ? (gh('fPeriod').value.trim() || '') : (kind === 'folder' ? 'Folder' : 'File');
+    const where = top ? 'Subjects tab' : ('inside ' + SUBJ_NAME[gh('fPlace').value]);
+    const ok = isHttps(url);
+    box.hidden = false;
+    box.innerHTML =
+      '<div class="hint" style="margin:0 0 8px;">Preview — will appear on the <b>' + escH(where) + '</b>:</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border:1px solid #c9cedb;border-left:4px solid #E7A23C;padding:12px 14px;max-width:420px;">' +
+        '<div style="display:flex;align-items:center;gap:12px;"><span style="font-family:monospace;font-size:11px;background:#142645;color:#fff;padding:6px 8px;">' + escH(code) + '</span>' +
+        '<div><div style="font-weight:700;color:#142645;">' + escH(title) + '</div><div style="font-size:11px;color:#5a6178;">' + escH(sub) + '</div></div></div>' +
+        '<span style="font-family:monospace;font-size:11px;color:#c9821f;">OPEN →</span></div>' +
+      '<div class="hint" style="margin-top:8px;">' + (ok
+        ? 'Link looks valid. <a href="' + escH(url) + '" target="_blank" rel="noopener">Test the link ↗</a>'
+        : '<span style="color:#b00020;font-weight:600;">The link must start with https://</span>') + '</div>';
+  });
+
   gh('addFolder').addEventListener('click', async () => {
     const status = gh('folderStatus');
     const creds = getGhCreds(status);
     if (!creds) return;
     const { owner, repo, branch, token } = creds;
+    const place = gh('fPlace').value;
+    const kind = gh('fKind').value;
     const code = gh('fCode').value.trim();
     const title = gh('fTitle').value.trim();
     const period = gh('fPeriod').value.trim();
     const url = gh('fUrl').value.trim();
-    if (!code || !title || !url) {
-      status.textContent = 'Fill in at least the code, title and link.';
+    if (!title || !url || (place === 'top' && !code)) {
+      status.textContent = place === 'top' ? 'Fill in at least the code, title and link.' : 'Fill in the title and link.';
       return;
     }
+    if (!isHttps(url)) { status.textContent = 'The link must start with https://'; return; }
     gh('addFolder').disabled = true;
     status.textContent = 'Saving…';
     try {
-      const existing = await ghGetFile(owner, repo, 'data/folders.json', branch, token);
-      let folders = [];
-      let sha;
-      if (existing) {
-        sha = existing.sha;
-        try { folders = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); }
-        catch { folders = []; }
-      }
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      folders.push({ id, code, title, period, url });
-      const content = b64EncodeUnicode(JSON.stringify(folders, null, 2));
-      await ghPutFile(owner, repo, 'data/folders.json', branch, token, content, `Add folder: ${title}`, sha);
-      status.textContent = 'Added! It will appear on the Subjects tab within a minute or two.';
-      gh('fCode').value = '';
-      gh('fTitle').value = '';
-      gh('fPeriod').value = '';
-      gh('fUrl').value = '';
+      if (place === 'top') {
+        const { list, sha } = await readJson(owner, repo, 'data/folders.json', branch, token);
+        list.push({ id, code, title, period, url, kind });
+        await ghPutFile(owner, repo, 'data/folders.json', branch, token, b64EncodeUnicode(JSON.stringify(list, null, 2)), `Add ${kind}: ${title}`, sha);
+        status.textContent = 'Added! It will appear on the Subjects tab within a minute or two.';
+      } else {
+        const { list, sha } = await readJson(owner, repo, 'data/subitems.json', branch, token);
+        list.push({ id, parent: place, title, url, kind });
+        await ghPutFile(owner, repo, 'data/subitems.json', branch, token, b64EncodeUnicode(JSON.stringify(list, null, 2)), `Add ${kind} in ${SUBJ_NAME[place]}: ${title}`, sha);
+        status.textContent = `Added inside ${SUBJ_NAME[place]}! It will appear within a minute or two.`;
+      }
+      ['fCode','fTitle','fPeriod','fUrl'].forEach(k => gh(k).value = '');
+      gh('fPreview').hidden = true;
     } catch (err) {
       status.textContent = `Error: ${err.message}`;
     } finally {
@@ -1210,38 +1272,31 @@
     status.textContent = 'Loading…';
     listEl.innerHTML = '';
     try {
-      const existing = await ghGetFile(owner, repo, 'data/folders.json', branch, token);
-      if (!existing) {
-        status.textContent = 'No extra folders added yet.';
-        return;
-      }
-      const folders = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, '')));
-      if (!folders.length) {
-        status.textContent = 'No extra folders added yet.';
-        return;
-      }
-      status.textContent = `${folders.length} folder(s) loaded.`;
-      folders.forEach((folder, i) => {
+      const tops = (await readJson(owner, repo, 'data/folders.json', branch, token)).list.map(x => ({ ...x, _file: 'data/folders.json' }));
+      const subs = (await readJson(owner, repo, 'data/subitems.json', branch, token)).list.map(x => ({ ...x, _file: 'data/subitems.json' }));
+      const all = tops.concat(subs);
+      if (!all.length) { status.textContent = 'No extra buttons added yet.'; return; }
+      status.textContent = `${all.length} button(s) loaded.`;
+      all.forEach((item) => {
+        const isSub = item._file === 'data/subitems.json';
         const div = document.createElement('div');
         div.className = 'list-item';
         div.innerHTML = `
-          <div class="li-title">${(folder.code || '')} — ${(folder.title || '').replace(/</g, '&lt;')}</div>
-          <div class="li-sub">${(folder.period || '')}</div>
+          <div class="li-title">${isSub ? '' : escH(item.code || '') + ' — '}${escH(item.title)}</div>
+          <div class="li-sub">${isSub ? 'Inside ' + escH(SUBJ_NAME[item.parent] || 'a subject') : 'Subjects tab'} · ${item.kind === 'file' ? 'File' : 'Folder'}</div>
           <div class="li-actions">
+            <a class="small-btn" style="text-decoration:none;" href="${escH(item.url)}" target="_blank" rel="noopener">Preview ↗</a>
             <button class="small-btn danger e-delete">Delete</button>
           </div>
-          <div class="hint e-status"></div>
-        `;
+          <div class="hint e-status"></div>`;
         div.querySelector('.e-delete').addEventListener('click', async () => {
-          if (!confirm(`Remove the "${folder.title}" folder from Subjects?`)) return;
+          if (!confirm(`Remove "${item.title}"?`)) return;
           const statusEl = div.querySelector('.e-status');
           statusEl.textContent = 'Deleting…';
           try {
-            const fresh = await ghGetFile(owner, repo, 'data/folders.json', branch, token);
-            let all = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, '')));
-            all = all.filter(f => (folder.id ? f.id !== folder.id : f !== all[i]));
-            const content = b64EncodeUnicode(JSON.stringify(all, null, 2));
-            await ghPutFile(owner, repo, 'data/folders.json', branch, token, content, `Delete folder: ${folder.title}`, fresh.sha);
+            const fresh = await readJson(owner, repo, item._file, branch, token);
+            const kept = fresh.list.filter(f => f.id !== item.id);
+            await ghPutFile(owner, repo, item._file, branch, token, b64EncodeUnicode(JSON.stringify(kept, null, 2)), `Delete button: ${item.title}`, fresh.sha);
             div.remove();
           } catch (err) {
             statusEl.textContent = `Error: ${err.message}`;

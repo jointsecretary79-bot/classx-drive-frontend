@@ -1,6 +1,18 @@
 [
   {
     "type": "image",
+    "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1793889447807-banner-shubh_diwali_16x9.jpg",
+    "path": "uploads/1793889447807-banner-shubh_diwali_16x9.jpg",
+    "id": "1793889447807-jhg3ky",
+    "caption": "",
+    "link": "",
+    "ts": 1793889447807,
+    "duration": 5,
+    "startAt": 1794076200000,
+    "endAt": 1794249000000
+  },
+  {
+    "type": "image",
     "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1792039839386-banner-1792039773109.jpg",
     "path": "uploads/1792039839386-banner-1792039773109.jpg",
     "id": "1792039839386-e9os12",

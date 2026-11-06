@@ -781,15 +781,26 @@
   }
 
   async function ghGetFile(owner, repo, path, branch, token) {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, {
+    // cache-busting: GitHub / the browser can hand back an OLD copy (and old sha) right after a write,
+    // which is what made quick consecutive edits and deletes fail.
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}&_=${Date.now()}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      cache: 'no-store',
     });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`GitHub read failed (${res.status})`);
-    return res.json();
+    const data = await res.json();
+    if (data && !data.content && data.sha) {
+      // files over 1 MB come back without content — read the blob instead
+      const br = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs/${data.sha}?_=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }, cache: 'no-store',
+      });
+      if (br.ok) { const bl = await br.json(); data.content = bl.content; }
+    }
+    return data;
   }
 
-  async function ghPutFile(owner, repo, path, branch, token, contentB64, message, sha) {
+  async function ghPutFileRaw(owner, repo, path, branch, token, contentB64, message, sha) {
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
@@ -797,12 +808,12 @@
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || `GitHub write failed (${res.status})`);
+      const err = new Error(errData.message || `GitHub write failed (${res.status})`); err.status = res.status; throw err;
     }
     return res.json();
   }
 
-  async function ghDeleteFile(owner, repo, path, branch, token, sha, message) {
+  async function ghDeleteFileRaw(owner, repo, path, branch, token, sha, message) {
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
@@ -810,9 +821,54 @@
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || `GitHub delete failed (${res.status})`);
+      const err = new Error(errData.message || `GitHub delete failed (${res.status})`); err.status = res.status; throw err;
     }
     return res.json();
+  }
+
+  // GitHub rejects overlapping commits to one branch with a 409. Every write goes through ONE queue
+  // (so several deletes/saves in a row run one after another) and a 409 is retried automatically.
+  let ghChain = Promise.resolve();
+  function ghSerial(fn) { const run = ghChain.then(fn, fn); ghChain = run.catch(() => {}); return run; }
+  const ghSleep = (ms) => new Promise(r => setTimeout(r, ms));
+  async function ghRetry(fn) {
+    for (let i = 0; ; i++) {
+      try { return await fn(); }
+      catch (e) { if (e.status === 409 && i < 4) { await ghSleep(700 * (i + 1)); continue; } throw e; }
+    }
+  }
+  function ghPutFile(...args) { return ghSerial(() => ghRetry(() => ghPutFileRaw(...args))); }
+  function ghDeleteFile(owner, repo, path, branch, token, sha, message) {
+    return ghSerial(() => ghRetry(async () => {
+      // the sha can be stale after another commit — look it up fresh when GitHub says it does not match
+      try { return await ghDeleteFileRaw(owner, repo, path, branch, token, sha, message); }
+      catch (e) {
+        if (e.status === 409 || e.status === 422) {
+          const cur = await ghGetFile(owner, repo, path, branch, token);
+          if (!cur) return null;                       // already gone — nothing to delete
+          return ghDeleteFileRaw(owner, repo, path, branch, token, cur.sha, message);
+        }
+        throw e;
+      }
+    }));
+  }
+  // Read-modify-write data/updates.json safely: re-reads the newest copy on every attempt.
+  function mutateUpdatesJson(owner, repo, branch, token, mutator, message) {
+    return ghSerial(async () => {
+      for (let i = 0; ; i++) {
+        const fresh = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
+        let entries = [];
+        if (fresh) { try { entries = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, ''))); } catch { entries = []; } }
+        const result = mutator(entries) || entries;
+        try {
+          await ghPutFileRaw(owner, repo, 'data/updates.json', branch, token, b64EncodeUnicode(JSON.stringify(result, null, 2)), message, fresh ? fresh.sha : undefined);
+          return result;
+        } catch (e) {
+          if ((e.status === 409 || e.status === 422) && i < 5) { await ghSleep(700 * (i + 1)); continue; }
+          throw e;
+        }
+      }
+    });
   }
 
   async function ghListDir(owner, repo, path, branch, token) {
@@ -897,27 +953,19 @@
       }
 
       // 2. Read the current updates.json (create it fresh if it doesn't exist yet)
-      status.textContent = 'Reading existing updates…';
-      const existing = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
-      let entries = [];
-      let sha;
-      if (existing) {
-        sha = existing.sha;
-        try { entries = JSON.parse(b64DecodeUnicode(existing.content.replace(/\n/g, ''))); }
-        catch { entries = []; }
-      }
+      status.textContent = 'Saving update…';
 
       // 3. Prepend the new entry and write it back
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      entries.unshift({
-        id, date, time, title, note, url,
-        files: uploadedFiles,
-        showInTicker, showInList, flash, folderCbse, folderApp,
-        ts: Date.now(),
-      });
-      status.textContent = 'Saving update…';
-      const newContent = b64EncodeUnicode(JSON.stringify(entries, null, 2));
-      await ghPutFile(owner, repo, 'data/updates.json', branch, token, newContent, `Post update: ${title}`, sha);
+      await mutateUpdatesJson(owner, repo, branch, token, (entries) => {
+        entries.unshift({
+          id, date, time, title, note, url,
+          files: uploadedFiles,
+          showInTicker, showInList, flash, folderCbse, folderApp,
+          ts: Date.now(),
+        });
+        return entries;
+      }, `Post update: ${title}`);
 
       status.textContent = 'Posted! It will appear on the app within a minute or two.';
       gh('uTitle').value = '';
@@ -1016,11 +1064,21 @@
 
   // ============ Manage posted updates ============
   function renderEntryRow(entry, index, owner, repo, branch, token, sha) {
-    const esc = (s) => String(s || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    const files = Array.isArray(entry.files) ? entry.files : [];
-    const filesHtml = files.length
-      ? `<div class="li-sub">Attached: ${files.map(f => esc(f.name)).join(', ')} — <span class="hint" style="display:inline;">to swap a file, delete this entry and post it again with the new file(s)</span></div>`
-      : '';
+    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const isImg = (n) => /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(n || '');
+    const isPdf = (n) => /\.pdf(\?|$)/i.test(n || '');
+
+    // Attached files. Older posts saved only a single url pointing at the file — treat that as an attachment too.
+    let files = Array.isArray(entry.files) ? entry.files.map(f => ({ name: f.name, url: f.url })) : [];
+    if (!files.length && entry.url) {
+      const clean = String(entry.url).split('?')[0];
+      if (isImg(clean) || isPdf(clean)) {
+        let nm = clean.split('/').pop() || 'file';
+        try { nm = decodeURIComponent(nm); } catch (e) {}
+        files = [{ name: nm, url: entry.url }];
+      }
+    }
+    const removed = new Set();   // urls the admin has marked for removal
 
     const div = document.createElement('div');
     div.className = 'list-item';
@@ -1035,7 +1093,11 @@
       <input class="e-note" value="${esc(entry.note)}">
       <label>Link</label>
       <input class="e-url" value="${esc(entry.url)}">
-      ${filesHtml}
+      <label>Attached photos / PDFs</label>
+      <div class="e-files"></div>
+      <label>Add or replace files (optional)</label>
+      <input type="file" class="e-newfiles" multiple accept="image/*,.pdf">
+      <div class="hint">New files are added on “Save changes”. Use “Remove” on an existing file to replace it.</div>
       <div class="li-checks">
         <label><input type="checkbox" class="e-ticker" ${entry.showInTicker !== false && entry.ticker !== false ? 'checked' : ''}> Show in ticker</label>
         <label><input type="checkbox" class="e-flash" ${entry.flash ? 'checked' : ''}> Flash red</label>
@@ -1050,44 +1112,122 @@
       <div class="hint e-status"></div>
     `;
 
+    const filesBox = div.querySelector('.e-files');
+    function drawFiles() {
+      filesBox.innerHTML = '';
+      if (!files.length) { filesBox.innerHTML = '<div class="hint">No photo or PDF attached.</div>'; return; }
+      files.forEach(f => {
+        const gone = removed.has(f.url);
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;margin:6px 0;' + (gone ? 'opacity:.45;' : '');
+        const prev = document.createElement(isImg(f.name || f.url) ? 'img' : 'span');
+        if (prev.tagName === 'IMG') { prev.src = f.url; prev.alt = f.name || ''; prev.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid #ccd;'; }
+        else { prev.textContent = '📄'; prev.style.cssText = 'font-size:30px;width:56px;text-align:center;'; }
+        const info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0;word-break:break-all;font-size:13px;';
+        info.textContent = (f.name || f.url) + (gone ? '  (will be removed)' : '');
+        const open = document.createElement('a');
+        open.className = 'small-btn'; open.style.textDecoration = 'none'; open.textContent = 'Open';
+        open.href = f.url; open.target = '_blank'; open.rel = 'noopener';
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'small-btn' + (gone ? '' : ' danger');
+        rm.textContent = gone ? 'Undo' : 'Remove';
+        rm.addEventListener('click', () => { gone ? removed.delete(f.url) : removed.add(f.url); drawFiles(); });
+        row.append(prev, info, open, rm);
+        filesBox.appendChild(row);
+      });
+    }
+    drawFiles();
+
+    // repo path of an uploaded file (so a removed file can be deleted from /uploads too)
+    const repoPathOf = (u) => {
+      const m = String(u || '').match(/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[^/]+\/(uploads\/[^?#]+)/i);
+      if (!m) return null;
+      try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+    };
+
     div.querySelector('.e-save').addEventListener('click', async () => {
       const statusEl = div.querySelector('.e-status');
+      const saveBtn = div.querySelector('.e-save');
+      saveBtn.disabled = true;
       statusEl.textContent = 'Saving…';
       try {
-        const fresh = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
-        const entries = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, '')));
-        const target = entries.find(e => e.id === entry.id) || entries[index];
-        target.date = div.querySelector('.e-date').value.trim();
-        target.time = div.querySelector('.e-time').value.trim();
-        target.title = div.querySelector('.e-title').value.trim();
-        target.note = div.querySelector('.e-note').value.trim();
-        target.url = div.querySelector('.e-url').value.trim();
-        target.showInTicker = div.querySelector('.e-ticker').checked;
-        target.flash = div.querySelector('.e-flash').checked;
-        target.showInList = div.querySelector('.e-list').checked;
-        target.folderCbse = div.querySelector('.e-cbse').checked;
-        target.folderApp = div.querySelector('.e-app').checked;
-        const content = b64EncodeUnicode(JSON.stringify(entries, null, 2));
-        await ghPutFile(owner, repo, 'data/updates.json', branch, token, content, `Edit update: ${target.title}`, fresh.sha);
+        // 1. upload any newly chosen files
+        const picked = div.querySelector('.e-newfiles').files;
+        const added = [];
+        for (let i = 0; i < picked.length; i++) {
+          statusEl.textContent = `Uploading file ${i + 1} of ${picked.length}…`;
+          const file = picked[i];
+          const b64 = await fileToBase64(file);
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const path = `uploads/${Date.now()}-${i}-${safeName}`;
+          await ghPutFile(owner, repo, path, branch, token, b64, `Upload ${file.name} via admin portal`);
+          added.push({ name: file.name, url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}` });
+        }
+        const keptFiles = files.filter(f => !removed.has(f.url)).concat(added);
+        const removedUrls = [...removed];
+
+        // 2. write the entry (re-reads the newest updates.json, retries on conflicts)
+        statusEl.textContent = 'Saving…';
+        const vals = {
+          date: div.querySelector('.e-date').value.trim(),
+          time: div.querySelector('.e-time').value.trim(),
+          title: div.querySelector('.e-title').value.trim(),
+          note: div.querySelector('.e-note').value.trim(),
+          url: div.querySelector('.e-url').value.trim(),
+          showInTicker: div.querySelector('.e-ticker').checked,
+          flash: div.querySelector('.e-flash').checked,
+          showInList: div.querySelector('.e-list').checked,
+          folderCbse: div.querySelector('.e-cbse').checked,
+          folderApp: div.querySelector('.e-app').checked,
+        };
+        if (removedUrls.includes(vals.url)) vals.url = keptFiles[0] ? keptFiles[0].url : '';
+        else if (!vals.url && keptFiles[0]) vals.url = keptFiles[0].url;
+        await mutateUpdatesJson(owner, repo, branch, token, (entries) => {
+          const target = entries.find(e => e.id === entry.id) || entries[index];
+          if (!target) throw new Error('This update no longer exists — reload the list.');
+          Object.assign(target, vals, { files: keptFiles });
+          return entries;
+        }, `Edit update: ${vals.title}`);
+
+        // 3. remove the replaced files from the repo (best effort)
+        for (const u of removedUrls) {
+          const rp = repoPathOf(u);
+          if (!rp) continue;
+          try { const cur = await ghGetFile(owner, repo, rp, branch, token); if (cur) await ghDeleteFile(owner, repo, rp, branch, token, cur.sha, 'Remove replaced attachment via admin portal'); } catch (e) {}
+        }
+        files = keptFiles; removed.clear(); entry.url = vals.url;
+        div.querySelector('.e-url').value = vals.url;
+        div.querySelector('.e-newfiles').value = '';
+        drawFiles();
         statusEl.textContent = 'Saved.';
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
+      } finally {
+        saveBtn.disabled = false;
       }
     });
 
     div.querySelector('.e-delete').addEventListener('click', async () => {
-      if (!confirm(`Delete "${entry.title}" entirely? This removes it from the ticker, the list and any folders.`)) return;
+      if (!confirm(`Delete "${entry.title}" entirely? This removes it from the ticker, the list and any folders, and deletes its attached files.`)) return;
       const statusEl = div.querySelector('.e-status');
+      const delBtn = div.querySelector('.e-delete');
+      delBtn.disabled = true;
       statusEl.textContent = 'Deleting…';
       try {
-        const fresh = await ghGetFile(owner, repo, 'data/updates.json', branch, token);
-        let entries = JSON.parse(b64DecodeUnicode(fresh.content.replace(/\n/g, '')));
-        entries = entries.filter(e => (entry.id ? e.id !== entry.id : e !== entries[index]));
-        const content = b64EncodeUnicode(JSON.stringify(entries, null, 2));
-        await ghPutFile(owner, repo, 'data/updates.json', branch, token, content, `Delete update: ${entry.title}`, fresh.sha);
-        div.remove();
+        await mutateUpdatesJson(owner, repo, branch, token, (entries) => {
+          return entries.filter((e, i) => (entry.id ? e.id !== entry.id : i !== index));
+        }, `Delete update: ${entry.title}`);
+        div.remove();   // the post is gone — remove the card right away
+        // attached files are cleaned up in the background; a failure here never blocks the delete
+        for (const f of files) {
+          const rp = repoPathOf(f.url);
+          if (!rp) continue;
+          try { const cur = await ghGetFile(owner, repo, rp, branch, token); if (cur) await ghDeleteFile(owner, repo, rp, branch, token, cur.sha, 'Delete attachment of removed update via admin portal'); } catch (e) {}
+        }
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
+        delBtn.disabled = false;
       }
     });
 

@@ -3,13 +3,13 @@
     "id": "1793976326639-9wkigh",
     "date": "06 NOV",
     "time": "08:12 pm",
-    "title": "FINAL CLASS X BOARD EXAMINATION TIME-TABLE DECLARED OFFICALLY BY CBSE.",
+    "title": "CLASS X BOARD EXAMINATION DATE-SHEET(TIME-TABLE) ANNOUNCED OFFICALLY BY CBSE.",
     "note": "2027",
     "url": "https://docs.google.com/document/d/1e-zFxNOOAb9I3p4Pc2nrmq_EiDizC8dLL6qlPFXTj_8/edit?usp=sharing",
     "files": [
       {
         "name": "Datesheet_ClassX _XII_2027_Main_06112026.pdf",
-        "label": "CBSE OFFICAL DATESHEET",
+        "label": "CBSE OFFICAL VERSION DATESHEET",
         "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1793976317856-0-Datesheet_ClassX__XII_2027_Main_06112026.pdf"
       }
     ],
@@ -18,7 +18,13 @@
     "flash": true,
     "folderCbse": true,
     "folderApp": false,
-    "ts": 1793976326639
+    "ts": 1793976326639,
+    "links": [
+      {
+        "text": "Simplifed Version",
+        "url": "https://docs.google.com/document/d/1e-zFxNOOAb9I3p4Pc2nrmq_EiDizC8dLL6qlPFXTj_8/edit?usp=sharing"
+      }
+    ]
   },
   {
     "id": "1793270901885-squbxl",

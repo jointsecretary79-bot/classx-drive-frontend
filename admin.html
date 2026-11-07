@@ -287,6 +287,11 @@
   .vc button:focus-visible, .vc input:focus-visible, .vc a:focus-visible{ outline:2px solid var(--marigold); outline-offset:1px; }
 
 
+  .banner-actions{ position:absolute; left:0; right:0; bottom:12px; display:none; justify-content:center; flex-wrap:wrap; gap:8px; z-index:3; padding:0 10px; }
+  .banner-slide.show-actions .banner-actions{ display:flex; }
+  .banner-slide.show-actions .banner-cap{ opacity:0; }
+  .banner-act{ font:inherit; font-size:11.5px; font-weight:600; color:#fff; background:rgba(12,23,48,0.78); border:1px solid rgba(231,162,60,0.7); border-radius:16px; padding:5px 10px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:4px; line-height:1.2; }
+
   /* ---------- responsive ---------- */
   @media (max-width:1100px){
     .split{ grid-template-columns:1fr; }
@@ -384,8 +389,8 @@
         <input id="uNote" placeholder="e.g. SCIENCE CH.4 NOTES" />
 
         <h3 class="group-title">Link and files</h3>
-        <label for="uUrl">Link (optional — leave blank if attaching a file)</label>
-        <input id="uUrl" placeholder="https://drive.google.com/..." />
+        <label>Links (optional)</label>
+        <div id="uLinks"></div>
         <label for="uFile">Photos and/or a PDF (optional)</label>
         <input id="uFile" type="file" multiple accept="image/*,.pdf" />
         <div id="uFileNames"></div>
@@ -482,9 +487,9 @@
 
           <label for="bCaption">Caption (optional)</label>
           <input id="bCaption" placeholder="e.g. Thought of the day" maxlength="80" />
-          <label for="bLink">Link when tapped (optional)</label>
-          <input id="bLink" placeholder="https://…" />
-          <p class="hint" id="bLinkHint">Leave blank to just enlarge the image.</p>
+          <label>Links shown when the picture is tapped (optional)</label>
+          <div id="bLinks"></div>
+          <p class="hint" id="bLinkHint">Tapping the picture shows a Magnify button plus one button for each link.</p>
 
           <h3 class="group-title">How long &amp; when</h3>
           <label for="bDuration">Show for (seconds)</label>
@@ -765,6 +770,7 @@
   gh('ghBranch').value = localStorage.getItem('classx_gh_branch') || 'main';
   gh('uDate').value = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase().replace(/\s/g, ' ');
   gh('uFile').addEventListener('change', () => renderNameInputs(gh('uFile').files, gh('uFileNames')));
+  const postLinks = makeLinksEditor(gh('uLinks'), []);
   gh('uTime').value = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   function b64EncodeUnicode(str) {
@@ -772,6 +778,37 @@
   }
   function b64DecodeUnicode(str) {
     return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+  // Links editor: rows of [button text] [link]. Each link becomes its own button in the app, with this text.
+  function makeLinksEditor(box, initial, onChange) {
+    box.innerHTML = '';
+    const list = document.createElement('div'); box.appendChild(list);
+    const add = document.createElement('button');
+    add.type = 'button'; add.className = 'small-btn'; add.textContent = '+ Add another link'; add.style.marginTop = '6px';
+    const note = document.createElement('div'); note.className = 'hint';
+    note.textContent = 'Each link shows as its own button for students, with the text you type. Leave the text empty to show “Open link”.';
+    box.append(add, note);
+    const changed = () => { if (onChange) onChange(); };
+    function addRow(l) {
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap;';
+      const tx = document.createElement('input'); tx.className = 'lk-text'; tx.maxLength = 60; tx.placeholder = 'Button text (e.g. Download datesheet)'; tx.style.cssText = 'flex:1 1 170px;min-width:0;';
+      const ur = document.createElement('input'); ur.className = 'lk-url'; ur.placeholder = 'https://…'; ur.style.cssText = 'flex:2 1 220px;min-width:0;';
+      const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'small-btn danger'; rm.textContent = '×'; rm.setAttribute('aria-label', 'Remove this link');
+      tx.value = (l && l.text) || ''; ur.value = (l && l.url) || '';
+      rm.addEventListener('click', () => { row.remove(); if (!list.children.length) addRow(); changed(); });
+      tx.addEventListener('input', changed); ur.addEventListener('input', changed);
+      row.append(tx, ur, rm); list.appendChild(row);
+    }
+    add.addEventListener('click', () => addRow());
+    const api = {
+      set(arr) { list.innerHTML = ''; (arr && arr.length ? arr : [null]).forEach(addRow); },
+      getLinks() {
+        return Array.from(list.children).map(r => ({ text: r.querySelector('.lk-text').value.trim(), url: r.querySelector('.lk-url').value.trim() })).filter(l => l.url);
+      },
+      validate() { return api.getLinks().some(l => !/^https?:\/\/\S+$/i.test(l.url)) ? 'Every link must start with https://' : ''; },
+    };
+    api.set(initial);
+    return api;
   }
   // One "Document name" box per chosen file — this is the name students see in the app.
   function renderNameInputs(files, box) {
@@ -925,7 +962,9 @@
     const time = gh('uTime').value.trim();
     const title = gh('uTitle').value.trim();
     const note = gh('uNote').value.trim();
-    let url = gh('uUrl').value.trim();
+    const linkErr = postLinks.validate();
+    const postedLinks = postLinks.getLinks();
+    let url = postedLinks[0] ? postedLinks[0].url : '';
     const files = gh('uFile').files;
     const showInTicker = gh('uTicker').checked;
     const flash = gh('uFlash').checked;
@@ -943,6 +982,7 @@
       status.textContent = 'Repository should look like owner/repo-name.';
       return;
     }
+    if (linkErr) { status.textContent = 'Error: ' + linkErr; return; }
 
     localStorage.setItem('classx_gh_token', token);
     localStorage.setItem('classx_gh_repo', repoFull);
@@ -975,7 +1015,7 @@
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       await mutateUpdatesJson(owner, repo, branch, token, (entries) => {
         entries.unshift({
-          id, date, time, title, note, url,
+          id, date, time, title, note, url, links: postedLinks,
           files: uploadedFiles,
           showInTicker, showInList, flash, folderCbse, folderApp,
           ts: Date.now(),
@@ -986,7 +1026,7 @@
       status.textContent = 'Posted! It will appear on the app within a minute or two.';
       gh('uTitle').value = '';
       gh('uNote').value = '';
-      gh('uUrl').value = '';
+      postLinks.set([]);
       gh('uFile').value = '';
       gh('uFileNames').innerHTML = '';
       gh('uTicker').checked = true;
@@ -1108,8 +1148,8 @@
       <input class="e-title" value="${esc(entry.title)}">
       <label>Note / tag</label>
       <input class="e-note" value="${esc(entry.note)}">
-      <label>Link</label>
-      <input class="e-url" value="${esc(entry.url)}">
+      <label>Links (button text + link)</label>
+      <div class="e-links"></div>
       <label>Attached photos / PDFs</label>
       <div class="e-files"></div>
       <label>Add or replace files (optional)</label>
@@ -1163,6 +1203,11 @@
       });
     }
     drawFiles();
+    // existing links; an older post's single url counts as a link unless it is just its own attachment
+    const fileUrlSet = new Set(files.map(f => f.url));
+    const startLinks = Array.isArray(entry.links) && entry.links.length ? entry.links
+      : (entry.url && !fileUrlSet.has(entry.url) ? [{ text: '', url: entry.url }] : []);
+    const linkEd = makeLinksEditor(div.querySelector('.e-links'), startLinks);
     div.querySelector('.e-newfiles').addEventListener('change', () => renderNameInputs(div.querySelector('.e-newfiles').files, div.querySelector('.e-newnames')));
 
     // repo path of an uploaded file (so a removed file can be deleted from /uploads too)
@@ -1196,20 +1241,22 @@
 
         // 2. write the entry (re-reads the newest updates.json, retries on conflicts)
         statusEl.textContent = 'Saving…';
+        const linkErr = linkEd.validate();
+        if (linkErr) throw new Error(linkErr);
+        const eLinks = linkEd.getLinks();
         const vals = {
           date: div.querySelector('.e-date').value.trim(),
           time: div.querySelector('.e-time').value.trim(),
           title: div.querySelector('.e-title').value.trim(),
           note: div.querySelector('.e-note').value.trim(),
-          url: div.querySelector('.e-url').value.trim(),
+          links: eLinks,
           showInTicker: div.querySelector('.e-ticker').checked,
           flash: div.querySelector('.e-flash').checked,
           showInList: div.querySelector('.e-list').checked,
           folderCbse: div.querySelector('.e-cbse').checked,
           folderApp: div.querySelector('.e-app').checked,
         };
-        if (removedUrls.includes(vals.url)) vals.url = keptFiles[0] ? keptFiles[0].url : '';
-        else if (!vals.url && keptFiles[0]) vals.url = keptFiles[0].url;
+        vals.url = eLinks[0] ? eLinks[0].url : (keptFiles[0] ? keptFiles[0].url : '');
         await mutateUpdatesJson(owner, repo, branch, token, (entries) => {
           const target = entry.id ? entries.find(e => e.id === entry.id) : entries[index];
           if (!target) throw new Error('This update no longer exists — reload the list.');
@@ -1223,8 +1270,7 @@
           if (!rp) continue;
           try { const cur = await ghGetFile(owner, repo, rp, branch, token); if (cur) await ghDeleteFile(owner, repo, rp, branch, token, cur.sha, 'Remove replaced attachment via admin portal'); } catch (e) {}
         }
-        files = keptFiles; removed.clear(); entry.url = vals.url;
-        div.querySelector('.e-url').value = vals.url;
+        files = keptFiles; removed.clear(); entry.url = vals.url; entry.links = vals.links;
         div.querySelector('.e-newfiles').value = '';
         div.querySelector('.e-newnames').innerHTML = '';
         drawFiles();
@@ -1541,9 +1587,17 @@
     }
     const safeUrl = (u) => /^https?:\/\//i.test(u || '') ? u : '';
 
+    function bannerLinkList(b) {
+      const out = [];
+      if (Array.isArray(b.links) && b.links.length) {
+        b.links.forEach(l => { const u = l && safeUrl(l.url); if (u) out.push({ text: ((l.text) || '').trim(), url: u }); });
+      } else if (safeUrl(b.link)) out.push({ text: '', url: b.link });
+      return out;
+    }
+
     function buildImageSlide(b, i, openImage) {
-      const slide = document.createElement('button');
-      slide.type = 'button';
+      const slide = document.createElement('div');
+      slide.setAttribute('role', 'button'); slide.tabIndex = 0;
       slide.className = 'banner-slide';
       slide.setAttribute('aria-label', b.caption || 'Banner ' + (i + 1));
       const img = document.createElement('img');
@@ -1554,9 +1608,42 @@
         cap.className = 'banner-cap'; cap.textContent = b.caption;
         slide.appendChild(cap);
       }
+      const zoom = () => { if (openImage) openImage(b.url, b.caption || ''); };
+      const links = bannerLinkList(b);
+      let hideT;
+      const hideActions = () => { clearTimeout(hideT); slide.classList.remove('show-actions'); };
+
+      // The buttons stay hidden so they never cover the text in the picture.
+      // Tapping the picture shows them: Magnify, and one button for every link, with the text the admin chose.
+      if (openImage || links.length) {
+        const actions = document.createElement('div');
+        actions.className = 'banner-actions';
+        if (openImage) {
+          const mag = document.createElement('button');
+          mag.type = 'button'; mag.className = 'banner-act';
+          mag.setAttribute('aria-label', 'Magnify image');
+          mag.textContent = '🔍 Magnify';
+          mag.addEventListener('click', (e) => { e.stopPropagation(); hideActions(); zoom(); });
+          actions.appendChild(mag);
+        }
+        links.forEach(l => {
+          const isPdf = /\.pdf([?#]|$)/i.test(l.url);
+          const a = document.createElement('a');
+          a.className = 'banner-act'; a.href = l.url; a.target = '_blank'; a.rel = 'noopener';
+          a.textContent = l.text || (isPdf ? '📄 Open PDF' : '🔗 Open link');
+          a.addEventListener('click', (e) => { e.stopPropagation(); hideActions(); });
+          actions.appendChild(a);
+        });
+        slide.appendChild(actions);
+      }
       slide.addEventListener('click', () => {
-        if (b.link) window.open(b.link, '_blank', 'noopener');
-        else if (openImage) openImage(b.url, b.caption || '');
+        if (!(openImage || links.length)) return;
+        if (slide.classList.contains('show-actions')) { hideActions(); return; }
+        slide.classList.add('show-actions');
+        clearTimeout(hideT); hideT = setTimeout(hideActions, 6000);
+      });
+      slide.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); slide.click(); }
       });
       return slide;
     }
@@ -2052,28 +2139,30 @@
   }
 
   // ---- live preview (same player as the app) ----
+  const bnLinks = makeLinksEditor(gh('bLinks'), [], () => liveSoon());
   let liveCtl = null, liveUrls = [];
   let bHtmlText = '';
   const objUrl = (f) => { const u = URL.createObjectURL(f); liveUrls.push(u); return u; };
 
   function draftItem() {
-    const caption = gh('bCaption').value.trim(), link = gh('bLink').value.trim(), duration = clampDur(gh('bDuration').value);
+    const bl = bnLinks.getLinks(), link = bl[0] ? bl[0].url : '', links = bl, duration = clampDur(gh('bDuration').value);
+    const caption = gh('bCaption').value.trim();
     const play = { autoplay: gh('bAutoplay').checked, loop: gh('bLoop').checked, muted: gh('bMuted').checked };
     if (bType === 'html') {
       return bHtmlText ? { type: 'html', html: bHtmlText, caption, fit: gh('bHtmlFit').checked, duration } : null;
     }
     if (bType === 'image') {
       const f = gh('bFile').files[0];
-      return f ? { type: 'image', url: objUrl(f), caption, link, duration } : null;
+      return f ? { type: 'image', url: objUrl(f), caption, link, links, duration } : null;
     }
     const cover = gh('bCover').files[0];
     const poster = cover ? objUrl(cover) : '';
     if (bType === 'video') {
       const f = gh('bVideoFile').files[0];
-      return f ? Object.assign({ type: 'video', url: objUrl(f), poster, caption, link, duration }, play) : null;
+      return f ? Object.assign({ type: 'video', url: objUrl(f), poster, caption, link, links, duration }, play) : null;
     }
     const u = gh('bVideoUrl').value.trim();
-    return /^https?:\/\//i.test(u) ? Object.assign({ type: 'video', url: u, poster, caption, link, duration }, play) : null;
+    return /^https?:\/\//i.test(u) ? Object.assign({ type: 'video', url: u, poster, caption, link, links, duration }, play) : null;
   }
 
   function renderLive() {
@@ -2098,7 +2187,6 @@
   ['bFile', 'bVideoFile', 'bCover'].forEach(id => gh(id).addEventListener('change', renderLive));
   gh('bVideoUrl').addEventListener('input', liveSoon);
   gh('bVideoUrl').addEventListener('change', renderLive);
-  gh('bLink').addEventListener('input', liveSoon);
   gh('bDuration').addEventListener('input', liveSoon);
   gh('bHtmlFit').addEventListener('change', renderLive);
   gh('bHtmlFile').addEventListener('change', async () => {
@@ -2155,7 +2243,9 @@
     if (!creds) return;
     const { owner, repo, branch, token } = creds;
     const caption = gh('bCaption').value.trim();
-    const link = gh('bLink').value.trim();
+    const bnList = bnLinks.getLinks(), link = bnList[0] ? bnList[0].url : '';
+    const bnErr = bnLinks.validate();
+    if (bnErr) { status.textContent = bnErr; return; }
 
     const sched = readSchedule();
     if (sched.error) { status.textContent = sched.error; return; }
@@ -2231,7 +2321,7 @@
         item.autoplay = autoplay; item.loop = gh('bLoop').checked; item.muted = autoplay ? true : gh('bMuted').checked;
       }
       item.id = `${ts}-${Math.random().toString(36).slice(2, 8)}`;
-      item.caption = caption; item.link = link; item.ts = ts;
+      item.caption = caption; item.link = link; item.links = bnList; item.ts = ts;
       item.duration = sched.duration; item.startAt = sched.startAt; item.endAt = sched.endAt;
 
       status.textContent = 'Saving banner list…';
@@ -2244,7 +2334,7 @@
         : 'Uploaded! It will appear on the home screen within a minute or two.';
       ['bFile', 'bVideoFile', 'bCover', 'bHtmlFile'].forEach(id => { gh(id).value = ''; });
       bHtmlText = '';
-      gh('bVideoUrl').value = ''; gh('bCaption').value = ''; gh('bLink').value = '';
+      gh('bVideoUrl').value = ''; gh('bCaption').value = ''; bnLinks.set([]);
       gh('bDuration').value = bType === 'html' ? 60 : 5; gh('bStart').value = ''; gh('bEnd').value = '';
       renderLive();
     } catch (err) {
@@ -2316,8 +2406,8 @@
       <div class="edit-box" hidden>
         <label>Caption</label>
         <input class="b-cap" maxlength="80" value="${escHtml(b.caption)}">
-        <label>Link when tapped</label>
-        <input class="b-lnk" value="${escHtml(b.link)}" placeholder="https://…">
+        <label>Links shown when tapped (button text + link)</label>
+        <div class="b-links"></div>
         <label>Show for (seconds)</label>
         <input class="b-dur" type="number" min="2" max="300" step="1" value="${clampDur(b.duration)}">
         <label>Start showing on</label>
@@ -2336,6 +2426,7 @@
     div.querySelector('.t').textContent = b.caption || '(no caption)';
     const st = div.querySelector('.e-status');
     const box = div.querySelector('.edit-box');
+    const bEd = makeLinksEditor(div.querySelector('.b-links'), Array.isArray(b.links) && b.links.length ? b.links : (b.link ? [{ text: '', url: b.link }] : []));
     const schedLine = div.querySelector('.sched-line');
     schedLine.textContent = scheduleSummary(b);
 
@@ -2357,7 +2448,8 @@
         const target = fresh.list.find(x => x.id === b.id);
         if (!target) throw new Error('This banner was already removed.');
         target.caption = div.querySelector('.b-cap').value.trim();
-        target.link = div.querySelector('.b-lnk').value.trim();
+        const bErr = bEd.validate(); if (bErr) throw new Error(bErr);
+        target.links = bEd.getLinks(); target.link = target.links[0] ? target.links[0].url : '';
         target.duration = clampDur(div.querySelector('.b-dur').value);
         target.startAt = eStart; target.endAt = eEnd;
         if (isHtml) target.fit = div.querySelector('.b-fit').checked;

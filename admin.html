@@ -388,6 +388,7 @@
         <input id="uUrl" placeholder="https://drive.google.com/..." />
         <label for="uFile">Photos and/or a PDF (optional)</label>
         <input id="uFile" type="file" multiple accept="image/*,.pdf" />
+        <div id="uFileNames"></div>
         <p class="hint">Pick as many as you like. Photos show as a tappable, zoomable gallery; PDFs get their own “Open PDF” button. Every file is stamped with today’s date and time. If you don’t set a link, the update points to the first file.</p>
 
         <h3 class="group-title">Where it shows</h3>
@@ -763,6 +764,7 @@
   gh('ghRepo').value = localStorage.getItem('classx_gh_repo') || 'jointsecretary79-bot/classx-drive-frontend';
   gh('ghBranch').value = localStorage.getItem('classx_gh_branch') || 'main';
   gh('uDate').value = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase().replace(/\s/g, ' ');
+  gh('uFile').addEventListener('change', () => renderNameInputs(gh('uFile').files, gh('uFileNames')));
   gh('uTime').value = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   function b64EncodeUnicode(str) {
@@ -770,6 +772,19 @@
   }
   function b64DecodeUnicode(str) {
     return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+  // One "Document name" box per chosen file — this is the name students see in the app.
+  function renderNameInputs(files, box) {
+    box.innerHTML = '';
+    if (!files || !files.length) return;
+    const t = document.createElement('label'); t.textContent = 'Document names (shown to students)'; box.appendChild(t);
+    Array.from(files).forEach(f => {
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;align-items:center;margin:6px 0;';
+      const tag = document.createElement('span'); tag.textContent = /\.pdf$/i.test(f.name) ? '📄' : '🖼️'; tag.style.flex = '0 0 auto';
+      const inp = document.createElement('input'); inp.className = 'fname-input'; inp.maxLength = 80;
+      inp.placeholder = 'Document name'; inp.value = f.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ');
+      row.append(tag, inp); box.appendChild(row);
+    });
   }
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -938,6 +953,7 @@
       // 1. Upload every attached file into /uploads, keeping track of ALL of them —
       //    not just the first — so images can render as a gallery and PDFs stay separate.
       const uploadedFiles = [];
+      const docNames = Array.from(document.querySelectorAll('#uFileNames .fname-input')).map(x => x.value.trim());
       if (files && files.length) {
         status.textContent = `Uploading ${files.length} file(s)…`;
         for (let i = 0; i < files.length; i++) {
@@ -947,7 +963,7 @@
           const path = `uploads/${Date.now()}-${i}-${safeName}`;
           await ghPutFile(owner, repo, path, branch, token, b64, `Upload ${file.name} via admin portal`);
           const fileUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
-          uploadedFiles.push({ name: file.name, url: fileUrl });
+          uploadedFiles.push({ name: file.name, label: docNames[i] || '', url: fileUrl });
           if (!url) url = fileUrl;
         }
       }
@@ -972,6 +988,7 @@
       gh('uNote').value = '';
       gh('uUrl').value = '';
       gh('uFile').value = '';
+      gh('uFileNames').innerHTML = '';
       gh('uTicker').checked = true;
       gh('uFlash').checked = false;
       gh('uShowList').checked = true;
@@ -1069,7 +1086,7 @@
     const isPdf = (n) => /\.pdf(\?|$)/i.test(n || '');
 
     // Attached files. Older posts saved only a single url pointing at the file — treat that as an attachment too.
-    let files = Array.isArray(entry.files) ? entry.files.map(f => ({ name: f.name, url: f.url })) : [];
+    let files = Array.isArray(entry.files) ? entry.files.map(f => ({ name: f.name, label: f.label || '', url: f.url })) : [];
     if (!files.length && entry.url) {
       const clean = String(entry.url).split('?')[0];
       if (isImg(clean) || isPdf(clean)) {
@@ -1097,6 +1114,7 @@
       <div class="e-files"></div>
       <label>Add or replace files (optional)</label>
       <input type="file" class="e-newfiles" multiple accept="image/*,.pdf">
+      <div class="e-newnames"></div>
       <div class="hint">New files are added on “Save changes”. Use “Remove” on an existing file to replace it.</div>
       <div class="li-checks">
         <label><input type="checkbox" class="e-ticker" ${entry.showInTicker !== false && entry.ticker !== false ? 'checked' : ''}> Show in ticker</label>
@@ -1124,8 +1142,15 @@
         if (prev.tagName === 'IMG') { prev.src = f.url; prev.alt = f.name || ''; prev.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid #ccd;'; }
         else { prev.textContent = '📄'; prev.style.cssText = 'font-size:30px;width:56px;text-align:center;'; }
         const info = document.createElement('div');
-        info.style.cssText = 'flex:1;min-width:0;word-break:break-all;font-size:13px;';
-        info.textContent = (f.name || f.url) + (gone ? '  (will be removed)' : '');
+        info.style.cssText = 'flex:1;min-width:0;font-size:13px;';
+        const nm = document.createElement('div');
+        nm.style.cssText = 'word-break:break-all;color:#5a6178;font-size:12px;';
+        nm.textContent = (f.name || f.url) + (gone ? '  (will be removed)' : '');
+        const lab = document.createElement('input');
+        lab.placeholder = 'Document name (shown to students)'; lab.maxLength = 80;
+        lab.value = f.label || ''; lab.style.marginTop = '4px'; lab.disabled = gone;
+        lab.addEventListener('input', () => { f.label = lab.value; });
+        info.append(nm, lab);
         const open = document.createElement('a');
         open.className = 'small-btn'; open.style.textDecoration = 'none'; open.textContent = 'Open';
         open.href = f.url; open.target = '_blank'; open.rel = 'noopener';
@@ -1138,6 +1163,7 @@
       });
     }
     drawFiles();
+    div.querySelector('.e-newfiles').addEventListener('change', () => renderNameInputs(div.querySelector('.e-newfiles').files, div.querySelector('.e-newnames')));
 
     // repo path of an uploaded file (so a removed file can be deleted from /uploads too)
     const repoPathOf = (u) => {
@@ -1155,6 +1181,7 @@
         // 1. upload any newly chosen files
         const picked = div.querySelector('.e-newfiles').files;
         const added = [];
+        const newNames = Array.from(div.querySelectorAll('.e-newnames .fname-input')).map(x => x.value.trim());
         for (let i = 0; i < picked.length; i++) {
           statusEl.textContent = `Uploading file ${i + 1} of ${picked.length}…`;
           const file = picked[i];
@@ -1162,7 +1189,7 @@
           const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
           const path = `uploads/${Date.now()}-${i}-${safeName}`;
           await ghPutFile(owner, repo, path, branch, token, b64, `Upload ${file.name} via admin portal`);
-          added.push({ name: file.name, url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}` });
+          added.push({ name: file.name, label: newNames[i] || '', url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}` });
         }
         const keptFiles = files.filter(f => !removed.has(f.url)).concat(added);
         const removedUrls = [...removed];
@@ -1199,6 +1226,7 @@
         files = keptFiles; removed.clear(); entry.url = vals.url;
         div.querySelector('.e-url').value = vals.url;
         div.querySelector('.e-newfiles').value = '';
+        div.querySelector('.e-newnames').innerHTML = '';
         drawFiles();
         statusEl.textContent = 'Saved.';
       } catch (err) {

@@ -534,11 +534,6 @@
   @keyframes badge-blink{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.35; transform:scale(1.12); } }
 
   /* ---- all-documents button + documents sheet ---- */
-  .alldocs-btn{
-    width:100%; font:inherit; font-size:13px; font-weight:600; color:var(--ink); background:var(--paper-card);
-    border:1px solid var(--ink); border-radius:var(--radius); padding:11px 12px; cursor:pointer; margin:0 0 6px;
-  }
-  .alldocs-btn:active{ background:var(--ink); color:#fff; }
   .doc-sheet{ position:fixed; inset:0; z-index:190; background:rgba(12,23,48,.82); display:flex; align-items:flex-end; justify-content:center; }
   .doc-card{ position:relative; width:100%; max-width:460px; max-height:86vh; overflow-y:auto; background:var(--paper); border-radius:18px 18px 0 0; padding:20px 18px 30px; }
   .doc-close{ position:absolute; top:12px; right:12px; width:34px; height:34px; border:0; border-radius:50%; background:var(--ink); color:#fff; font-size:15px; cursor:pointer; }
@@ -556,6 +551,18 @@
   .doc-pdf b{ display:block; font-size:13.5px; line-height:1.3; }
   .doc-pdf small{ display:block; font-size:11px; color:var(--text-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .doc-pdf .go{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--marigold-deep); flex:0 0 auto; }
+
+  /* ---- image viewer with magnification controls ---- */
+  .img-lightbox{ display:flex; flex-direction:column; padding:0; align-items:stretch; justify-content:flex-start; }
+  .img-lightbox.hidden{ display:none; }
+  .lb-stage{ flex:1; min-height:0; overflow:auto; display:flex; padding:14px; touch-action:pan-x pan-y; -webkit-overflow-scrolling:touch; }
+  .img-lightbox .lb-stage img{ max-width:none; max-height:none; width:auto; flex:none; margin:auto; display:block; user-select:none; -webkit-user-drag:none; }
+  .lb-bar{ flex:none; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); background:rgba(12,23,48,.97); border-top:1px solid rgba(231,162,60,.5); color:#fff; }
+  .lb-btn{ font:inherit; font-size:12.5px; font-weight:600; color:#fff; background:transparent; border:1px solid rgba(255,255,255,.4); border-radius:16px; padding:6px 12px; cursor:pointer; text-decoration:none; line-height:1.2; min-width:34px; text-align:center; }
+  .lb-btn:active{ background:var(--marigold); color:var(--ink); border-color:var(--marigold); }
+  .lb-pct{ font-family:'IBM Plex Mono',monospace; font-size:12px; min-width:42px; text-align:center; }
+  .lb-bar input[type=range]{ width:140px; accent-color:var(--marigold); }
+  .img-lightbox .lb-close{ z-index:5; }
 </style>
 </head>
 <body>
@@ -567,7 +574,8 @@
     <h4>Before you explore the site</h4>
     <p>Please read the <strong>How to Use the Drive</strong> guide first — it explains navigation and the daily‑update habit.</p>
     <a class="file-link" href="https://docs.google.com/document/d/1u1IlmVu4hQStFuoVk_FPZZ60jGk3mjmt0EbQgXmU9X0/edit?tab=t.0" target="_blank" rel="noopener">Open the guide ↗</a>
-    <span class="tag" style="margin-top:6px;display:inline-block;">LANGUAGE · भाषा · ಭಾಷೆ · ഭാഷ</span>
+    <span class="tag" id="lang-tag" style="margin-top:6px;display:inline-block;">LANGUAGE · भाषा · ಭಾಷೆ · ഭാഷ</span>
+    <button type="button" class="teacher-link" id="lang-change" style="display:none;margin:8px 0 16px;">🌐 Change language</button>
     <div class="lang-grid" id="lang-grid" role="radiogroup" aria-label="Choose language">
       <button type="button" class="lang-btn" data-lang="en" role="radio">English</button>
       <button type="button" class="lang-btn" data-lang="hi" role="radio">हिंदी</button>
@@ -638,9 +646,18 @@
 </div>
 
 <!-- ===== Fullscreen image viewer — opened by tapping any attached photo ===== -->
-<div class="img-lightbox hidden" id="img-lightbox">
+<div class="img-lightbox hidden" id="img-lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
   <button class="lb-close" id="lb-close" type="button" aria-label="Close image">✕</button>
-  <img id="lb-img" src="" alt="" />
+  <div class="lb-stage" id="lb-stage"><img id="lb-img" src="" alt="" /></div>
+  <div class="lb-bar">
+    <button type="button" class="lb-btn" id="lb-out" aria-label="Zoom out">−</button>
+    <input type="range" id="lb-zoom" min="100" max="500" step="5" value="100" aria-label="How much to magnify">
+    <button type="button" class="lb-btn" id="lb-in" aria-label="Zoom in">+</button>
+    <span class="lb-pct" id="lb-pct">100%</span>
+    <button type="button" class="lb-btn" id="lb-reset">Reset</button>
+    <a class="lb-btn" id="lb-open" target="_blank" rel="noopener">Open image</a>
+    <button type="button" class="lb-btn" id="lb-dl">Download</button>
+  </div>
 </div>
 
 <!-- ===== Documents sheet: every image / PDF of an update, listed separately ===== -->
@@ -846,7 +863,6 @@
 
     <section class="screen" data-screen="updates">
       <div class="pad">
-        <button type="button" class="alldocs-btn hidden" id="alldocs-btn">📎 All uploaded documents (<span id="alldocs-n">0</span>)</button>
         <div class="ulog-box" id="ulog-box">
         <div class="ulog-head">
           <div class="section-label"><span class="num">05</span><h3>Daily updates log</h3></div>
@@ -1045,7 +1061,7 @@ Examinations- 2026-27- reg
       <div class="stub">
         <span class="mono-label">Last updated</span>
         <h4 id="last-updated-text">—</h4>
-        <p>Maintained &amp; monitored by <strong>Harshit Smit Pawani</strong> and team.</p>
+        <p>Maintained &amp; monitored by <strong>Prashant Kumar B S</strong> (Editor &amp; Teacher) and his student <strong>Harshit Smit Pawani</strong>.</p>
       </div>
     </div>
 
@@ -1462,21 +1478,93 @@ Examinations- 2026-27- reg
     });
   })();
 
-  // ---- fullscreen image lightbox (opened by attached photo thumbnails) ----
+  // ---- fullscreen image viewer: choose how much to magnify, pan, open and download ----
   const imgLightbox = document.getElementById('img-lightbox');
   const lbImg = document.getElementById('lb-img');
+  const lbStage = document.getElementById('lb-stage');
+  const lbZoom = document.getElementById('lb-zoom');
+  const lbPct = document.getElementById('lb-pct');
+  let lbZ = 1, lbBaseW = 0, lbSrc = '', lbName = '';
+
+  function lbApply(z, keepCenter) {
+    z = Math.min(5, Math.max(1, z));
+    const st = lbStage;
+    const fx = (st.scrollLeft + st.clientWidth / 2) / Math.max(1, st.scrollWidth);
+    const fy = (st.scrollTop + st.clientHeight / 2) / Math.max(1, st.scrollHeight);
+    lbZ = z;
+    if (lbBaseW) lbImg.style.width = (lbBaseW * z) + 'px';
+    lbZoom.value = String(Math.round(z * 100));
+    lbPct.textContent = Math.round(z * 100) + '%';
+    if (keepCenter) {
+      st.scrollLeft = fx * st.scrollWidth - st.clientWidth / 2;
+      st.scrollTop = fy * st.scrollHeight - st.clientHeight / 2;
+    }
+  }
+  function lbFit() {
+    const nw = lbImg.naturalWidth, nh = lbImg.naturalHeight;
+    if (!nw || !nh) return;
+    const f = Math.min((lbStage.clientWidth - 28) / nw, (lbStage.clientHeight - 28) / nh);
+    lbBaseW = Math.max(40, nw * f);
+    lbApply(1, false);
+    lbStage.scrollLeft = 0; lbStage.scrollTop = 0;
+  }
+  lbImg.addEventListener('load', lbFit);
+  window.addEventListener('resize', () => { if (!imgLightbox.classList.contains('hidden')) lbFit(); });
+
   function openLightbox(src, alt) {
-    lbImg.src = src;
+    lbSrc = src; lbName = alt || '';
+    lbBaseW = 0; lbImg.style.width = '';
     lbImg.alt = alt || '';
+    lbImg.src = src;
+    document.getElementById('lb-open').href = src;
     imgLightbox.classList.remove('hidden');
+    lbApply(1, false);
+    if (lbImg.complete && lbImg.naturalWidth) lbFit();
   }
   function closeLightbox() {
     imgLightbox.classList.add('hidden');
-    lbImg.src = '';
+    lbImg.removeAttribute('src');
+  }
+  async function lbDownload() {
+    let name = (lbName || '').trim().replace(/[\\/:*?"<>|]+/g, ' ') || 'image';
+    try {
+      const r = await fetch(lbSrc);
+      if (!r.ok) throw new Error('bad response');
+      const blob = await r.blob();
+      if (!/\.[a-z0-9]{2,5}$/i.test(name)) {
+        const ext = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/svg+xml': 'svg' })[blob.type] || 'jpg';
+        name += '.' + ext;
+      }
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = u; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 3000);
+    } catch (e) { window.open(lbSrc, '_blank', 'noopener'); }   // the browser can still save it from the new tab
   }
   document.getElementById('lb-close').addEventListener('click', closeLightbox);
-  imgLightbox.addEventListener('click', (e) => { if (e.target === imgLightbox) closeLightbox(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+  document.getElementById('lb-in').addEventListener('click', () => lbApply(lbZ + 0.25, true));
+  document.getElementById('lb-out').addEventListener('click', () => lbApply(lbZ - 0.25, true));
+  document.getElementById('lb-reset').addEventListener('click', () => { lbApply(1, false); lbStage.scrollLeft = 0; lbStage.scrollTop = 0; });
+  lbZoom.addEventListener('input', () => lbApply(lbZoom.value / 100, true));
+  document.getElementById('lb-dl').addEventListener('click', lbDownload);
+  imgLightbox.addEventListener('click', (e) => { if (e.target === imgLightbox || (e.target === lbStage && lbZ === 1)) closeLightbox(); });
+  document.addEventListener('keydown', (e) => {
+    if (imgLightbox.classList.contains('hidden')) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === '+' || e.key === '=') lbApply(lbZ + 0.25, true);
+    else if (e.key === '-') lbApply(lbZ - 0.25, true);
+  });
+  // mouse wheel and two-finger pinch change the magnification; a mouse can drag the picture when zoomed in
+  lbStage.addEventListener('wheel', (e) => { e.preventDefault(); lbApply(lbZ * (e.deltaY < 0 ? 1.15 : 1 / 1.15), true); }, { passive: false });
+  let pinchD = 0, pinchZ = 1;
+  const tDist = (ts) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
+  lbStage.addEventListener('touchstart', (e) => { if (e.touches.length === 2) { pinchD = tDist(e.touches); pinchZ = lbZ; } }, { passive: true });
+  lbStage.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && pinchD) { e.preventDefault(); lbApply(pinchZ * tDist(e.touches) / pinchD, true); } }, { passive: false });
+  lbStage.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinchD = 0; });
+  let drag = null;
+  lbStage.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && lbZ > 1) { drag = { x: e.clientX, y: e.clientY, l: lbStage.scrollLeft, t: lbStage.scrollTop }; lbStage.setPointerCapture(e.pointerId); } });
+  lbStage.addEventListener('pointermove', (e) => { if (drag) { lbStage.scrollLeft = drag.l - (e.clientX - drag.x); lbStage.scrollTop = drag.t - (e.clientY - drag.y); } });
+  ['pointerup', 'pointercancel'].forEach(ev => lbStage.addEventListener(ev, () => { drag = null; }));
 
   // ---- push notifications ----
   // Set this to your deployed backend URL after Step 3 of the deploy guide, e.g.
@@ -1712,7 +1800,6 @@ Examinations- 2026-27- reg
   // ---- document names, documents sheet, and the "new updates" badge on the Updates button ----
   function fileLabel(f) { return ((f && f.label) || '').trim() || (f && f.name) || ''; }
   const safeHref = (u) => /^https?:\/\//i.test(u || '') ? u : '';
-  let ALL_ENTRIES = [];
   let latestUpdateTs = 0;
   const SEEN_KEY = 'classx_seen_updates_ts';
 
@@ -1780,58 +1867,69 @@ Examinations- 2026-27- reg
     document.getElementById('doc-sheet').classList.remove('hidden');
     document.getElementById('doc-sheet').querySelector('.doc-card').scrollTop = 0;
   }
+  // links added by the admin, each with its own button text; older posts only have a single url
+  function getEntryLinks(entry) {
+    const fileUrls = new Set(getEntryFiles(entry).map(f => f.url));
+    if (Array.isArray(entry.links) && entry.links.length) {
+      return entry.links.filter(l => l && safeHref(l.url)).map(l => ({ text: String(l.text || '').trim(), url: l.url }));
+    }
+    if (safeHref(entry.url) && !fileUrls.has(entry.url)) return [{ text: '', url: entry.url }];
+    return [];
+  }
+  function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } }
+
   function openDocSheet(entry) {
     const box = document.createElement('div');
     const t = document.createElement('h4'); t.className = 'doc-title'; t.textContent = entry.title || 'Update';
     const m = document.createElement('p'); m.className = 'doc-meta';
     m.textContent = [(entry.date || '') + (entry.time ? ', ' + entry.time : ''), entry.note].filter(Boolean).join(' · ');
     box.append(t, m);
-    const files = getEntryFiles(entry);
-    if (safeHref(entry.url) && !files.some(f => f.url === entry.url)) {
-      const a = document.createElement('a'); a.className = 'doc-pdf'; a.href = entry.url; a.target = '_blank'; a.rel = 'noopener';
-      a.innerHTML = '<span class="ic">🔗</span><span class="tx"><b>Open link</b></span><span class="go">OPEN →</span>';
-      box.appendChild(a);
+    const links = getEntryLinks(entry);
+    if (links.length) {
+      const h = document.createElement('div'); h.className = 'doc-sec'; h.textContent = `Links (${links.length})`; box.appendChild(h);
+      links.forEach(l => {
+        const a = document.createElement('a'); a.className = 'doc-pdf'; a.href = l.url; a.target = '_blank'; a.rel = 'noopener';
+        const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = '🔗';
+        const tx = document.createElement('span'); tx.className = 'tx';
+        const b = document.createElement('b'); b.textContent = l.text || 'Open link';
+        const s = document.createElement('small'); s.textContent = hostOf(l.url);
+        tx.append(b, s);
+        const go = document.createElement('span'); go.className = 'go'; go.textContent = 'OPEN →';
+        a.append(ic, tx, go); box.appendChild(a);
+      });
     }
-    fillDocSections(box, files.map(f => ({ f, from: '' })));
+    fillDocSections(box, getEntryFiles(entry).map(f => ({ f, from: '' })));
     showDocSheet(box);
   }
-  function openAllDocs() {
-    const box = document.createElement('div');
-    const t = document.createElement('h4'); t.className = 'doc-title'; t.textContent = 'All uploaded documents';
-    const m = document.createElement('p'); m.className = 'doc-meta'; m.textContent = 'Newest first · images and PDFs listed separately';
-    box.append(t, m);
-    const items = [];
-    ALL_ENTRIES.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).forEach(e => {
-      getEntryFiles(e).forEach(f => items.push({ f, from: [e.title, e.date].filter(Boolean).join(' · ') }));
-    });
-    fillDocSections(box, items);
-    showDocSheet(box);
-  }
-  function setupAllDocs(list) {
-    const n = list.reduce((s, e) => s + getEntryFiles(e).length, 0);
-    const btn = document.getElementById('alldocs-btn');
-    if (!btn) return;
-    document.getElementById('alldocs-n').textContent = String(n);
-    btn.classList.toggle('hidden', n < 1);
-    if (!btn._wired) { btn._wired = true; btn.addEventListener('click', openAllDocs); }
+
+  // tapping an update: one file opens straight away; several files / links let the student choose
+  function openUpdate(entry) {
+    const files = getEntryFiles(entry), links = getEntryLinks(entry);
+    if (files.length === 1 && !links.length) {
+      const f = files[0];
+      if (isImageFile(f.name || f.url)) openLightbox(f.url, fileLabel(f));
+      else window.open(f.url, '_blank', 'noopener');
+      return;
+    }
+    openDocSheet(entry);
   }
 
   function buildEntryRow(entry) {
     const a = document.createElement('a');
     a.className = 'resource-row';
-    const files = getEntryFiles(entry);
-    if (files.length) {
-      // an update with documents opens a sheet that lists every image and PDF separately
-      a.href = '#';
-      a.addEventListener('click', (e) => { e.preventDefault(); openDocSheet(entry); });
-    } else {
-      a.href = entry.url || '#';
+    const files = getEntryFiles(entry), links = getEntryLinks(entry);
+    if (!files.length && links.length <= 1) {
+      a.href = links[0] ? links[0].url : (entry.url || '#');
       a.target = '_blank';
       a.rel = 'noopener';
+    } else {
+      a.href = '#';
+      a.addEventListener('click', (e) => { e.preventDefault(); openUpdate(entry); });
     }
     const flashClass = entry.flash ? ' flash-alert' : '';
     const timeStr = entry.time ? `, ${entry.time}` : '';
-    const arrow = files.length ? `📎 ${files.length} →` : '→';
+    const n = files.length + links.length;
+    const arrow = n > 1 ? `${n} items →` : '→';
     a.innerHTML =
       `<span class="rdate mono">${escapeHtml((entry.date || '') + timeStr)}</span>` +
       `<span style="flex:1"><span class="rtitle${flashClass}">${escapeHtml(entry.title || '')}</span>` +
@@ -1840,8 +1938,6 @@ Examinations- 2026-27- reg
     const piece = document.createElement('div');
     piece.className = 'ulog-item';
     piece.appendChild(a);
-    const att = buildAttachmentsEl(entry);
-    if (att) piece.appendChild(att);
     return piece;
   }
 
@@ -1867,9 +1963,7 @@ Examinations- 2026-27- reg
         folderCbse: !!e.folderCbse,
         folderApp: !!e.folderApp,
       }));
-      ALL_ENTRIES = norm;
       refreshUpdateBadge(norm);
-      setupAllDocs(norm);
 
       // If the admin has set a custom ticker message or hidden the ticker in Site settings,
       // that already took effect in loadSiteSettings() — leave the ticker alone here so
@@ -1943,6 +2037,14 @@ Examinations- 2026-27- reg
     }
     const safeUrl = (u) => /^https?:\/\//i.test(u || '') ? u : '';
 
+    function bannerLinkList(b) {
+      const out = [];
+      if (Array.isArray(b.links) && b.links.length) {
+        b.links.forEach(l => { const u = l && safeUrl(l.url); if (u) out.push({ text: ((l.text) || '').trim(), url: u }); });
+      } else if (safeUrl(b.link)) out.push({ text: '', url: b.link });
+      return out;
+    }
+
     function buildImageSlide(b, i, openImage) {
       const slide = document.createElement('div');
       slide.setAttribute('role', 'button'); slide.tabIndex = 0;
@@ -1957,13 +2059,13 @@ Examinations- 2026-27- reg
         slide.appendChild(cap);
       }
       const zoom = () => { if (openImage) openImage(b.url, b.caption || ''); };
-      const href = safeUrl(b.link);
+      const links = bannerLinkList(b);
       let hideT;
       const hideActions = () => { clearTimeout(hideT); slide.classList.remove('show-actions'); };
 
       // The buttons stay hidden so they never cover the text in the picture.
-      // Tapping the picture shows them: Magnify, and Open link / Open PDF when the banner has a link.
-      if (openImage || href) {
+      // Tapping the picture shows them: Magnify, and one button for every link, with the text the admin chose.
+      if (openImage || links.length) {
         const actions = document.createElement('div');
         actions.className = 'banner-actions';
         if (openImage) {
@@ -1974,21 +2076,21 @@ Examinations- 2026-27- reg
           mag.addEventListener('click', (e) => { e.stopPropagation(); hideActions(); zoom(); });
           actions.appendChild(mag);
         }
-        if (href) {
-          const isPdf = /\.pdf([?#]|$)/i.test(href);
+        links.forEach(l => {
+          const isPdf = /\.pdf([?#]|$)/i.test(l.url);
           const a = document.createElement('a');
-          a.className = 'banner-act'; a.href = href; a.target = '_blank'; a.rel = 'noopener';
-          a.textContent = isPdf ? '📄 Open PDF' : '🔗 Open link';
+          a.className = 'banner-act'; a.href = l.url; a.target = '_blank'; a.rel = 'noopener';
+          a.textContent = l.text || (isPdf ? '📄 Open PDF' : '🔗 Open link');
           a.addEventListener('click', (e) => { e.stopPropagation(); hideActions(); });
           actions.appendChild(a);
-        }
+        });
         slide.appendChild(actions);
       }
       slide.addEventListener('click', () => {
-        if (!(openImage || href)) return;
+        if (!(openImage || links.length)) return;
         if (slide.classList.contains('show-actions')) { hideActions(); return; }
         slide.classList.add('show-actions');
-        clearTimeout(hideT); hideT = setTimeout(hideActions, 5000);
+        clearTimeout(hideT); hideT = setTimeout(hideActions, 6000);
       });
       slide.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); slide.click(); }
@@ -2537,6 +2639,13 @@ Examinations- 2026-27- reg
     })();
   }
   mark(cur);
+  // Language already chosen on this device: don't ask again, just offer a small "Change language" link.
+  var saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+  var tag = document.getElementById('lang-tag'), chg = document.getElementById('lang-change');
+  if (saved && tag && chg) {
+    tag.style.display = 'none'; grid.style.display = 'none'; chg.style.display = 'inline-block';
+    chg.addEventListener('click', function () { tag.style.display = 'inline-block'; grid.style.display = 'grid'; chg.style.display = 'none'; });
+  }
   grid.addEventListener('click',function(e){
     var b=e.target.closest('.lang-btn'); if(!b) return;
     cur=b.dataset.lang; mark(cur);

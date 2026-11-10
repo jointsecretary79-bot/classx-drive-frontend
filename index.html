@@ -581,6 +581,15 @@
   .lec-meta span{ font-size:11px; color:var(--text-soft); }
   .lec-del{ flex:0 0 40px; border:0; border-left:1px solid var(--line); background:none; font-size:18px; color:var(--text-soft); cursor:pointer; }
   .lec-del:active{ background:var(--maroon); color:#fff; }
+
+  .lec-why{ background:#fff7e6; border-left:3px solid var(--marigold); padding:12px 14px; margin:0 0 12px; font-size:13px; line-height:1.55; color:var(--text); }
+  .lec-why b{ display:block; font-family:'Fraunces',serif; font-size:15px; color:var(--ink); margin-bottom:4px; }
+  .lec-why p{ margin:0; }
+  .man-body{ max-height:62vh; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:4px; text-align:left; }
+  .man-body h5{ font-family:'Fraunces',serif; font-size:14px; color:var(--ink); margin:14px 0 4px; }
+  .man-body h5:first-child{ margin-top:2px; }
+  .man-body p, .man-body li{ font-size:13px; line-height:1.55; color:var(--text); margin:0 0 6px; }
+  .man-body ol, .man-body ul{ margin:0 0 6px; padding-left:20px; }
 </style>
 </head>
 <body>
@@ -686,6 +695,55 @@
   </div>
 </div>
 
+<!-- ===== Lectures user manual ===== -->
+<div class="modal-overlay hidden" id="lec-manual" role="dialog" aria-modal="true" aria-label="Lectures user manual">
+  <div class="modal-card" style="max-width:430px;">
+    <span class="tag">USER MANUAL</span>
+    <h4>Free video lectures — how to use</h4>
+    <div class="man-body">
+      <h5>Why use it</h5>
+      <p>It shows one lecture at a time with no recommended videos, comments or feed. Fewer distractions means better focus. Plan what you will watch before you start, then paste only that link.</p>
+
+      <h5>Watch a lecture</h5>
+      <ol>
+        <li>Open YouTube (app or website) and find the lecture you want.</li>
+        <li>Tap <b>Share</b>, then <b>Copy link</b>.</li>
+        <li>Come back to this app → <b>Lectures</b>, press <b>Paste</b> (or press and hold in the box and choose Paste).</li>
+        <li>Press <b>▶ Play lecture</b>. The video plays right here.</li>
+      </ol>
+
+      <h5>Controls in the player</h5>
+      <ul>
+        <li>Tap the video to pause or play.</li>
+        <li>Tap the <b>⚙ gear</b> in the player to change the <b>video quality</b> (lower for slow internet, higher for clear writing) and the <b>speed</b>.</li>
+        <li>Tap the full-screen button for a bigger picture. Turn your phone sideways for the best view.</li>
+        <li>A link with a time, like <i>…?t=1m30s</i>, starts the video at that point.</li>
+        <li>A <b>playlist</b> link plays the whole series one after another.</li>
+      </ul>
+
+      <h5>Your recent lectures</h5>
+      <p>Every lecture you play is saved on this phone, with its picture and title, under “Your recent lectures”. Tap one to watch it again. Press <b>×</b> to remove it. They are kept on this device only.</p>
+
+      <h5>If a video does not play</h5>
+      <p>The owner of some videos does not allow them to play outside YouTube. Press <b>Open on YouTube ↗</b> below the player to watch it there. You also need an internet connection.</p>
+
+      <h5>About ads</h5>
+      <p>The player does not show suggested videos from other channels. YouTube may still show its own ads on some videos; that is the video owner’s choice and this app cannot remove them.</p>
+
+      <h5>Watching without internet (download)</h5>
+      <p>This app cannot download YouTube videos, because YouTube only allows downloads through YouTube itself. To save a lecture to watch offline: press <b>Open on YouTube ↗</b>, then tap the <b>Download</b> button under the video in the YouTube app, where YouTube offers it. Choose the video quality when it asks. The saved video plays inside the YouTube app, in your Library → Downloads.</p>
+
+      <h5>Study tips</h5>
+      <ul>
+        <li>Keep a notebook open and pause to write notes.</li>
+        <li>Watch one lecture fully before opening another.</li>
+        <li>Use the recent list to revise instead of searching again.</li>
+      </ul>
+    </div>
+    <div class="modal-actions" style="margin-top:12px;"><button class="btn btn-solid" id="lec-manual-close" type="button">Got it</button></div>
+  </div>
+</div>
+
 <!-- ===== Feedback form popup ===== -->
 <div class="modal-overlay hidden" id="feedback-modal">
   <div class="modal-card" style="max-width:440px;">
@@ -761,8 +819,9 @@
         <div class="stamp-card">
           <span class="tag">WATCH</span>
           <h4>Watch any lecture from YouTube</h4>
-          <p>Copy a YouTube link, paste it in the app, and the lecture plays right here.</p>
+          <p>Study with fewer distractions: paste the link of the lecture you want and it plays right here, with no recommended videos or comments to pull your attention away.</p>
           <button type="button" class="btn btn-solid" id="lec-open">▶ Open lectures</button>
+          <button type="button" class="btn" id="lec-manual-home" style="margin-top:8px;">📖 User manual</button>
         </div>
 
         <div class="section-label"><span class="num">01</span><h3>Must read first</h3></div>
@@ -1035,7 +1094,12 @@ Examinations- 2026-27- reg
     <section class="screen" data-screen="lectures">
       <div class="pad">
         <div class="section-label"><span class="num">▶</span><h3>Free video lectures</h3></div>
-        <p class="arch-intro">On YouTube, tap <b>Share → Copy link</b>. Paste the link below and press Play. The lecture plays inside this app.</p>
+        <div class="lec-why">
+          <b>Study with better focus</b>
+          <p>This page plays <u>only the lecture you choose</u>. There is no recommended-videos feed, no comments and no endless scrolling, so there is less to distract you and it is easier to stay on one topic. Just paste the YouTube link of the lecture you want to watch, and it plays here.</p>
+        </div>
+        <button type="button" class="btn" id="lec-manual-btn" style="width:100%;justify-content:center;margin:0 0 14px;">📖 How to use — user manual</button>
+        <p class="arch-intro">On YouTube, tap <b>Share → Copy link</b>. Paste the link below and press Play.</p>
         <div class="lec-input">
           <input class="pf-input" id="lec-url" type="text" inputmode="url" placeholder="Paste a YouTube link here" autocomplete="off" aria-label="YouTube link">
           <button type="button" class="btn" id="lec-paste">Paste</button>
@@ -1047,6 +1111,7 @@ Examinations- 2026-27- reg
           <div class="lec-frame" id="lec-frame"></div>
           <div class="lec-now" id="lec-now"></div>
           <a class="btn" id="lec-yt" target="_blank" rel="noopener">Open on YouTube ↗</a>
+          <p class="lec-note" style="margin-top:8px;">Want it offline? Open it on YouTube and use YouTube’s own <b>Download</b> button there — you can choose the video quality in the YouTube app. See the user manual for details.</p>
         </div>
         <p class="lec-note">Videos play through YouTube's privacy-friendly player without suggested videos from other channels. Some videos may still show YouTube's own ads — that is decided by the video's owner. If a video says it can't be played here, use “Open on YouTube”.</p>
 
@@ -2846,6 +2911,12 @@ Examinations- 2026-27- reg
     } catch (e) { msg.textContent = 'Could not read the clipboard. Press and hold in the box and choose Paste.'; $('lec-url').focus(); }
   });
   $('lec-open').addEventListener('click', () => goToTab('lectures'));
+  const man = $('lec-manual'), openMan = () => { man.classList.remove('hidden'); man.querySelector('.man-body').scrollTop = 0; }, closeMan = () => man.classList.add('hidden');
+  $('lec-manual-btn').addEventListener('click', openMan);
+  $('lec-manual-home').addEventListener('click', openMan);
+  $('lec-manual-close').addEventListener('click', closeMan);
+  man.addEventListener('click', (e) => { if (e.target === man) closeMan(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMan(); });
   $('fab-lectures').addEventListener('click', () => goToTab('lectures'));
   $('lec-back').addEventListener('click', () => goToTab('home'));
   renderRecent();

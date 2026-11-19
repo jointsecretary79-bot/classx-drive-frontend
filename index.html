@@ -675,31 +675,10 @@
   }
   .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(var(--nav-h) + 90px); z-index:320; max-width:90%; background:var(--ink); color:#fff; border:1px solid var(--marigold); padding:10px 16px; border-radius:22px; font-size:13px; box-shadow:0 8px 18px rgba(0,0,0,.4); text-align:center; }
   .toast.hidden{ display:none; }
-  .pb-cand{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; background:#fff; border:1px solid var(--line); border-left:4px solid var(--marigold); margin-bottom:6px; border-radius:var(--radius); }
-  .pb-cand input[type=text], .pb-cand input[type=date], .pb-cand input[type=time]{ padding:8px; border:1px solid var(--line); border-radius:var(--radius); font-size:13px; background:#fff; color:var(--ink); }
-  .pb-cand .pb-cs{ flex:1 1 140px; min-width:0; } .pb-cand .pb-cd{ flex:1 1 130px; } .pb-cand .pb-ct{ flex:0 1 100px; }
-  .pb-raw{ white-space:pre-wrap; font-size:11px; color:var(--text-soft); max-height:160px; overflow:auto; background:#fff; border:1px dashed var(--line); padding:8px; }
   .app-tip{ background:#eaf3ff; border-left:3px solid var(--ink); padding:12px 14px; margin:0 0 12px; font-size:13px; line-height:1.55; color:var(--text); }
   .app-tip b{ display:block; font-family:'Fraunces',serif; font-size:15px; color:var(--ink); margin-bottom:4px; }
   .app-tip p{ margin:0; }
   .sv-tag{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; background:var(--ink); color:#fff; padding:1px 6px; border-radius:8px; margin-top:3px; }
-  /* ---- printing (planner / pre-boards / notes → Save as PDF) ---- */
-  #print-area{ display:none; }
-  @media print{
-    html,body{ background:#fff !important; }
-    body.printing > *:not(#print-area){ display:none !important; }
-    body.printing #print-area{ display:block !important; color:#000; font-family:'IBM Plex Sans',Arial,sans-serif; }
-    #print-area .pr-head{ display:flex; justify-content:space-between; border-bottom:3px solid #e9a023; padding-bottom:6px; margin-bottom:10px; font-size:14px; }
-    #print-area h2{ font-size:20px; margin:4px 0; }
-    #print-area .pr-sub{ font-size:12px; color:#555; margin-bottom:12px; }
-    #print-area table{ width:100%; border-collapse:collapse; font-size:12px; }
-    #print-area th, #print-area td{ border:1px solid #999; padding:6px 7px; text-align:left; vertical-align:top; }
-    #print-area th{ background:#eee; } #print-area tr{ page-break-inside:avoid; }
-    #print-area .pr-note{ border:1px solid #999; padding:8px 10px; margin-bottom:8px; page-break-inside:avoid; }
-    #print-area .pr-note h3{ margin:0 0 4px; font-size:14px; } #print-area .pr-note div{ white-space:pre-wrap; font-size:12px; } #print-area .pr-note small{ color:#666; }
-    #print-area .pr-foot{ margin-top:14px; font-size:10px; color:#777; text-align:center; }
-    @page{ margin:14mm; }
-  }
 </style>
 </head>
 <body>
@@ -1340,23 +1319,6 @@ Examinations- 2026-27- reg
         <div class="tl-pane" id="pane-preboards">
           <div class="stub">
             <span class="mono-label">Pre-board exams</span>
-            <h4>Scan your hall ticket</h4>
-            <p>Take a clear photo of your hall ticket or datesheet. The app reads the subjects and dates and fills your pre-board schedule — you check them before they are added.</p>
-            <div class="tl-row">
-              <button type="button" class="btn btn-solid" id="pb-camera">📷 Scan hall ticket</button>
-              <button type="button" class="btn" id="pb-gallery">🖼 Choose photo</button>
-            </div>
-            <input type="file" id="pb-file-cam" accept="image/*" capture="environment" hidden>
-            <input type="file" id="pb-file-gal" accept="image/*" hidden>
-            <div class="status-line" id="pb-scan-status">Needs internet the first time (it downloads the text reader). Works best with a flat, well-lit, sharp photo.</div>
-            <div id="pb-review" style="display:none;margin-top:10px;">
-              <div id="pb-cands"></div>
-              <div class="tl-row"><button type="button" class="btn btn-solid" id="pb-addsel">＋ Add selected to Pre-boards</button></div>
-              <details><summary class="status-line" style="cursor:pointer;">Show text the app read</summary><div class="pb-raw" id="pb-raw"></div></details>
-            </div>
-          </div>
-          <div class="stub">
-            <span class="mono-label">Add by hand</span>
             <h4>Add a pre-board exam</h4>
             <label class="pl-field"><span>Subject</span><input id="pb-subject" list="pl-subjects" placeholder="e.g. Science" maxlength="40" autocomplete="off"></label>
             <div class="pl-two">
@@ -1373,7 +1335,6 @@ Examinations- 2026-27- reg
           </div>
           <div class="section-label"><span class="num">▸</span><h3>My pre-board schedule</h3></div>
           <div id="pb-list"></div>
-          <button type="button" class="btn" id="pb-print" style="margin:6px 0 14px;">🖨 Print / Save as PDF</button>
         </div>
 
         <!-- NOTES -->
@@ -1391,7 +1352,6 @@ Examinations- 2026-27- reg
           </div>
           <label class="pl-field"><span>Search notes</span><input id="nt-search" placeholder="Search…" autocomplete="off"></label>
           <div id="nt-list"></div>
-          <button type="button" class="btn" id="nt-print" style="margin:6px 0 10px;">🖨 Print notes / Save as PDF</button>
           <div class="status-line" id="nt-storage"></div>
         </div>
 
@@ -1433,7 +1393,6 @@ Examinations- 2026-27- reg
           <div id="pl-day-list"></div>
           <div class="section-label"><span class="num">▸</span><h3>Upcoming</h3></div>
           <div id="pl-upcoming"></div>
-          <button type="button" class="btn" id="pl-print" style="margin:6px 8px 14px 0;">🖨 Print planner / Save as PDF</button>
           <button type="button" class="btn" id="pl-seed" style="margin:6px 0 14px;">＋ Add CBSE board exam dates</button>
         </div>
       </div>
@@ -3308,7 +3267,6 @@ Examinations- 2026-27- reg
     </div>
   </div>
 </div>
-<div id="print-area" aria-hidden="true"></div>
 <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 
 <!-- ===== Storage permission popup ===== -->
@@ -3700,154 +3658,6 @@ Examinations- 2026-27- reg
     g('pb-status').textContent = 'Added: ' + subj + ', ' + DAYS[parseYMD(date).getDay()] + ' ' + fmtDate(date) + ' at ' + fmtTime(time) + '.';
     unlockAudio();
     try { if (lead >= 0 && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
-  });
-
-  // ---- hall ticket scan (text is read on the phone with Tesseract.js; nothing is uploaded) ----
-  var TESS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js';
-  function loadTess() {
-    return new Promise(function (res, rej) {
-      if (window.Tesseract) return res();
-      var sc = document.createElement('script'); sc.src = TESS_URL; sc.onload = res; sc.onerror = function () { rej(new Error('load')); };
-      document.head.appendChild(sc);
-    });
-  }
-  function prepImage(file) {
-    return new Promise(function (res, rej) {
-      var img = new Image(), url = URL.createObjectURL(file);
-      img.onload = function () {
-        var sc = Math.min(1, 2000 / Math.max(img.width, img.height));
-        var c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
-        var x = c.getContext('2d'); try { x.filter = 'grayscale(1) contrast(1.4)'; } catch (e) {}
-        x.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c);
-      };
-      img.onerror = function () { rej(new Error('img')); };
-      img.src = url;
-    });
-  }
-  var MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-  var MONRE = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)';
-  var SUBJ = [[/mathematics|maths?\b/i, 'Mathematics'], [/social\s*(science|studies)|\bsst\b/i, 'Social Science'], [/information\s*technology/i, 'Information Technology'],
-    [/artificial\s*intelligence/i, 'Artificial Intelligence'], [/science/i, 'Science'], [/english/i, 'English'], [/hindi/i, 'Hindi'], [/kannada/i, 'Kannada'], [/sanskrit/i, 'Sanskrit'],
-    [/telugu/i, 'Telugu'], [/tamil/i, 'Tamil'], [/malayalam/i, 'Malayalam'], [/marathi/i, 'Marathi'], [/urdu/i, 'Urdu'], [/french/i, 'French'], [/computer/i, 'Computer Science']];
-  function findDate(str) {
-    var m, d, mo, y = 0;
-    m = /(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{4}|\d{2})\b/.exec(str);
-    if (m) { d = +m[1]; mo = +m[2]; y = +m[3]; }
-    else {
-      m = new RegExp('(\\d{1,2})(?:st|nd|rd|th)?[\\s\\-,]*' + MONRE + '[a-z]*\\.?[\\s\\-,]*(\\d{4}|\\d{2})?', 'i').exec(str);
-      if (m) { d = +m[1]; mo = MON.indexOf(m[2].toLowerCase()) + 1; y = m[3] ? +m[3] : 0; }
-      else {
-        m = new RegExp(MONRE + '[a-z]*\\.?\\s*(\\d{1,2})(?:st|nd|rd|th)?,?\\s*(\\d{4})?', 'i').exec(str);
-        if (m) { mo = MON.indexOf(m[1].toLowerCase()) + 1; d = +m[2]; y = m[3] ? +m[3] : 0; }
-      }
-    }
-    if (!m || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
-    if (y && y < 100) y += 2000;
-    if (!y) { var now = new Date(); y = now.getFullYear(); if (new Date(y, mo - 1, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) y++; }
-    return { iso: y + '-' + pad2(mo) + '-' + pad2(d), text: m[0] };
-  }
-  function findTime(str) {
-    var m = /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(a\.?m\.?|p\.?m\.?)?/i.exec(str);
-    if (!m) return null;
-    var h = +m[1], mi = +m[2], ap = m[3] ? m[3].toLowerCase().charAt(0) : '';
-    if (mi > 59 || h > 23) return null;
-    if (ap === 'p' && h < 12) h += 12; if (ap === 'a' && h === 12) h = 0;
-    return pad2(h) + ':' + pad2(mi);
-  }
-  function parseTicket(text) {
-    var lines = text.split(/\n+/).map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
-    var out = [], seen = {}, defTime = null;
-    lines.forEach(function (l) { if (defTime) return; var dd = findDate(l); var t = findTime(dd ? l.replace(dd.text, '') : l); if (t) defTime = t; });
-    lines.forEach(function (l, i) {
-      var subj = null; SUBJ.some(function (x) { if (x[0].test(l)) { subj = x[1]; return true; } return false; });
-      if (!subj) return;
-      var d = findDate(l), src = l;
-      if (!d && lines[i + 1]) { d = findDate(lines[i + 1]); if (d) src = l + ' ' + lines[i + 1]; }
-      if (!d && lines[i - 1]) { d = findDate(lines[i - 1]); if (d) src = lines[i - 1] + ' ' + l; }
-      if (!d) return;
-      var t = findTime(src.replace(d.text, '')) || defTime || '10:30';
-      var key = subj + d.iso; if (seen[key]) return; seen[key] = 1;
-      out.push({ subject: subj, date: d.iso, time: t });
-    });
-    return out.slice(0, 15);
-  }
-  function showCandidates(text) {
-    var c = parseTicket(text), rv = g('pb-review'), st = g('pb-scan-status');
-    g('pb-raw').textContent = text || '(nothing readable)';
-    rv.style.display = 'block';
-    if (!c.length) { g('pb-cands').innerHTML = ''; g('pb-addsel').style.display = 'none'; st.textContent = 'I could read the photo but could not find subject + date pairs. Try a clearer, flatter photo, or add the dates by hand below.'; return; }
-    g('pb-addsel').style.display = '';
-    g('pb-cands').innerHTML = c.map(function (x) {
-      return '<div class="pb-cand"><input type="checkbox" checked aria-label="Include"><input class="pb-cs" type="text" value="' + esc(x.subject) + '"><input class="pb-cd" type="date" value="' + x.date + '"><input class="pb-ct" type="time" value="' + x.time + '"></div>';
-    }).join('');
-    st.textContent = 'Found ' + c.length + ' exam' + (c.length > 1 ? 's' : '') + '. Please check each subject, date and time, then add them. (Alarm setting below is applied.)';
-  }
-  g('pb-addsel').addEventListener('click', function () {
-    var lead = +g('pb-alarm').value, added = 0;
-    document.querySelectorAll('#pb-cands .pb-cand').forEach(function (row) {
-      if (!row.querySelector('input[type=checkbox]').checked) return;
-      var sj = row.querySelector('.pb-cs').value.trim(), dt = row.querySelector('.pb-cd').value, tm2 = row.querySelector('.pb-ct').value || '10:30';
-      if (sj && dt && addPre(sj, dt, tm2, 'From hall ticket', lead)) added++;
-    });
-    save(); renderAll(); g('pb-review').style.display = 'none';
-    g('pb-scan-status').textContent = added ? added + ' exam' + (added > 1 ? 's' : '') + ' added to your pre-boards ✓' : 'Nothing new to add (already in your list).';
-    unlockAudio();
-    try { if (added && lead >= 0 && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
-  });
-  async function scan(file) {
-    var st = g('pb-scan-status'); g('pb-review').style.display = 'none';
-    if (!file) return;
-    if (navigator.onLine === false) { st.textContent = 'You are offline. Scanning needs internet the first time.'; return; }
-    try {
-      st.textContent = 'Loading the reader… (first time can take a minute)';
-      await loadTess();
-      var canvas = await prepImage(file);
-      var worker = await Tesseract.createWorker('eng', 1, { logger: function (m) {
-        if (m.status === 'recognizing text') st.textContent = 'Reading your hall ticket… ' + Math.round(m.progress * 100) + '%';
-        else if (m.status) st.textContent = m.status.charAt(0).toUpperCase() + m.status.slice(1) + '…';
-      } });
-      var r = await worker.recognize(canvas); await worker.terminate();
-      showCandidates((r && r.data && r.data.text) || '');
-    } catch (e) { st.textContent = 'Could not read the photo. Check your internet, try a clearer photo, or add the dates by hand.'; }
-  }
-  g('pb-camera').addEventListener('click', function () { g('pb-file-cam').click(); });
-  g('pb-gallery').addEventListener('click', function () { g('pb-file-gal').click(); });
-  ['pb-file-cam', 'pb-file-gal'].forEach(function (id) { g(id).addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; scan(f); }); });
-
-  // ---------- PRINT / SAVE AS PDF ----------
-  function doPrint(title, bodyHTML) {
-    var a = g('print-area'), u = {}; try { u = getUser() || {}; } catch (e) {}
-    a.innerHTML = '<div class="pr-head"><b>Class X Drive</b><span>' + esc(title) + '</span></div><h2>' + esc(title) + '</h2><div class="pr-sub">' + (u.name ? esc(u.name) + ' · ' : '') + 'Printed ' + fmtDate(ymd(new Date())) + '</div>' + bodyHTML + '<div class="pr-foot">Class X Drive</div>';
-    document.body.classList.add('printing');
-    setTimeout(function () { try { window.print(); } catch (e) {} }, 120);
-  }
-  window.addEventListener('afterprint', function () { document.body.classList.remove('printing'); g('print-area').innerHTML = ''; });
-  function table(head, rows) {
-    return '<table><thead><tr>' + head.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
-  }
-  g('pl-print').addEventListener('click', function () {
-    var list = plans.slice().sort(sorter);
-    if (!list.length) { g('pl-status').textContent = 'Your planner is empty — nothing to print yet.'; return; }
-    doPrint('My Study Planner', table(['Date', 'Day', 'Time', 'Subject', 'To do', 'Note', 'Done'], list.map(function (p) {
-      return [fmtDate(p.date), DAYS[parseYMD(p.date).getDay()], fmtTime(p.time), esc(p.subject), esc(p.kind), esc(p.note || ''), p.done ? '☑' : '☐'];
-    })));
-  });
-  g('pb-print').addEventListener('click', function () {
-    var list = plans.filter(function (p) { return p.kind === 'Pre-board'; }).sort(sorter);
-    if (!list.length) { g('pb-status').textContent = 'Add your pre-board exams first.'; return; }
-    doPrint('Pre-board Exam Schedule', table(['Date', 'Day', 'Time', 'Subject', 'Note'], list.map(function (p) {
-      return [fmtDate(p.date), DAYS[parseYMD(p.date).getDay()], fmtTime(p.time), esc(p.subject), esc(p.note || '')];
-    })));
-  });
-  g('nt-print').addEventListener('click', function () {
-    var q = g('nt-search').value.trim().toLowerCase();
-    var list = notes.filter(function (n) { return !q || (n.title + ' ' + n.body).toLowerCase().indexOf(q) > -1; }).sort(function (a, b) { return b.ts - a.ts; });
-    if (!list.length) { g('nt-status').textContent = 'No notes to print yet.'; return; }
-    doPrint('My Notes', list.map(function (n) {
-      var d = new Date(n.ts);
-      return '<div class="pr-note"><h3>' + esc(n.title || 'Untitled') + '</h3><small>' + fmtDate(ymd(d)) + '</small><div>' + esc(n.body) + '</div></div>';
-    }).join(''));
   });
 
   // ---------- alarm checker for planner ----------

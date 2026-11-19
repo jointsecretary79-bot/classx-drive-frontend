@@ -593,8 +593,8 @@
   .man-body ol, .man-body ul{ margin:0 0 6px; padding-left:20px; }
 
   /* ================= Study tools (timer / stopwatch / planner) + install sheet ================= */
-  .tl-tabs{ display:flex; gap:0; border:1px solid var(--ink); border-radius:var(--radius); overflow:hidden; margin:4px 0 16px; }
-  .tl-tab{ flex:1; padding:10px 4px; background:none; border:none; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink); }
+  .tl-tabs{ display:flex; gap:0; border:1px solid var(--ink); border-radius:var(--radius); overflow-x:auto; margin:4px 0 16px; -webkit-overflow-scrolling:touch; }
+  .tl-tab{ flex:1 0 auto; padding:10px 12px; white-space:nowrap; background:none; border:none; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink); }
   .tl-tab + .tl-tab{ border-left:1px solid var(--ink); }
   .tl-tab.on{ background:var(--ink); color:#fff; }
   .tl-pane{ display:none; } .tl-pane.on{ display:block; }
@@ -675,6 +675,31 @@
   }
   .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(var(--nav-h) + 90px); z-index:320; max-width:90%; background:var(--ink); color:#fff; border:1px solid var(--marigold); padding:10px 16px; border-radius:22px; font-size:13px; box-shadow:0 8px 18px rgba(0,0,0,.4); text-align:center; }
   .toast.hidden{ display:none; }
+  .pb-cand{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; background:#fff; border:1px solid var(--line); border-left:4px solid var(--marigold); margin-bottom:6px; border-radius:var(--radius); }
+  .pb-cand input[type=text], .pb-cand input[type=date], .pb-cand input[type=time]{ padding:8px; border:1px solid var(--line); border-radius:var(--radius); font-size:13px; background:#fff; color:var(--ink); }
+  .pb-cand .pb-cs{ flex:1 1 140px; min-width:0; } .pb-cand .pb-cd{ flex:1 1 130px; } .pb-cand .pb-ct{ flex:0 1 100px; }
+  .pb-raw{ white-space:pre-wrap; font-size:11px; color:var(--text-soft); max-height:160px; overflow:auto; background:#fff; border:1px dashed var(--line); padding:8px; }
+  .app-tip{ background:#eaf3ff; border-left:3px solid var(--ink); padding:12px 14px; margin:0 0 12px; font-size:13px; line-height:1.55; color:var(--text); }
+  .app-tip b{ display:block; font-family:'Fraunces',serif; font-size:15px; color:var(--ink); margin-bottom:4px; }
+  .app-tip p{ margin:0; }
+  .sv-tag{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; background:var(--ink); color:#fff; padding:1px 6px; border-radius:8px; margin-top:3px; }
+  /* ---- printing (planner / pre-boards / notes → Save as PDF) ---- */
+  #print-area{ display:none; }
+  @media print{
+    html,body{ background:#fff !important; }
+    body.printing > *:not(#print-area){ display:none !important; }
+    body.printing #print-area{ display:block !important; color:#000; font-family:'IBM Plex Sans',Arial,sans-serif; }
+    #print-area .pr-head{ display:flex; justify-content:space-between; border-bottom:3px solid #e9a023; padding-bottom:6px; margin-bottom:10px; font-size:14px; }
+    #print-area h2{ font-size:20px; margin:4px 0; }
+    #print-area .pr-sub{ font-size:12px; color:#555; margin-bottom:12px; }
+    #print-area table{ width:100%; border-collapse:collapse; font-size:12px; }
+    #print-area th, #print-area td{ border:1px solid #999; padding:6px 7px; text-align:left; vertical-align:top; }
+    #print-area th{ background:#eee; } #print-area tr{ page-break-inside:avoid; }
+    #print-area .pr-note{ border:1px solid #999; padding:8px 10px; margin-bottom:8px; page-break-inside:avoid; }
+    #print-area .pr-note h3{ margin:0 0 4px; font-size:14px; } #print-area .pr-note div{ white-space:pre-wrap; font-size:12px; } #print-area .pr-note small{ color:#666; }
+    #print-area .pr-foot{ margin-top:14px; font-size:10px; color:#777; text-align:center; }
+    @page{ margin:14mm; }
+  }
 </style>
 </head>
 <body>
@@ -889,6 +914,7 @@
           <span class="tag">WATCH</span>
           <h4>Watch any lecture from YouTube</h4>
           <p>Study with fewer distractions: paste the link of the lecture you want and it plays right here, with no recommended videos or comments to pull your attention away.</p>
+          <p style="font-size:12.5px;color:var(--text-soft);margin:0 0 8px;"><b>📲 For fewer ads, use the downloaded app</b> — tap the + button → Install app.</p>
           <button type="button" class="btn btn-solid" id="lec-open">▶ Open lectures</button>
           <button type="button" class="btn" id="lec-manual-home" style="margin-top:8px;">📖 User manual</button>
         </div>
@@ -1164,6 +1190,11 @@ Examinations- 2026-27- reg
           <b>Study with better focus</b>
           <p>This page plays <u>only the lecture you choose</u>. There is no recommended-videos feed, no comments and no endless scrolling, so there is less to distract you and it is easier to stay on one topic. Just paste the YouTube link of the lecture you want to watch, and it plays here.</p>
         </div>
+        <div class="app-tip" id="lec-app-tip">
+          <b>📲 For fewer ads, use the downloaded app</b>
+          <p>Install the Class X Drive app on your phone: it opens full-screen with no browser around it, so there is less to distract you and fewer ads than opening links in the browser. (Ads inside a YouTube video are decided by the video’s owner.)</p>
+          <button type="button" class="btn btn-solid" id="lec-install" style="margin-top:8px;">⬇ Download app</button>
+        </div>
         <button type="button" class="btn" id="lec-manual-btn" style="width:100%;justify-content:center;margin:0 0 14px;">📖 How to use — user manual</button>
         <p class="arch-intro">On YouTube, tap <b>Share → Copy link</b>. Paste the link below and press Play.</p>
         <div class="lec-input">
@@ -1177,9 +1208,22 @@ Examinations- 2026-27- reg
           <div class="lec-frame" id="lec-frame"></div>
           <div class="lec-now" id="lec-now"></div>
           <a class="btn" id="lec-yt" target="_blank" rel="noopener">Open on YouTube ↗</a>
+          <button type="button" class="btn" id="lec-save-current" style="margin-left:6px;">☆ Save this lecture</button>
           <p class="lec-note" style="margin-top:8px;">Want it offline? Open it on YouTube and use YouTube’s own <b>Download</b> button there — you can choose the video quality in the YouTube app. See the user manual for details.</p>
         </div>
         <p class="lec-note">Videos play through YouTube's privacy-friendly player without suggested videos from other channels. Some videos may still show YouTube's own ads — that is decided by the video's owner. If a video says it can't be played here, use “Open on YouTube”.</p>
+
+        <div class="section-label"><span class="num">★</span><h3>Saved lectures</h3></div>
+        <div class="stub">
+          <span class="mono-label">Save many links at once</span>
+          <p>Paste one or more YouTube links (one per line). They stay saved here, so you do not have to open YouTube or copy the link again and again.</p>
+          <textarea class="nt-area" id="sv-links" placeholder="https://youtu.be/…&#10;https://youtu.be/…" aria-label="YouTube links"></textarea>
+          <label class="pl-field" style="margin-top:8px;"><span>Subject (optional)</span><input id="sv-subject" list="pl-subjects" maxlength="30" placeholder="e.g. Science" autocomplete="off"></label>
+          <button type="button" class="btn btn-solid" id="sv-add">＋ Save links</button>
+          <div class="status-line" id="sv-msg"></div>
+        </div>
+        <label class="pl-field"><span>Show</span><select id="sv-filter"><option value="">All subjects</option></select></label>
+        <div id="sv-list"></div>
 
         <div class="section-label"><span class="num">✦</span><h3>Your recent lectures</h3></div>
         <div id="lec-recent"></div>
@@ -1247,6 +1291,7 @@ Examinations- 2026-27- reg
           <button type="button" class="tl-tab" data-pane="stopwatch">Stopwatch</button>
           <button type="button" class="tl-tab" data-pane="planner">Planner</button>
           <button type="button" class="tl-tab" data-pane="notes">📝 Notes</button>
+          <button type="button" class="tl-tab" data-pane="preboards">🎓 Pre-boards</button>
         </div>
 
         <!-- TIMER -->
@@ -1291,6 +1336,46 @@ Examinations- 2026-27- reg
           </div>
         </div>
 
+        <!-- PRE-BOARDS -->
+        <div class="tl-pane" id="pane-preboards">
+          <div class="stub">
+            <span class="mono-label">Pre-board exams</span>
+            <h4>Scan your hall ticket</h4>
+            <p>Take a clear photo of your hall ticket or datesheet. The app reads the subjects and dates and fills your pre-board schedule — you check them before they are added.</p>
+            <div class="tl-row">
+              <button type="button" class="btn btn-solid" id="pb-camera">📷 Scan hall ticket</button>
+              <button type="button" class="btn" id="pb-gallery">🖼 Choose photo</button>
+            </div>
+            <input type="file" id="pb-file-cam" accept="image/*" capture="environment" hidden>
+            <input type="file" id="pb-file-gal" accept="image/*" hidden>
+            <div class="status-line" id="pb-scan-status">Needs internet the first time (it downloads the text reader). Works best with a flat, well-lit, sharp photo.</div>
+            <div id="pb-review" style="display:none;margin-top:10px;">
+              <div id="pb-cands"></div>
+              <div class="tl-row"><button type="button" class="btn btn-solid" id="pb-addsel">＋ Add selected to Pre-boards</button></div>
+              <details><summary class="status-line" style="cursor:pointer;">Show text the app read</summary><div class="pb-raw" id="pb-raw"></div></details>
+            </div>
+          </div>
+          <div class="stub">
+            <span class="mono-label">Add by hand</span>
+            <h4>Add a pre-board exam</h4>
+            <label class="pl-field"><span>Subject</span><input id="pb-subject" list="pl-subjects" placeholder="e.g. Science" maxlength="40" autocomplete="off"></label>
+            <div class="pl-two">
+              <label class="pl-field"><span>Date</span><input id="pb-date" type="date"></label>
+              <label class="pl-field"><span>Time</span><input id="pb-time" type="time" value="10:30"></label>
+            </div>
+            <div class="pl-day" id="pb-day"></div>
+            <label class="pl-field"><span>Note (room, seat, paper code…)</span><input id="pb-note" maxlength="80" placeholder="Optional"></label>
+            <label class="pl-field"><span>Alarm</span>
+              <select id="pb-alarm"><option value="-1">No alarm</option><option value="0">At exam time</option><option value="60" selected>1 hour before</option><option value="1440">1 day before</option></select>
+            </label>
+            <button type="button" class="btn btn-solid" id="pb-add">＋ Add pre-board exam</button>
+            <div class="status-line" id="pb-status"></div>
+          </div>
+          <div class="section-label"><span class="num">▸</span><h3>My pre-board schedule</h3></div>
+          <div id="pb-list"></div>
+          <button type="button" class="btn" id="pb-print" style="margin:6px 0 14px;">🖨 Print / Save as PDF</button>
+        </div>
+
         <!-- NOTES -->
         <div class="tl-pane" id="pane-notes">
           <div class="stub">
@@ -1306,6 +1391,7 @@ Examinations- 2026-27- reg
           </div>
           <label class="pl-field"><span>Search notes</span><input id="nt-search" placeholder="Search…" autocomplete="off"></label>
           <div id="nt-list"></div>
+          <button type="button" class="btn" id="nt-print" style="margin:6px 0 10px;">🖨 Print notes / Save as PDF</button>
           <div class="status-line" id="nt-storage"></div>
         </div>
 
@@ -1330,7 +1416,7 @@ Examinations- 2026-27- reg
               <datalist id="pl-subjects"><option>English</option><option>Hindi</option><option>Kannada</option><option>Sanskrit</option><option>Mathematics</option><option>Science</option><option>Social Science</option><option>Information Technology</option></datalist>
             </label>
             <label class="pl-field"><span>What to do</span>
-              <select id="pl-kind"><option>Read</option><option>Work / Practice</option><option>PYQs</option><option>Revise</option><option>Exam</option><option>Other</option></select>
+              <select id="pl-kind"><option>Read</option><option>Work / Practice</option><option>PYQs</option><option>Revise</option><option>Exam</option><option>Pre-board</option><option>Other</option></select>
             </label>
             <div class="pl-two">
               <label class="pl-field"><span>Date</span><input id="pl-date" type="date"></label>
@@ -1347,6 +1433,7 @@ Examinations- 2026-27- reg
           <div id="pl-day-list"></div>
           <div class="section-label"><span class="num">▸</span><h3>Upcoming</h3></div>
           <div id="pl-upcoming"></div>
+          <button type="button" class="btn" id="pl-print" style="margin:6px 8px 14px 0;">🖨 Print planner / Save as PDF</button>
           <button type="button" class="btn" id="pl-seed" style="margin:6px 0 14px;">＋ Add CBSE board exam dates</button>
         </div>
       </div>
@@ -3074,7 +3161,7 @@ Examinations- 2026-27- reg
     f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     frame.appendChild(f);
     stage.classList.remove('hidden');
-    current = keyOf(l);
+    current = keyOf(l); window.__lastLecture = l;
     now.textContent = l.title || 'Now playing';
     $('lec-yt').href = watchUrl(l);
     if (addToRecent) { remember(l); fetchTitle(l); }
@@ -3109,6 +3196,72 @@ Examinations- 2026-27- reg
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMan(); });
   $('fab-lectures').addEventListener('click', () => goToTab('lectures'));
   $('lec-back').addEventListener('click', () => goToTab('home'));
+  // ---- saved lectures: paste many links once and keep them here ----
+  const SKEY = 'classx_saved_lectures';
+  let saved = []; try { const a = JSON.parse(localStorage.getItem(SKEY) || '[]'); if (Array.isArray(a)) saved = a; } catch (e) {}
+  function persistSaved() { try { if (window.classxStore) window.classxStore.set(SKEY, saved); } catch (e) {} }
+  window.classxSaveLectures = persistSaved;      // called again if the person allows storage later
+  async function titleOf(vid) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000);
+    try {
+      const r = await fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + vid), { signal: ctl.signal });
+      if (!r.ok) return ''; const j = await r.json(); return (j && j.title) ? String(j.title).slice(0, 120) : '';
+    } catch (e) { return ''; } finally { clearTimeout(t); }
+  }
+  function renderSaved() {
+    const box = $('sv-list'), flt = $('sv-filter'); box.innerHTML = '';
+    const subs = [...new Set(saved.map((x) => x.subject).filter(Boolean))].sort(), cur = flt.value;
+    flt.innerHTML = ''; const all = document.createElement('option'); all.value = ''; all.textContent = 'All subjects'; flt.appendChild(all);
+    subs.forEach((sj) => { const o = document.createElement('option'); o.value = sj; o.textContent = sj; flt.appendChild(o); });
+    flt.value = subs.includes(cur) ? cur : '';
+    const items = saved.filter((x) => !flt.value || x.subject === flt.value);
+    if (!items.length) { box.innerHTML = '<div class="stub"><p style="margin:0;">' + (saved.length ? 'No saved lectures for this subject.' : 'Your saved lectures will appear here.') + '</p></div>'; return; }
+    items.forEach((l) => {
+      const row = document.createElement('div'); row.className = 'lec-item';
+      const main = document.createElement('button'); main.type = 'button'; main.className = 'lec-main';
+      const th = document.createElement('span'); th.className = 'lec-thumb';
+      if (l.vid) { const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.src = 'https://i.ytimg.com/vi/' + l.vid + '/mqdefault.jpg'; im.addEventListener('error', () => { im.remove(); th.textContent = '▶'; }); th.appendChild(im); }
+      else th.textContent = '▶ Playlist';
+      const meta = document.createElement('span'); meta.className = 'lec-meta';
+      const b = document.createElement('b'); b.textContent = l.title || (l.vid ? 'YouTube lecture' : 'YouTube playlist');
+      meta.appendChild(b);
+      if (l.subject) { const tg = document.createElement('span'); tg.className = 'sv-tag'; tg.textContent = l.subject; meta.appendChild(tg); }
+      main.append(th, meta);
+      main.addEventListener('click', () => { $('lec-url').value = ''; play(l, false); stage.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      const ren = document.createElement('button'); ren.type = 'button'; ren.className = 'lec-del'; ren.textContent = '✎'; ren.setAttribute('aria-label', 'Rename');
+      ren.addEventListener('click', () => { const t = prompt('Name for this lecture', l.title || ''); if (t !== null) { l.title = t.trim().slice(0, 120); persistSaved(); renderSaved(); } });
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'lec-del'; del.textContent = '×'; del.setAttribute('aria-label', 'Remove from saved lectures');
+      del.addEventListener('click', () => { saved = saved.filter((x) => keyOf(x) !== keyOf(l)); persistSaved(); renderSaved(); });
+      row.append(main, ren, del); box.appendChild(row);
+    });
+  }
+  $('sv-filter').addEventListener('change', renderSaved);
+  $('sv-add').addEventListener('click', async () => {
+    const m = $('sv-msg'), tokens = $('sv-links').value.split(/\s+/).filter(Boolean);
+    if (!tokens.length) { m.textContent = 'Paste at least one YouTube link first.'; return; }
+    const subj = $('sv-subject').value.trim().slice(0, 30), fresh = []; let dup = 0, bad = 0;
+    tokens.forEach((tk) => {
+      const l = parseYT(tk);
+      if (!l) { bad++; return; }
+      if (saved.some((x) => keyOf(x) === keyOf(l)) || fresh.some((x) => keyOf(x) === keyOf(l))) { dup++; return; }
+      fresh.push({ vid: l.vid, list: l.list, start: l.start || 0, title: '', subject: subj, ts: Date.now() });
+    });
+    saved = fresh.concat(saved).slice(0, 200);
+    persistSaved(); renderSaved(); if (fresh.length) $('sv-links').value = '';
+    m.textContent = 'Saved ' + fresh.length + ' link' + (fresh.length === 1 ? '' : 's') + (dup ? ' · ' + dup + ' already saved' : '') + (bad ? ' · ' + bad + ' not a YouTube link' : '') + '.';
+    for (const f of fresh) { if (f.vid) { const t = await titleOf(f.vid); if (t) { f.title = t; persistSaved(); renderSaved(); } } }
+  });
+  $('lec-save-current').addEventListener('click', async () => {
+    const l = window.__lastLecture; if (!l) return;
+    if (saved.some((x) => keyOf(x) === keyOf(l))) { msg.textContent = 'Already in your saved lectures.'; return; }
+    const item = { vid: l.vid, list: l.list, start: l.start || 0, title: l.title || '', subject: '', ts: Date.now() };
+    saved.unshift(item); persistSaved(); renderSaved(); msg.textContent = 'Saved ✓ — find it under “Saved lectures”.';
+    if (item.vid && !item.title) { const t = await titleOf(item.vid); if (t) { item.title = t; persistSaved(); renderSaved(); } }
+  });
+  const appTip = $('lec-app-tip');
+  if (appTip && ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true)) appTip.style.display = 'none';
+  $('lec-install').addEventListener('click', () => { const b = document.getElementById('fab-install'); if (b) b.click(); });
+  renderSaved();
   renderRecent();
 })();
 </script>
@@ -3155,6 +3308,7 @@ Examinations- 2026-27- reg
     </div>
   </div>
 </div>
+<div id="print-area" aria-hidden="true"></div>
 <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 
 <!-- ===== Storage permission popup ===== -->
@@ -3205,7 +3359,8 @@ Examinations- 2026-27- reg
     if (consent === 'yes') { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
     else if (consent === null) askStorage();          // ask the user before storing anything
   }
-  function saveAll() { lsSet('classx_timer', tm); lsSet('classx_planner', plans); lsSet('classx_notes', notes); }
+  function saveAll() { lsSet('classx_timer', tm); lsSet('classx_planner', plans); lsSet('classx_notes', notes); try { if (typeof window.classxSaveLectures === 'function') window.classxSaveLectures(); } catch (e) {} }
+  window.classxStore = { set: lsSet, get: lsGet };
   function storageLine() {
     var el = g('nt-storage'); if (!el) return;
     el.innerHTML = consent === 'yes' ? 'Saving on this device is <b>allowed</b>. <a href="#" id="nt-store-off" style="color:var(--maroon)">Stop saving &amp; clear data</a>'
@@ -3215,8 +3370,8 @@ Examinations- 2026-27- reg
     if (e.target.id === 'nt-store-on') { e.preventDefault(); consent = null; askStorage(); }
     if (e.target.id === 'nt-store-off') {
       e.preventDefault();
-      if (!confirm('Delete saved notes, planner and timer from this device?')) return;
-      try { ['classx_timer', 'classx_planner', 'classx_notes'].forEach(function (k) { localStorage.removeItem(k); }); localStorage.setItem('classx_storage_ok', 'no'); } catch (x) {}
+      if (!confirm('Delete saved notes, planner, timer and saved lectures from this device?')) return;
+      try { ['classx_timer', 'classx_planner', 'classx_notes', 'classx_saved_lectures'].forEach(function (k) { localStorage.removeItem(k); }); localStorage.setItem('classx_storage_ok', 'no'); } catch (x) {}
       consent = 'no'; storageLine();
     }
   });
@@ -3435,7 +3590,7 @@ Examinations- 2026-27- reg
     var up = plans.filter(function (p) { return !p.done && p.date >= start && p.date !== selected; }).sort(sorter).slice(0, 12);
     g('pl-upcoming').innerHTML = up.length ? up.map(function (p) { return itemHTML(p, true); }).join('') : '<div class="pl-empty">No upcoming tasks.</div>';
   }
-  function renderAll() { renderCal(); renderLists(); }
+  function renderAll() { renderCal(); renderLists(); if (typeof pbRender === 'function') pbRender(); }
 
   g('cal-prev').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); renderCal(); });
   g('cal-next').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); renderCal(); });
@@ -3512,12 +3667,195 @@ Examinations- 2026-27- reg
   });
   ntRender(); storageLine();
 
+  // ---------- PRE-BOARDS ----------
+  var LEADS = { 0: 'at exam time', 60: '1 hour before', 1440: '1 day before' };
+  function pbRender() {
+    var el = g('pb-list'); if (!el) return;
+    var list = plans.filter(function (p) { return p.kind === 'Pre-board'; }).sort(sorter);
+    if (!list.length) { el.innerHTML = '<div class="pl-empty">No pre-board exams yet. Scan your hall ticket or add one above.</div>'; return; }
+    var t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    el.innerHTML = list.map(function (p) {
+      var days = Math.round((parseYMD(p.date) - t0) / 864e5);
+      var cd = p.done ? 'Done ✓' : days < 0 ? 'Over' : days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : 'in ' + days + ' days';
+      return '<div class="pl-item' + (p.done ? ' done' : '') + '" data-id="' + p.id + '"><div class="when">' + fmtDate(p.date) + '<br>' + DAYS[parseYMD(p.date).getDay()].slice(0, 3) + '<br>' + fmtTime(p.time) + '</div>' +
+        '<div class="what"><h5>' + esc(p.subject) + '</h5><div class="meta">' + cd + (p.alarm ? ' · 🔔 ' + (LEADS[p.lead || 0] || '') : '') + '</div>' + (p.note ? '<div class="note">' + esc(p.note) + '</div>' : '') + '</div>' +
+        '<div class="acts"><button class="pl-mini" data-act="done">' + (p.done ? 'Undo' : '✓ Done') + '</button><button class="pl-mini" data-act="del">✕</button></div></div>';
+    }).join('');
+  }
+  g('pb-list').addEventListener('click', onItemClick);
+  g('pb-date').addEventListener('input', function () { var v = g('pb-date').value; g('pb-day').textContent = v ? 'Day: ' + DAYS[parseYMD(v).getDay()] : ''; });
+  function addPre(subject, date, time, note, leadVal) {
+    var exists = plans.some(function (p) { return p.kind === 'Pre-board' && p.subject === subject && p.date === date; });
+    if (exists) return false;
+    plans.push({ id: 'b' + Date.now() + Math.floor(Math.random() * 100000), subject: subject, kind: 'Pre-board', date: date, time: time, note: note || '', alarm: leadVal >= 0, lead: leadVal >= 0 ? leadVal : 0, done: false, fired: false });
+    return true;
+  }
+  g('pb-add').addEventListener('click', function () {
+    var subj = g('pb-subject').value.trim(), date = g('pb-date').value, time = g('pb-time').value;
+    if (!subj || !date || !time) { g('pb-status').textContent = 'Please fill in subject, date and time.'; return; }
+    var lead = +g('pb-alarm').value;
+    var ok = addPre(subj, date, time, g('pb-note').value.trim(), lead);
+    if (!ok) { g('pb-status').textContent = subj + ' on ' + fmtDate(date) + ' is already in your pre-boards.'; return; }
+    save(); g('pb-subject').value = ''; g('pb-note').value = ''; renderAll();
+    g('pb-status').textContent = 'Added: ' + subj + ', ' + DAYS[parseYMD(date).getDay()] + ' ' + fmtDate(date) + ' at ' + fmtTime(time) + '.';
+    unlockAudio();
+    try { if (lead >= 0 && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  });
+
+  // ---- hall ticket scan (text is read on the phone with Tesseract.js; nothing is uploaded) ----
+  var TESS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js';
+  function loadTess() {
+    return new Promise(function (res, rej) {
+      if (window.Tesseract) return res();
+      var sc = document.createElement('script'); sc.src = TESS_URL; sc.onload = res; sc.onerror = function () { rej(new Error('load')); };
+      document.head.appendChild(sc);
+    });
+  }
+  function prepImage(file) {
+    return new Promise(function (res, rej) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        var sc = Math.min(1, 2000 / Math.max(img.width, img.height));
+        var c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        var x = c.getContext('2d'); try { x.filter = 'grayscale(1) contrast(1.4)'; } catch (e) {}
+        x.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c);
+      };
+      img.onerror = function () { rej(new Error('img')); };
+      img.src = url;
+    });
+  }
+  var MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  var MONRE = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)';
+  var SUBJ = [[/mathematics|maths?\b/i, 'Mathematics'], [/social\s*(science|studies)|\bsst\b/i, 'Social Science'], [/information\s*technology/i, 'Information Technology'],
+    [/artificial\s*intelligence/i, 'Artificial Intelligence'], [/science/i, 'Science'], [/english/i, 'English'], [/hindi/i, 'Hindi'], [/kannada/i, 'Kannada'], [/sanskrit/i, 'Sanskrit'],
+    [/telugu/i, 'Telugu'], [/tamil/i, 'Tamil'], [/malayalam/i, 'Malayalam'], [/marathi/i, 'Marathi'], [/urdu/i, 'Urdu'], [/french/i, 'French'], [/computer/i, 'Computer Science']];
+  function findDate(str) {
+    var m, d, mo, y = 0;
+    m = /(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{4}|\d{2})\b/.exec(str);
+    if (m) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+    else {
+      m = new RegExp('(\\d{1,2})(?:st|nd|rd|th)?[\\s\\-,]*' + MONRE + '[a-z]*\\.?[\\s\\-,]*(\\d{4}|\\d{2})?', 'i').exec(str);
+      if (m) { d = +m[1]; mo = MON.indexOf(m[2].toLowerCase()) + 1; y = m[3] ? +m[3] : 0; }
+      else {
+        m = new RegExp(MONRE + '[a-z]*\\.?\\s*(\\d{1,2})(?:st|nd|rd|th)?,?\\s*(\\d{4})?', 'i').exec(str);
+        if (m) { mo = MON.indexOf(m[1].toLowerCase()) + 1; d = +m[2]; y = m[3] ? +m[3] : 0; }
+      }
+    }
+    if (!m || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    if (y && y < 100) y += 2000;
+    if (!y) { var now = new Date(); y = now.getFullYear(); if (new Date(y, mo - 1, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) y++; }
+    return { iso: y + '-' + pad2(mo) + '-' + pad2(d), text: m[0] };
+  }
+  function findTime(str) {
+    var m = /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(a\.?m\.?|p\.?m\.?)?/i.exec(str);
+    if (!m) return null;
+    var h = +m[1], mi = +m[2], ap = m[3] ? m[3].toLowerCase().charAt(0) : '';
+    if (mi > 59 || h > 23) return null;
+    if (ap === 'p' && h < 12) h += 12; if (ap === 'a' && h === 12) h = 0;
+    return pad2(h) + ':' + pad2(mi);
+  }
+  function parseTicket(text) {
+    var lines = text.split(/\n+/).map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+    var out = [], seen = {}, defTime = null;
+    lines.forEach(function (l) { if (defTime) return; var dd = findDate(l); var t = findTime(dd ? l.replace(dd.text, '') : l); if (t) defTime = t; });
+    lines.forEach(function (l, i) {
+      var subj = null; SUBJ.some(function (x) { if (x[0].test(l)) { subj = x[1]; return true; } return false; });
+      if (!subj) return;
+      var d = findDate(l), src = l;
+      if (!d && lines[i + 1]) { d = findDate(lines[i + 1]); if (d) src = l + ' ' + lines[i + 1]; }
+      if (!d && lines[i - 1]) { d = findDate(lines[i - 1]); if (d) src = lines[i - 1] + ' ' + l; }
+      if (!d) return;
+      var t = findTime(src.replace(d.text, '')) || defTime || '10:30';
+      var key = subj + d.iso; if (seen[key]) return; seen[key] = 1;
+      out.push({ subject: subj, date: d.iso, time: t });
+    });
+    return out.slice(0, 15);
+  }
+  function showCandidates(text) {
+    var c = parseTicket(text), rv = g('pb-review'), st = g('pb-scan-status');
+    g('pb-raw').textContent = text || '(nothing readable)';
+    rv.style.display = 'block';
+    if (!c.length) { g('pb-cands').innerHTML = ''; g('pb-addsel').style.display = 'none'; st.textContent = 'I could read the photo but could not find subject + date pairs. Try a clearer, flatter photo, or add the dates by hand below.'; return; }
+    g('pb-addsel').style.display = '';
+    g('pb-cands').innerHTML = c.map(function (x) {
+      return '<div class="pb-cand"><input type="checkbox" checked aria-label="Include"><input class="pb-cs" type="text" value="' + esc(x.subject) + '"><input class="pb-cd" type="date" value="' + x.date + '"><input class="pb-ct" type="time" value="' + x.time + '"></div>';
+    }).join('');
+    st.textContent = 'Found ' + c.length + ' exam' + (c.length > 1 ? 's' : '') + '. Please check each subject, date and time, then add them. (Alarm setting below is applied.)';
+  }
+  g('pb-addsel').addEventListener('click', function () {
+    var lead = +g('pb-alarm').value, added = 0;
+    document.querySelectorAll('#pb-cands .pb-cand').forEach(function (row) {
+      if (!row.querySelector('input[type=checkbox]').checked) return;
+      var sj = row.querySelector('.pb-cs').value.trim(), dt = row.querySelector('.pb-cd').value, tm2 = row.querySelector('.pb-ct').value || '10:30';
+      if (sj && dt && addPre(sj, dt, tm2, 'From hall ticket', lead)) added++;
+    });
+    save(); renderAll(); g('pb-review').style.display = 'none';
+    g('pb-scan-status').textContent = added ? added + ' exam' + (added > 1 ? 's' : '') + ' added to your pre-boards ✓' : 'Nothing new to add (already in your list).';
+    unlockAudio();
+    try { if (added && lead >= 0 && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  });
+  async function scan(file) {
+    var st = g('pb-scan-status'); g('pb-review').style.display = 'none';
+    if (!file) return;
+    if (navigator.onLine === false) { st.textContent = 'You are offline. Scanning needs internet the first time.'; return; }
+    try {
+      st.textContent = 'Loading the reader… (first time can take a minute)';
+      await loadTess();
+      var canvas = await prepImage(file);
+      var worker = await Tesseract.createWorker('eng', 1, { logger: function (m) {
+        if (m.status === 'recognizing text') st.textContent = 'Reading your hall ticket… ' + Math.round(m.progress * 100) + '%';
+        else if (m.status) st.textContent = m.status.charAt(0).toUpperCase() + m.status.slice(1) + '…';
+      } });
+      var r = await worker.recognize(canvas); await worker.terminate();
+      showCandidates((r && r.data && r.data.text) || '');
+    } catch (e) { st.textContent = 'Could not read the photo. Check your internet, try a clearer photo, or add the dates by hand.'; }
+  }
+  g('pb-camera').addEventListener('click', function () { g('pb-file-cam').click(); });
+  g('pb-gallery').addEventListener('click', function () { g('pb-file-gal').click(); });
+  ['pb-file-cam', 'pb-file-gal'].forEach(function (id) { g(id).addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; scan(f); }); });
+
+  // ---------- PRINT / SAVE AS PDF ----------
+  function doPrint(title, bodyHTML) {
+    var a = g('print-area'), u = {}; try { u = getUser() || {}; } catch (e) {}
+    a.innerHTML = '<div class="pr-head"><b>Class X Drive</b><span>' + esc(title) + '</span></div><h2>' + esc(title) + '</h2><div class="pr-sub">' + (u.name ? esc(u.name) + ' · ' : '') + 'Printed ' + fmtDate(ymd(new Date())) + '</div>' + bodyHTML + '<div class="pr-foot">Class X Drive</div>';
+    document.body.classList.add('printing');
+    setTimeout(function () { try { window.print(); } catch (e) {} }, 120);
+  }
+  window.addEventListener('afterprint', function () { document.body.classList.remove('printing'); g('print-area').innerHTML = ''; });
+  function table(head, rows) {
+    return '<table><thead><tr>' + head.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+  }
+  g('pl-print').addEventListener('click', function () {
+    var list = plans.slice().sort(sorter);
+    if (!list.length) { g('pl-status').textContent = 'Your planner is empty — nothing to print yet.'; return; }
+    doPrint('My Study Planner', table(['Date', 'Day', 'Time', 'Subject', 'To do', 'Note', 'Done'], list.map(function (p) {
+      return [fmtDate(p.date), DAYS[parseYMD(p.date).getDay()], fmtTime(p.time), esc(p.subject), esc(p.kind), esc(p.note || ''), p.done ? '☑' : '☐'];
+    })));
+  });
+  g('pb-print').addEventListener('click', function () {
+    var list = plans.filter(function (p) { return p.kind === 'Pre-board'; }).sort(sorter);
+    if (!list.length) { g('pb-status').textContent = 'Add your pre-board exams first.'; return; }
+    doPrint('Pre-board Exam Schedule', table(['Date', 'Day', 'Time', 'Subject', 'Note'], list.map(function (p) {
+      return [fmtDate(p.date), DAYS[parseYMD(p.date).getDay()], fmtTime(p.time), esc(p.subject), esc(p.note || '')];
+    })));
+  });
+  g('nt-print').addEventListener('click', function () {
+    var q = g('nt-search').value.trim().toLowerCase();
+    var list = notes.filter(function (n) { return !q || (n.title + ' ' + n.body).toLowerCase().indexOf(q) > -1; }).sort(function (a, b) { return b.ts - a.ts; });
+    if (!list.length) { g('nt-status').textContent = 'No notes to print yet.'; return; }
+    doPrint('My Notes', list.map(function (n) {
+      var d = new Date(n.ts);
+      return '<div class="pr-note"><h3>' + esc(n.title || 'Untitled') + '</h3><small>' + fmtDate(ymd(d)) + '</small><div>' + esc(n.body) + '</div></div>';
+    }).join(''));
+  });
+
   // ---------- alarm checker for planner ----------
   function checkAlarms() {
     var now = Date.now(), changed = false;
     plans.forEach(function (p) {
       if (!p.alarm || p.done || p.fired) return;
-      var w = when(p);
+      var w = when(p) - (p.lead || 0) * 60000;      // alarm may be set before the start time
       if (now >= w) {
         p.fired = true; changed = true;
         if (now - w < 5 * 60000) {   // only ring if it's on time; stale ones are just shown as "missed"
@@ -3654,7 +3992,7 @@ document.addEventListener('click', function (e) {
   refreshLabel();
 
   // our own pre-prompt (so the browser's permission box is always opened by a real tap)
-  function modalOpen() { return !!document.querySelector('.modal-overlay:not(.hidden)'); }
+  function modalOpen() { var sh = document.getElementById('install-sheet'); return !!document.querySelector('.modal-overlay:not(.hidden)') || !!(sh && !sh.classList.contains('hidden')); }
   function askOnce() {
     if (!supported() || Notification.permission !== 'default') return;
     try { if (sessionStorage.getItem('classx_notif_asked') === '1') return; } catch (e) {}
@@ -3682,7 +4020,7 @@ document.addEventListener('click', function (e) {
 
   // installed app opened from the home screen → ask right away (no install popup there)
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
-  if (standalone) setTimeout(askOnce, 1500);
+  if (standalone) setTimeout(askOnce, 1500); else setTimeout(askOnce, 6000);   // browser visit: ask too (after any install popup)
 })();
 </script>
 </body>

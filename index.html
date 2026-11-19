@@ -590,6 +590,67 @@
   .man-body h5:first-child{ margin-top:2px; }
   .man-body p, .man-body li{ font-size:13px; line-height:1.55; color:var(--text); margin:0 0 6px; }
   .man-body ol, .man-body ul{ margin:0 0 6px; padding-left:20px; }
+
+  /* ================= Study tools (timer / stopwatch / planner) + install sheet ================= */
+  .tl-tabs{ display:flex; gap:0; border:1px solid var(--ink); border-radius:var(--radius); overflow:hidden; margin:4px 0 16px; }
+  .tl-tab{ flex:1; padding:10px 4px; background:none; border:none; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink); }
+  .tl-tab + .tl-tab{ border-left:1px solid var(--ink); }
+  .tl-tab.on{ background:var(--ink); color:#fff; }
+  .tl-pane{ display:none; } .tl-pane.on{ display:block; }
+  .tl-dial{ position:relative; width:210px; height:210px; margin:6px auto 14px; }
+  .tl-dial svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .tl-dial .trk{ fill:none; stroke:var(--line); stroke-width:8; }
+  .tl-dial .bar{ fill:none; stroke:var(--marigold); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .25s linear; }
+  .tl-readout{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:34px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .tl-big{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:44px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; margin:14px 0 16px; }
+  .tl-row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .tl-row .btn{ flex:1 1 90px; justify-content:center; }
+  .tl-set{ display:flex; gap:8px; justify-content:center; margin-bottom:12px; }
+  .tl-set label{ display:flex; flex-direction:column; align-items:center; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-soft); gap:4px; }
+  .tl-in{ width:70px; padding:10px 6px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:18px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; color:var(--ink); }
+  .tl-chips{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:12px; }
+  .tl-chip{ padding:6px 10px; font-family:'IBM Plex Mono',monospace; font-size:11px; border:1px dashed var(--ink-soft); background:none; color:var(--ink); border-radius:var(--radius); cursor:pointer; }
+  .tl-laps{ list-style:none; margin:8px 0 0; padding:0; max-height:200px; overflow-y:auto; }
+  .tl-laps li{ display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px dashed var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--text); }
+  .pl-field{ display:flex; flex-direction:column; gap:4px; margin-bottom:10px; flex:1; min-width:0; }
+  .pl-field span{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-soft); letter-spacing:.04em; text-transform:uppercase; }
+  .pl-field input,.pl-field select{ width:100%; padding:10px; font-size:14px; font-family:'IBM Plex Sans',sans-serif; border:1px solid var(--line); border-radius:var(--radius); background:#fff; color:var(--ink); }
+  .pl-two{ display:flex; gap:8px; }
+  .pl-day{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--marigold-deep); margin:-4px 0 10px; }
+  .pl-check{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); margin-bottom:12px; }
+  .cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .cal-head h4{ margin:0; font-family:'Fraunces',serif; font-size:16px; color:var(--ink); }
+  .cal-nav{ background:none; border:1px solid var(--ink); width:34px; height:34px; cursor:pointer; color:var(--ink); font-size:16px; border-radius:var(--radius); }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .cal-dow{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-soft); padding:4px 0; }
+  .cal-cell{ position:relative; aspect-ratio:1/1; background:#fff; border:1px solid var(--line); cursor:pointer; font-size:13px; color:var(--text); font-family:'IBM Plex Sans',sans-serif; padding:0; border-radius:var(--radius); }
+  .cal-cell.empty{ background:none; border:none; cursor:default; }
+  .cal-cell.today{ border:2px solid var(--marigold); font-weight:700; }
+  .cal-cell.sel{ background:var(--ink); color:#fff; }
+  .cal-cell .dot{ position:absolute; bottom:4px; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:var(--maroon); }
+  .cal-cell .dot.done{ background:#9aa3b8; }
+  .cal-cell.sel .dot{ background:var(--marigold); }
+  .pl-item{ display:flex; gap:10px; align-items:flex-start; padding:12px; background:#fff; border:1px solid var(--line); border-left:4px solid var(--marigold); margin-bottom:8px; border-radius:var(--radius); }
+  .pl-item.done{ opacity:.55; border-left-color:#9aa3b8; } .pl-item.done h5{ text-decoration:line-through; }
+  .pl-item.missed{ border-left-color:var(--maroon); }
+  .pl-item .when{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-soft); min-width:74px; line-height:1.5; }
+  .pl-item .what{ flex:1; min-width:0; } .pl-item h5{ margin:0 0 2px; font-size:14px; color:var(--ink); }
+  .pl-item .meta{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--marigold-deep); }
+  .pl-item .note{ font-size:12px; color:var(--text-soft); margin-top:3px; word-break:break-word; }
+  .pl-item .acts{ display:flex; flex-direction:column; gap:6px; }
+  .pl-mini{ background:none; border:1px solid var(--ink); color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:5px 7px; cursor:pointer; border-radius:var(--radius); }
+  .pl-empty{ font-size:13px; color:var(--text-soft); padding:6px 2px 12px; }
+  .ring-card{ text-align:center; }
+  .ring-bell{ font-size:44px; animation:ring-shake .5s infinite; display:inline-block; }
+  @keyframes ring-shake{ 0%,100%{transform:rotate(-14deg)} 50%{transform:rotate(14deg)} }
+  .install-sheet{
+    position:fixed; left:12px; right:12px; bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index:150;
+    max-width:420px; margin:0 auto; background:var(--paper-card); border:1px solid var(--ink); border-top:4px solid var(--marigold);
+    border-radius:var(--radius); padding:14px 14px 12px; box-shadow:0 14px 40px rgba(0,0,0,.45); animation:fade-in .3s ease;
+  }
+  .install-sheet h4{ font-family:'Fraunces',serif; font-size:16px; color:var(--ink); margin:0 0 4px; }
+  .install-sheet p{ font-size:12.5px; color:var(--text-soft); margin:0 0 10px; }
+  .install-sheet .row{ display:flex; gap:8px; } .install-sheet .btn{ flex:1; justify-content:center; }
 </style>
 </head>
 <body>
@@ -597,10 +658,9 @@
 <!-- ===== Welcome / read-first popup ===== -->
 <div class="modal-overlay" id="welcome-modal">
   <div class="modal-card">
-    <span class="tag">READ FIRST</span>
-    <h4>Before you explore the site</h4>
-    <p>Please read the <strong>How to Use the Drive</strong> guide first — it explains navigation and the daily‑update habit.</p>
-    <a class="file-link" href="https://docs.google.com/document/d/1u1IlmVu4hQStFuoVk_FPZZ60jGk3mjmt0EbQgXmU9X0/edit?tab=t.0" target="_blank" rel="noopener">Open the guide ↗</a>
+    <span class="tag">WELCOME</span>
+    <h4>Choose your language</h4>
+    <p>Pick the language you want the app in. You can change it later.</p>
     <span class="tag" id="lang-tag" style="margin-top:6px;display:inline-block;">LANGUAGE · भाषा · ಭಾಷೆ · ഭാഷ</span>
     <button type="button" class="teacher-link" id="lang-change" style="display:none;margin:8px 0 16px;">🌐 Change language</button>
     <div class="lang-grid" id="lang-grid" role="radiogroup" aria-label="Choose language">
@@ -822,6 +882,13 @@
           <p>Study with fewer distractions: paste the link of the lecture you want and it plays right here, with no recommended videos or comments to pull your attention away.</p>
           <button type="button" class="btn btn-solid" id="lec-open">▶ Open lectures</button>
           <button type="button" class="btn" id="lec-manual-home" style="margin-top:8px;">📖 User manual</button>
+        </div>
+
+        <div class="stamp-card">
+          <span class="tag">NEW</span>
+          <h4>Study tools</h4>
+          <p>Timer, stopwatch and a study planner with a calendar and alarms for your subjects.</p>
+          <button type="button" class="btn btn-solid" id="tools-open-home">⏱ Open study tools</button>
         </div>
 
         <div class="section-label"><span class="num">01</span><h3>Must read first</h3></div>
@@ -1134,6 +1201,13 @@ Examinations- 2026-27- reg
         </div>
 
         <div class="stub">
+          <span class="mono-label">Timer · Stopwatch · Planner</span>
+          <h4>Study tools</h4>
+          <p>Plan subjects on a calendar and get an alarm when it is time to study.</p>
+          <button class="btn btn-solid" id="tools-open-more" type="button">Open study tools →</button>
+        </div>
+
+        <div class="stub">
           <span class="mono-label">Festival archive</span>
           <h4>Past festival slides</h4>
           <p>Photos, videos and animations from earlier festivals and events, kept here to watch again.</p>
@@ -1170,6 +1244,102 @@ Examinations- 2026-27- reg
       </div>
     </section>
 
+
+    <!-- ===== Study tools: Timer, Stopwatch, Planner ===== -->
+    <section class="screen" data-screen="tools">
+      <div class="pad">
+        <div class="section-label"><span class="num">⏱</span><h3>Study tools</h3></div>
+        <div class="tl-tabs" role="tablist">
+          <button type="button" class="tl-tab on" data-pane="timer">Timer</button>
+          <button type="button" class="tl-tab" data-pane="stopwatch">Stopwatch</button>
+          <button type="button" class="tl-tab" data-pane="planner">Planner</button>
+        </div>
+
+        <!-- TIMER -->
+        <div class="tl-pane on" id="pane-timer">
+          <div class="stub">
+            <span class="mono-label">Countdown timer</span>
+            <div class="tl-dial">
+              <svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="45"/><circle class="bar" id="tm-bar" cx="50" cy="50" r="45" stroke-dasharray="282.74" stroke-dashoffset="0"/></svg>
+              <div class="tl-readout" id="tm-read">00:25:00</div>
+            </div>
+            <div class="tl-set" id="tm-set">
+              <label>HOURS<input class="tl-in" id="tm-h" type="number" min="0" max="23" value="0" inputmode="numeric"></label>
+              <label>MINUTES<input class="tl-in" id="tm-m" type="number" min="0" max="59" value="25" inputmode="numeric"></label>
+              <label>SECONDS<input class="tl-in" id="tm-s" type="number" min="0" max="59" value="0" inputmode="numeric"></label>
+            </div>
+            <div class="tl-chips" id="tm-chips">
+              <button type="button" class="tl-chip" data-min="15">15 min</button>
+              <button type="button" class="tl-chip" data-min="25">25 min</button>
+              <button type="button" class="tl-chip" data-min="45">45 min</button>
+              <button type="button" class="tl-chip" data-min="60">1 hr</button>
+              <button type="button" class="tl-chip" data-min="180">3 hr (exam)</button>
+            </div>
+            <div class="tl-row">
+              <button type="button" class="btn btn-solid" id="tm-start">▶ Start</button>
+              <button type="button" class="btn" id="tm-reset">↺ Reset</button>
+            </div>
+            <div class="status-line" id="tm-status" style="text-align:center;">Rings when time is up.</div>
+          </div>
+        </div>
+
+        <!-- STOPWATCH -->
+        <div class="tl-pane" id="pane-stopwatch">
+          <div class="stub">
+            <span class="mono-label">Stopwatch</span>
+            <div class="tl-big" id="sw-read">00:00:00.00</div>
+            <div class="tl-row">
+              <button type="button" class="btn btn-solid" id="sw-start">▶ Start</button>
+              <button type="button" class="btn" id="sw-lap" disabled>⚑ Lap</button>
+              <button type="button" class="btn" id="sw-reset">↺ Reset</button>
+            </div>
+            <ul class="tl-laps" id="sw-laps"></ul>
+          </div>
+        </div>
+
+        <!-- PLANNER -->
+        <div class="tl-pane" id="pane-planner">
+          <div class="stub">
+            <span class="mono-label">Study calendar</span>
+            <div class="cal-head">
+              <button type="button" class="cal-nav" id="cal-prev" aria-label="Previous month">‹</button>
+              <h4 id="cal-title">—</h4>
+              <button type="button" class="cal-nav" id="cal-next" aria-label="Next month">›</button>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+            <div class="status-line">Tap a date to see or plan that day. Red dot = something pending.</div>
+          </div>
+
+          <div class="stub">
+            <span class="mono-label">Plan something</span>
+            <h4>Add to your timetable</h4>
+            <label class="pl-field"><span>Subject</span>
+              <input id="pl-subject" list="pl-subjects" placeholder="e.g. Mathematics" maxlength="40" autocomplete="off">
+              <datalist id="pl-subjects"><option>English</option><option>Hindi</option><option>Kannada</option><option>Sanskrit</option><option>Mathematics</option><option>Science</option><option>Social Science</option><option>Information Technology</option></datalist>
+            </label>
+            <label class="pl-field"><span>What to do</span>
+              <select id="pl-kind"><option>Read</option><option>Work / Practice</option><option>PYQs</option><option>Revise</option><option>Exam</option><option>Other</option></select>
+            </label>
+            <div class="pl-two">
+              <label class="pl-field"><span>Date</span><input id="pl-date" type="date"></label>
+              <label class="pl-field"><span>Time</span><input id="pl-time" type="time" value="17:00"></label>
+            </div>
+            <div class="pl-day" id="pl-day"></div>
+            <label class="pl-field"><span>Note (optional)</span><input id="pl-note" placeholder="Chapter / topic" maxlength="80"></label>
+            <label class="pl-check"><input type="checkbox" id="pl-alarm" checked> 🔔 Ring an alarm at this time</label>
+            <button type="button" class="btn btn-solid" id="pl-add">＋ Add to planner</button>
+            <div class="status-line" id="pl-status">Alarms ring while the app is open (even in the background). Keep it open for guaranteed alerts.</div>
+          </div>
+
+          <div class="section-label"><span class="num">▸</span><h3 id="pl-list-title">Selected day</h3></div>
+          <div id="pl-day-list"></div>
+          <div class="section-label"><span class="num">▸</span><h3>Upcoming</h3></div>
+          <div id="pl-upcoming"></div>
+          <button type="button" class="btn" id="pl-seed" style="margin:6px 0 14px;">＋ Add CBSE board exam dates</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== persistent site-info / credit footer — shown at the bottom of every tab ===== -->
     <div class="pad site-footer-info">
       <div class="section-label" style="margin-top:8px;"><span class="num">✦</span><h3>Site info</h3></div>
@@ -1184,6 +1354,7 @@ Examinations- 2026-27- reg
 
   <div class="fab-menu" id="fab-menu" role="menu" aria-label="More options">
     <button type="button" class="fab-item" id="fab-lectures" role="menuitem">▶ Free video lectures</button>
+    <button type="button" class="fab-item" id="fab-tools" role="menuitem">⏱ Study tools</button>
     <button type="button" class="fab-item" id="archive-link" role="menuitem" style="display:none;">🎉 Festival archive</button>
     <button type="button" class="fab-item" id="fab-feedback" role="menuitem">💬 Feedback &amp; suggestions</button>
     <a class="fab-item" href="https://whatsapp.com/channel/0029VbDKUk9BVJkx1zao703t" target="_blank" rel="noopener" role="menuitem">📢 WhatsApp channel</a>
@@ -1225,11 +1396,11 @@ Examinations- 2026-27- reg
   const navBtns = document.querySelectorAll('.nav-btn');
   const screens = document.querySelectorAll('.screen');
   const screenTag = document.getElementById('screen-tag');
-  const labels = { home:'Home', subjects:'Subjects', papers:'Papers', scriptures:'Scriptures', updates:'Updates', more:'More', archive:'Archive', lectures:'Lectures' };
+  const labels = { home:'Home', subjects:'Subjects', papers:'Papers', scriptures:'Scriptures', updates:'Updates', more:'More', archive:'Archive', lectures:'Lectures', tools:'Study tools' };
   const scrollArea = document.querySelector('.screens');
 
   function goToTab(target) {
-    const btn = document.querySelector(`.nav-btn[data-target="${target === 'archive' ? 'more' : target === 'lectures' ? 'home' : target}"]`);
+    const btn = document.querySelector(`.nav-btn[data-target="${target === 'archive' ? 'more' : target === 'lectures' ? 'home' : target === 'tools' ? 'more' : target}"]`);
     navBtns.forEach(b => b.classList.toggle('active', b === btn));
     screens.forEach(s => s.classList.toggle('active', s.dataset.screen === target));
     if (target === 'updates' && typeof markUpdatesSeen === 'function') markUpdatesSeen();
@@ -2950,6 +3121,380 @@ Examinations- 2026-27- reg
   document.getElementById('doc-close').addEventListener('click', closeDs);
   ds.addEventListener('click', (e) => { if (e.target === ds) closeDs(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDs(); closeFb(); } });
+})();
+</script>
+
+<!-- ===== Alarm ringing popup (timer + planner) ===== -->
+<div class="modal-overlay hidden" id="ring-modal" style="z-index:300;">
+  <div class="modal-card ring-card">
+    <span class="tag">ALARM</span>
+    <div class="ring-bell">🔔</div>
+    <h4 id="ring-title">Alarm</h4>
+    <p id="ring-body"></p>
+    <div class="modal-actions">
+      <button class="btn btn-solid" id="ring-stop" type="button">Stop</button>
+      <button class="btn" id="ring-snooze" type="button">Snooze 5 min</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Install-app sheet ===== -->
+<div class="install-sheet hidden" id="install-sheet" role="dialog" aria-label="Install app">
+  <h4 id="install-title">Install Class X Drive</h4>
+  <p id="install-msg">Add the app to your home screen for quick access.</p>
+  <div class="row">
+    <button type="button" class="btn btn-solid" id="install-go">⬇ Install app</button>
+    <button type="button" class="btn" id="install-later">Not now</button>
+  </div>
+</div>
+<script>
+// ===== Study tools: timer, stopwatch, planner + alarm engine =====
+(function () {
+  var g = function (id) { return document.getElementById(id); };
+  var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  // ---------- sub-tabs ----------
+  document.querySelectorAll('.tl-tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      document.querySelectorAll('.tl-tab').forEach(function (x) { x.classList.toggle('on', x === t); });
+      document.querySelectorAll('.tl-pane').forEach(function (p) { p.classList.toggle('on', p.id === 'pane-' + t.dataset.pane); });
+    });
+  });
+
+  // ---------- alarm sound / ring popup ----------
+  var actx = null, ringTimer = null, ringSnooze = null;
+  function unlockAudio() {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+    } catch (e) {}
+  }
+  ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlockAudio, { passive: true }); });
+  function beep() {
+    try {
+      unlockAudio(); if (!actx) return;
+      [0, 0.22, 0.44].forEach(function (d) {
+        var o = actx.createOscillator(), gn = actx.createGain();
+        o.type = 'square'; o.frequency.value = 880;
+        gn.gain.setValueAtTime(0.0001, actx.currentTime + d);
+        gn.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + d + 0.02);
+        gn.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d + 0.18);
+        o.connect(gn); gn.connect(actx.destination);
+        o.start(actx.currentTime + d); o.stop(actx.currentTime + d + 0.2);
+      });
+    } catch (e) {}
+  }
+  function stopRing() {
+    clearInterval(ringTimer); ringTimer = null;
+    g('ring-modal').classList.add('hidden');
+    try { navigator.vibrate && navigator.vibrate(0); } catch (e) {}
+  }
+  function ring(title, body, snoozeFn) {
+    g('ring-title').textContent = title;
+    g('ring-body').textContent = body || '';
+    ringSnooze = snoozeFn || null;
+    g('ring-snooze').style.display = snoozeFn ? '' : 'none';
+    g('ring-modal').classList.remove('hidden');
+    clearInterval(ringTimer);
+    var tick = function () { beep(); try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (e) {} };
+    tick(); ringTimer = setInterval(tick, 1500);
+    // system notification too (helps when the tab is in the background)
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+          navigator.serviceWorker.getRegistration().then(function (r) {
+            if (r) r.showNotification(title, { body: body || '', icon: './icon-192.png', tag: 'classx-alarm', requireInteraction: true, vibrate: [300, 150, 300] });
+            else new Notification(title, { body: body || '', icon: './icon-192.png' });
+          }).catch(function () {});
+        } else { new Notification(title, { body: body || '', icon: './icon-192.png' }); }
+      }
+    } catch (e) {}
+  }
+  g('ring-stop').addEventListener('click', stopRing);
+  g('ring-snooze').addEventListener('click', function () { var f = ringSnooze; stopRing(); if (f) f(); });
+
+  // keep the screen awake while a timer / stopwatch is running (best effort)
+  var wake = null;
+  function wakeOn() { try { if (navigator.wakeLock && !wake) navigator.wakeLock.request('screen').then(function (w) { wake = w; w.addEventListener('release', function () { wake = null; }); }).catch(function () {}); } catch (e) {} }
+  function wakeOff() { try { if (wake) { wake.release(); wake = null; } } catch (e) {} }
+
+  // ---------- TIMER ----------
+  var tm = lsGet('classx_timer', null);       // {state:'run'|'pause'|'idle', end, left, total}
+  if (!tm || !tm.state) tm = { state: 'idle', total: 25 * 60000, left: 25 * 60000, end: 0 };
+  var CIRC = 282.74, tmTick = null;
+  function fmtHMS(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor(s % 3600 / 60)) + ':' + pad2(s % 60); }
+  function tmLeft() { return tm.state === 'run' ? Math.max(0, tm.end - Date.now()) : tm.left; }
+  function tmRender() {
+    var left = tmLeft();
+    g('tm-read').textContent = fmtHMS(left);
+    g('tm-bar').style.strokeDashoffset = String(CIRC * (1 - (tm.total ? left / tm.total : 0)));
+    g('tm-start').textContent = tm.state === 'run' ? '❚❚ Pause' : (tm.state === 'pause' ? '▶ Resume' : '▶ Start');
+    g('tm-set').style.display = tm.state === 'idle' ? 'flex' : 'none';
+    g('tm-chips').style.display = tm.state === 'idle' ? 'flex' : 'none';
+  }
+  function tmSave() { lsSet('classx_timer', tm); }
+  function tmLoop() {
+    clearInterval(tmTick);
+    tmTick = setInterval(function () {
+      if (tm.state === 'run' && Date.now() >= tm.end) { tmDone(); return; }
+      tmRender();
+    }, 250);
+  }
+  function tmDone() {
+    clearInterval(tmTick); wakeOff();
+    tm = { state: 'idle', total: tm.total, left: tm.total, end: 0 }; tmSave(); tmRender();
+    g('tm-status').textContent = 'Time is up!';
+    ring('⏰ Timer finished', 'Your study timer has ended.', null);
+  }
+  function readInputs() {
+    var h = +g('tm-h').value || 0, m = +g('tm-m').value || 0, s = +g('tm-s').value || 0;
+    return Math.min(h, 23) * 3600000 + Math.min(m, 59) * 60000 + Math.min(s, 59) * 1000;
+  }
+  function writeInputs(ms) {
+    var s = Math.round(ms / 1000);
+    g('tm-h').value = Math.floor(s / 3600); g('tm-m').value = Math.floor(s % 3600 / 60); g('tm-s').value = s % 60;
+  }
+  g('tm-chips').addEventListener('click', function (e) {
+    var b = e.target.closest('.tl-chip'); if (!b || tm.state !== 'idle') return;
+    var ms = (+b.dataset.min) * 60000; writeInputs(ms); tm.total = tm.left = ms; tmSave(); tmRender();
+  });
+  ['tm-h', 'tm-m', 'tm-s'].forEach(function (id) {
+    g(id).addEventListener('input', function () { if (tm.state !== 'idle') return; var ms = readInputs(); tm.total = tm.left = ms; tmSave(); tmRender(); });
+  });
+  g('tm-start').addEventListener('click', function () {
+    unlockAudio();
+    if (tm.state === 'run') {
+      tm.left = Math.max(0, tm.end - Date.now()); tm.state = 'pause'; wakeOff(); g('tm-status').textContent = 'Paused.';
+    } else {
+      if (tm.state === 'idle') { tm.total = tm.left = readInputs(); }
+      if (tm.left <= 0) { g('tm-status').textContent = 'Set a time first.'; return; }
+      tm.end = Date.now() + tm.left; tm.state = 'run'; wakeOn(); g('tm-status').textContent = 'Running… keep the app open for the alarm.';
+      try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+    }
+    tmSave(); tmRender(); tmLoop();
+  });
+  g('tm-reset').addEventListener('click', function () {
+    clearInterval(tmTick); wakeOff(); var t = tm.total || readInputs();
+    tm = { state: 'idle', total: t, left: t, end: 0 }; tmSave(); writeInputs(t); tmRender(); g('tm-status').textContent = 'Rings when time is up.';
+  });
+  writeInputs(tm.total); tmRender();
+  if (tm.state === 'run') { if (Date.now() >= tm.end) tmDone(); else { tmLoop(); g('tm-status').textContent = 'Running…'; } }
+
+  // ---------- STOPWATCH ----------
+  var sw = { run: false, start: 0, acc: 0, laps: [] }, swTick = null;
+  function swMs() { return sw.acc + (sw.run ? performance.now() - sw.start : 0); }
+  function fmtSW(ms) { var cs = Math.floor(ms / 10) % 100, s = Math.floor(ms / 1000); return pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor(s % 3600 / 60)) + ':' + pad2(s % 60) + '.' + pad2(cs); }
+  function swRender() { g('sw-read').textContent = fmtSW(swMs()); }
+  function swLaps() {
+    g('sw-laps').innerHTML = sw.laps.map(function (l, i) {
+      return '<li><span>Lap ' + (i + 1) + '</span><span>+' + fmtSW(l.split) + '</span><span>' + fmtSW(l.total) + '</span></li>';
+    }).reverse().join('');
+  }
+  g('sw-start').addEventListener('click', function () {
+    if (sw.run) { sw.acc = swMs(); sw.run = false; clearInterval(swTick); wakeOff(); g('sw-start').textContent = '▶ Resume'; g('sw-lap').disabled = true; }
+    else { sw.start = performance.now(); sw.run = true; wakeOn(); swTick = setInterval(swRender, 40); g('sw-start').textContent = '❚❚ Stop'; g('sw-lap').disabled = false; }
+    swRender();
+  });
+  g('sw-lap').addEventListener('click', function () {
+    var t = swMs(), prev = sw.laps.length ? sw.laps[sw.laps.length - 1].total : 0;
+    sw.laps.push({ total: t, split: t - prev }); swLaps();
+  });
+  g('sw-reset').addEventListener('click', function () {
+    clearInterval(swTick); wakeOff(); sw = { run: false, start: 0, acc: 0, laps: [] };
+    g('sw-start').textContent = '▶ Start'; g('sw-lap').disabled = true; swRender(); swLaps();
+  });
+
+  // ---------- PLANNER ----------
+  var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var plans = lsGet('classx_planner', []);
+  function save() { lsSet('classx_planner', plans); }
+  function ymd(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function parseYMD(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function when(p) { var t = p.time.split(':'); var d = parseYMD(p.date); d.setHours(+t[0], +t[1], 0, 0); return d.getTime(); }
+  function fmtTime(t) { var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h >= 12 ? 'PM' : 'AM'); }
+  function fmtDate(s) { var d = parseYMD(s); return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear(); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  var today = new Date(), view = new Date(today.getFullYear(), today.getMonth(), 1), selected = ymd(today);
+  g('pl-date').value = selected;
+
+  function dayLabel() {
+    var v = g('pl-date').value;
+    g('pl-day').textContent = v ? 'Day: ' + DAYS[parseYMD(v).getDay()] : '';
+  }
+  g('pl-date').addEventListener('input', function () { if (g('pl-date').value) { selected = g('pl-date').value; var d = parseYMD(selected); view = new Date(d.getFullYear(), d.getMonth(), 1); } dayLabel(); renderAll(); });
+
+  function renderCal() {
+    g('cal-title').textContent = MONTHS[view.getMonth()] + ' ' + view.getFullYear();
+    var html = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) { return '<div class="cal-dow">' + d + '</div>'; }).join('');
+    var first = (view.getDay() + 6) % 7, days = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+    for (var i = 0; i < first; i++) html += '<button class="cal-cell empty" tabindex="-1" aria-hidden="true"></button>';
+    var todayS = ymd(new Date());
+    for (var d = 1; d <= days; d++) {
+      var s = view.getFullYear() + '-' + pad2(view.getMonth() + 1) + '-' + pad2(d);
+      var list = plans.filter(function (p) { return p.date === s; });
+      var pend = list.some(function (p) { return !p.done; });
+      html += '<button type="button" class="cal-cell' + (s === todayS ? ' today' : '') + (s === selected ? ' sel' : '') + '" data-d="' + s + '">' + d +
+        (list.length ? '<i class="dot' + (pend ? '' : ' done') + '"></i>' : '') + '</button>';
+    }
+    g('cal-grid').innerHTML = html;
+  }
+  function itemHTML(p, showDate) {
+    var late = !p.done && when(p) < Date.now() - 60000;
+    return '<div class="pl-item' + (p.done ? ' done' : '') + (late ? ' missed' : '') + '" data-id="' + p.id + '">' +
+      '<div class="when">' + (showDate ? fmtDate(p.date) + '<br>' + DAYS[parseYMD(p.date).getDay()].slice(0, 3) + '<br>' : '') + fmtTime(p.time) + '</div>' +
+      '<div class="what"><h5>' + esc(p.subject) + '</h5><div class="meta">' + esc(p.kind) + (p.alarm ? ' · 🔔' : '') + (late ? ' · missed' : '') + '</div>' +
+      (p.note ? '<div class="note">' + esc(p.note) + '</div>' : '') + '</div>' +
+      '<div class="acts"><button class="pl-mini" data-act="done">' + (p.done ? 'Undo' : '✓ Done') + '</button><button class="pl-mini" data-act="del">✕</button></div></div>';
+  }
+  function sorter(a, b) { return when(a) - when(b); }
+  function renderLists() {
+    var d = parseYMD(selected);
+    g('pl-list-title').textContent = DAYS[d.getDay()] + ', ' + fmtDate(selected);
+    var day = plans.filter(function (p) { return p.date === selected; }).sort(sorter);
+    g('pl-day-list').innerHTML = day.length ? day.map(function (p) { return itemHTML(p, false); }).join('') : '<div class="pl-empty">Nothing planned for this day yet.</div>';
+    var start = ymd(new Date());
+    var up = plans.filter(function (p) { return !p.done && p.date >= start && p.date !== selected; }).sort(sorter).slice(0, 12);
+    g('pl-upcoming').innerHTML = up.length ? up.map(function (p) { return itemHTML(p, true); }).join('') : '<div class="pl-empty">No upcoming tasks.</div>';
+  }
+  function renderAll() { renderCal(); renderLists(); }
+
+  g('cal-prev').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); renderCal(); });
+  g('cal-next').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); renderCal(); });
+  g('cal-grid').addEventListener('click', function (e) {
+    var b = e.target.closest('.cal-cell[data-d]'); if (!b) return;
+    selected = b.dataset.d; g('pl-date').value = selected; dayLabel(); renderAll();
+  });
+  function onItemClick(e) {
+    var b = e.target.closest('.pl-mini'); if (!b) return;
+    var id = b.closest('.pl-item').dataset.id, p = plans.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    if (b.dataset.act === 'done') { p.done = !p.done; } else { plans = plans.filter(function (x) { return x.id !== id; }); }
+    save(); renderAll();
+  }
+  g('pl-day-list').addEventListener('click', onItemClick);
+  g('pl-upcoming').addEventListener('click', onItemClick);
+
+  g('pl-add').addEventListener('click', function () {
+    var subj = g('pl-subject').value.trim(), date = g('pl-date').value, time = g('pl-time').value;
+    if (!subj || !date || !time) { g('pl-status').textContent = 'Please fill in subject, date and time.'; return; }
+    var alarm = g('pl-alarm').checked;
+    plans.push({ id: 'p' + Date.now() + Math.floor(Math.random() * 1000), subject: subj, kind: g('pl-kind').value, date: date, time: time, note: g('pl-note').value.trim(), alarm: alarm, done: false, fired: false });
+    save(); selected = date; g('pl-subject').value = ''; g('pl-note').value = '';
+    var d = parseYMD(date); view = new Date(d.getFullYear(), d.getMonth(), 1); renderAll();
+    g('pl-status').textContent = 'Added for ' + DAYS[d.getDay()] + ', ' + fmtDate(date) + ' at ' + fmtTime(time) + '.';
+    unlockAudio();
+    try { if (alarm && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  });
+
+  // one-tap CBSE Class 10 board exam dates (from the datesheet shown on the home page)
+  var EXAMS = [
+    ['2027-02-17', 'Mathematics', 'Code 041 / 241 · 10:30 AM – 1:30 PM'], ['2027-02-22', 'Science', 'Code 086 · 10:30 AM – 1:30 PM'],
+    ['2027-02-24', 'Information Technology', 'Code 402 · 10:30 AM – 12:30 PM'], ['2027-02-26', 'English', 'Code 101 / 184 · 10:30 AM – 1:30 PM'],
+    ['2027-02-27', 'Kannada', 'Code 015 · 10:30 AM – 1:30 PM'], ['2027-03-01', 'Sanskrit', 'Code 122 / 119 · 10:30 AM – 1:30 PM'],
+    ['2027-03-03', 'Hindi', 'Code 002 / 085 · 10:30 AM – 1:30 PM'], ['2027-03-08', 'Social Science', 'Code 087 · 10:30 AM – 1:30 PM']
+  ];
+  g('pl-seed').addEventListener('click', function () {
+    var added = 0;
+    EXAMS.forEach(function (x) {
+      if (plans.some(function (p) { return p.date === x[0] && p.subject === x[1] && p.kind === 'Exam'; })) return;
+      plans.push({ id: 'e' + x[0] + x[1].replace(/\s/g, ''), subject: x[1], kind: 'Exam', date: x[0], time: '10:30', note: x[2], alarm: false, done: false, fired: false }); added++;
+    });
+    save(); selected = EXAMS[0][0]; g('pl-date').value = selected; var d = parseYMD(selected); view = new Date(d.getFullYear(), d.getMonth(), 1); dayLabel(); renderAll();
+    g('pl-status').textContent = added ? added + ' exam dates added — verify at cbse.gov.in.' : 'Exam dates are already in your planner.';
+  });
+
+  // ---------- alarm checker for planner ----------
+  function checkAlarms() {
+    var now = Date.now(), changed = false;
+    plans.forEach(function (p) {
+      if (!p.alarm || p.done || p.fired) return;
+      var w = when(p);
+      if (now >= w) {
+        p.fired = true; changed = true;
+        if (now - w < 5 * 60000) {   // only ring if it's on time; stale ones are just shown as "missed"
+          ring('⏰ ' + p.subject + ' — ' + p.kind, fmtTime(p.time) + (p.note ? ' · ' + p.note : ''), function () {
+            var t = new Date(Date.now() + 5 * 60000);
+            plans.push({ id: 'p' + Date.now(), subject: p.subject, kind: p.kind, date: ymd(t), time: pad2(t.getHours()) + ':' + pad2(t.getMinutes()), note: (p.note ? p.note + ' ' : '') + '(snoozed)', alarm: true, done: false, fired: false });
+            save(); renderAll();
+          });
+        }
+      }
+    });
+    if (changed) { save(); renderAll(); }
+  }
+  setInterval(checkAlarms, 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { checkAlarms(); if (tm.state === 'run' && Date.now() >= tm.end) tmDone(); } });
+  dayLabel(); renderAll(); checkAlarms();
+})();
+</script>
+
+<script>
+// ===== Install-app popup: appears every time the app is opened in a browser (not once installed) =====
+(function () {
+  var sheet = document.getElementById('install-sheet'); if (!sheet) return;
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (standalone) return;
+  try { if (sessionStorage.getItem('classx_install_dismissed') === '1') { /* dismissed this visit only */ } } catch (e) {}
+  var deferred = null, shown = false;
+  var title = document.getElementById('install-title'), msg = document.getElementById('install-msg'), go = document.getElementById('install-go');
+  var ua = navigator.userAgent || '', isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream, isAndroid = /Android/i.test(ua);
+
+  function dismissed() { try { return sessionStorage.getItem('classx_install_dismissed') === '1'; } catch (e) { return false; } }
+  function show() {
+    if (shown || dismissed()) return;
+    // wait until welcome / sign-in popups are closed so they don't stack
+    var wait = setInterval(function () {
+      if (document.querySelector('.modal-overlay:not(.hidden)')) return;
+      clearInterval(wait); if (shown || dismissed()) return;
+      shown = true; sheet.classList.remove('hidden');
+    }, 500);
+  }
+  function hide(remember) { sheet.classList.add('hidden'); if (remember) try { sessionStorage.setItem('classx_install_dismissed', '1'); } catch (e) {} }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferred = e;
+    title.textContent = 'Install Class X Drive';
+    msg.textContent = 'Add the app to your home screen for quick access, notifications and a full-screen experience.';
+    go.textContent = '⬇ Install app'; go.style.display = '';
+    show();
+  });
+  window.addEventListener('appinstalled', function () { deferred = null; hide(false); });
+
+  go.addEventListener('click', function () {
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; hide(false); }).catch(function () { hide(true); });
+    } else { hide(true); }
+  });
+  document.getElementById('install-later').addEventListener('click', function () { hide(true); });
+
+  // browsers that never fire beforeinstallprompt: show manual instructions
+  if (isIOS) {
+    title.textContent = 'Install Class X Drive';
+    msg.innerHTML = 'Tap the <b>Share</b> button in Safari, then <b>Add to Home Screen</b>.';
+    go.style.display = 'none'; setTimeout(show, 1500);
+  } else if (isAndroid) {
+    setTimeout(function () {
+      if (deferred || shown) return;
+      title.textContent = 'Install Class X Drive';
+      msg.innerHTML = 'Open your browser menu <b>⋮</b> and tap <b>Install app</b> / <b>Add to Home screen</b>.';
+      go.style.display = 'none'; show();
+    }, 3500);
+  }
+})();
+</script>
+
+<script>
+['tools-open-home','tools-open-more','fab-tools'].forEach(function(id){
+  var b=document.getElementById(id); if(b) b.addEventListener('click',function(){ goToTab('tools'); });
+});
+// language already chosen on this device: skip the welcome popup automatically
+(function(){
+  var saved=null; try{ saved=localStorage.getItem('classx_lang'); }catch(e){}
+  if(saved){ setTimeout(function(){ var ok=document.getElementById('welcome-ok-btn'); if(ok) ok.click(); },0); }
 })();
 </script>
 </body>

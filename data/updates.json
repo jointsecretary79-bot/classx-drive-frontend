@@ -17,8 +17,8 @@
     "showInTicker": true,
     "showInList": true,
     "flash": true,
-    "folderCbse": true,
-    "folderApp": false,
+    "folderCbse": false,
+    "folderApp": true,
     "ts": 1795064873871
   },
   {

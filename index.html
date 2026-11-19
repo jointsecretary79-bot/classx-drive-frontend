@@ -651,6 +651,13 @@
   .install-sheet h4{ font-family:'Fraunces',serif; font-size:16px; color:var(--ink); margin:0 0 4px; }
   .install-sheet p{ font-size:12.5px; color:var(--text-soft); margin:0 0 10px; }
   .install-sheet .row{ display:flex; gap:8px; } .install-sheet .btn{ flex:1; justify-content:center; }
+  .nt-item{ background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink-soft); padding:12px; margin-bottom:8px; border-radius:var(--radius); }
+  .nt-item h5{ margin:0 0 4px; font-size:14px; color:var(--ink); }
+  .nt-item .body{ font-size:13px; color:var(--text); white-space:pre-wrap; word-break:break-word; }
+  .nt-item .meta{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-soft); margin-top:6px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .nt-item .acts{ display:flex; gap:6px; }
+  .nt-area{ width:100%; min-height:110px; padding:10px; font-size:14px; font-family:'IBM Plex Sans',sans-serif; border:1px solid var(--line); border-radius:var(--radius); background:#fff; color:var(--ink); resize:vertical; }
+  .fab-item.accent{ background:var(--marigold); color:var(--ink); }
 </style>
 </head>
 <body>
@@ -675,19 +682,6 @@
     </div>
     <div class="modal-actions">
       <button class="btn btn-solid" id="welcome-ok-btn">OK</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== Teacher Login popup (triggered from the app bar) ===== -->
-<div class="modal-overlay hidden" id="teacher-modal">
-  <div class="modal-card">
-    <span class="tag">ONLY FOR REGISTERED TEACHER ACCESS</span>
-    <h4>Teacher Login</h4>
-    <p>Continue to the teacher portal to sign in and manage Drive materials.</p>
-    <div class="modal-actions">
-      <a class="btn btn-solid" href="https://jointsecretary79-bot.github.io/classx-drive-frontend/Teacher%20Login.html" style="text-decoration:none;">Go to Teacher Login →</a>
-      <button class="btn" id="teacher-modal-close">Cancel</button>
     </div>
   </div>
 </div>
@@ -834,8 +828,6 @@
       </div>
       <div class="appbar-sub-row">
         <span class="screen-tag" id="screen-tag">Home</span>
-        <span class="divider-dot">·</span>
-        <button class="teacher-link" id="teacher-popup-trigger" type="button">Teacher Login</button>
       </div>
       <span class="live-clock" id="live-clock" hidden>--:--:--</span>
     </div>
@@ -1048,11 +1040,6 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="rtitle">Prior Intimation of Submission of List of Candidates (LOC) for Class X/XII Examination-2026-27 </span><span class="rnote">CBSE LASTEST UPDATE</span></span>
             <span class="rarrow">→</span>
           </a>
-          <a class="resource-row" href="https://docs.google.com/document/d/1wdCxXfgC8d-p6uVR-mPy4kR6wOpSBd8CzAGsTEJnhqA/edit?usp=sharing" target="_blank" rel="noopener">
-            <span class="rdate mono">1 SEP </span>
-            <span style="flex:1"><span class="rtitle">TEACHER LOGIN FOR REGISTERED TEACHERS </span><span class="rnote">TEACHER LOGIN</span></span>
-            <span class="rarrow">→</span>
-          </a>
           <a class="resource-row" href="https://drive.google.com/file/d/1maG2dcGEhkFiTOdKgJAMaKqApUX_NHE0/view?usp=sharing" target="_blank" rel="noopener">
             <span class="rdate mono">31 AUG </span>
             <span style="flex:1"><span class="rtitle">Class X DRIVE SEMI WEBSITE/APP </span><span class="rnote">SEMI WEB APP</span></span>
@@ -1119,11 +1106,6 @@ Examinations- 2026-27- reg
             <span style="flex:1"><span class="rtitle"> Bharat Scriptures & Knowledge Resources</span><span class="rnote">READ</span></span>
             <span class="rarrow">→</span>
           </a>
-            <a class="resource-row" href="https://docs.google.com/document/d/1wdCxXfgC8d-p6uVR-mPy4kR6wOpSBd8CzAGsTEJnhqA/edit?usp=sharing" target="_blank" rel="noopener">
-              <span class="rdate mono">1 SEP </span>
-              <span style="flex:1"><span class="rtitle">TEACHER LOGIN FOR REGISTERED TEACHERS </span><span class="rnote">TEACHER LOGIN</span></span>
-              <span class="rarrow">→</span>
-            </a>
             <a class="resource-row" href="https://drive.google.com/file/d/1maG2dcGEhkFiTOdKgJAMaKqApUX_NHE0/view?usp=sharing" target="_blank" rel="noopener">
               <span class="rdate mono">31 AUG </span>
               <span style="flex:1"><span class="rtitle">Class X DRIVE SEMI WEBSITE/APP </span><span class="rnote">SEMI WEB APP</span></span>
@@ -1235,12 +1217,6 @@ Examinations- 2026-27- reg
           <a class="btn" href="https://drive.google.com/drive/folders/1qt84cRtq7s1yl3cHw06Qv_HhXoM3jg6c" target="_blank" rel="noopener">Open Drive →</a>
         </div>
 
-        <div class="stub">
-          <span class="mono-label">Teacher access</span>
-          <h4>Teacher Login</h4>
-          <p>portal for uploading and managing materials.</p>
-          <a class="btn" href="https://jointsecretary79-bot.github.io/classx-drive-frontend/Teacher%20Login.html">Go to Teacher Login →</a>
-        </div>
       </div>
     </section>
 
@@ -1253,6 +1229,7 @@ Examinations- 2026-27- reg
           <button type="button" class="tl-tab on" data-pane="timer">Timer</button>
           <button type="button" class="tl-tab" data-pane="stopwatch">Stopwatch</button>
           <button type="button" class="tl-tab" data-pane="planner">Planner</button>
+          <button type="button" class="tl-tab" data-pane="notes">📝 Notes</button>
         </div>
 
         <!-- TIMER -->
@@ -1295,6 +1272,24 @@ Examinations- 2026-27- reg
             </div>
             <ul class="tl-laps" id="sw-laps"></ul>
           </div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="tl-pane" id="pane-notes">
+          <div class="stub">
+            <span class="mono-label">My notes</span>
+            <h4 id="nt-form-title">Write a note</h4>
+            <label class="pl-field"><span>Title / subject</span><input id="nt-title" placeholder="e.g. Maths – formulas" maxlength="60"></label>
+            <label class="pl-field"><span>Note</span><textarea class="nt-area" id="nt-body" placeholder="Type here…" maxlength="4000"></textarea></label>
+            <div class="tl-row">
+              <button type="button" class="btn btn-solid" id="nt-save">💾 Save note</button>
+              <button type="button" class="btn" id="nt-cancel" style="display:none;">Cancel edit</button>
+            </div>
+            <div class="status-line" id="nt-status"></div>
+          </div>
+          <label class="pl-field"><span>Search notes</span><input id="nt-search" placeholder="Search…" autocomplete="off"></label>
+          <div id="nt-list"></div>
+          <div class="status-line" id="nt-storage"></div>
         </div>
 
         <!-- PLANNER -->
@@ -1354,6 +1349,7 @@ Examinations- 2026-27- reg
 
   <div class="fab-menu" id="fab-menu" role="menu" aria-label="More options">
     <button type="button" class="fab-item" id="fab-lectures" role="menuitem">▶ Free video lectures</button>
+    <button type="button" class="fab-item accent" id="fab-install" role="menuitem">⬇ Install app</button>
     <button type="button" class="fab-item" id="fab-tools" role="menuitem">⏱ Study tools</button>
     <button type="button" class="fab-item" id="archive-link" role="menuitem" style="display:none;">🎉 Festival archive</button>
     <button type="button" class="fab-item" id="fab-feedback" role="menuitem">💬 Feedback &amp; suggestions</button>
@@ -1462,15 +1458,6 @@ Examinations- 2026-27- reg
       }
       requestPushPermission();
     }
-  });
-
-  // ---- teacher login popup (opened from the app bar, beside the clock) ----
-  const teacherModal = document.getElementById('teacher-modal');
-  document.getElementById('teacher-popup-trigger').addEventListener('click', () => {
-    teacherModal.classList.remove('hidden');
-  });
-  document.getElementById('teacher-modal-close').addEventListener('click', () => {
-    teacherModal.classList.add('hidden');
   });
 
   // ---- student account popup: Google Sign-In (cosmetic only — decoded in the browser, ----
@@ -3124,6 +3111,19 @@ Examinations- 2026-27- reg
 })();
 </script>
 
+<!-- ===== Storage permission popup ===== -->
+<div class="modal-overlay hidden" id="store-modal" style="z-index:290;">
+  <div class="modal-card">
+    <span class="tag">STORAGE</span>
+    <h4>Save on this device?</h4>
+    <p>To keep your notes, planner and timer, this app needs to store them on your phone (inside this browser/app only). Nothing is uploaded anywhere.</p>
+    <div class="modal-actions">
+      <button class="btn btn-solid" id="store-allow" type="button">Allow</button>
+      <button class="btn" id="store-deny" type="button">Not now</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Alarm ringing popup (timer + planner) ===== -->
 <div class="modal-overlay hidden" id="ring-modal" style="z-index:300;">
   <div class="modal-card ring-card">
@@ -3153,7 +3153,36 @@ Examinations- 2026-27- reg
   var g = function (id) { return document.getElementById(id); };
   var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
-  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  var consent = null; try { consent = localStorage.getItem('classx_storage_ok'); } catch (e) {}
+  function askStorage() { if (consent === null) g('store-modal').classList.remove('hidden'); }
+  function lsSet(k, v) {
+    if (consent === 'yes') { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    else if (consent === null) askStorage();          // ask the user before storing anything
+  }
+  function saveAll() { lsSet('classx_timer', tm); lsSet('classx_planner', plans); lsSet('classx_notes', notes); }
+  function storageLine() {
+    var el = g('nt-storage'); if (!el) return;
+    el.innerHTML = consent === 'yes' ? 'Saving on this device is <b>allowed</b>. <a href="#" id="nt-store-off" style="color:var(--maroon)">Stop saving &amp; clear data</a>'
+      : 'Saving is <b>off</b> — notes, planner and timer last only until you close the app. <a href="#" id="nt-store-on" style="color:var(--ink)">Allow saving</a>';
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.id === 'nt-store-on') { e.preventDefault(); consent = null; askStorage(); }
+    if (e.target.id === 'nt-store-off') {
+      e.preventDefault();
+      if (!confirm('Delete saved notes, planner and timer from this device?')) return;
+      try { ['classx_timer', 'classx_planner', 'classx_notes'].forEach(function (k) { localStorage.removeItem(k); }); localStorage.setItem('classx_storage_ok', 'no'); } catch (x) {}
+      consent = 'no'; storageLine();
+    }
+  });
+  g('store-allow').addEventListener('click', function () {
+    consent = 'yes'; try { localStorage.setItem('classx_storage_ok', 'yes'); } catch (e) {}
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    g('store-modal').classList.add('hidden'); saveAll(); storageLine();
+  });
+  g('store-deny').addEventListener('click', function () {
+    consent = 'no'; try { localStorage.setItem('classx_storage_ok', 'no'); } catch (e) {}
+    g('store-modal').classList.add('hidden'); storageLine();
+  });
 
   // ---------- sub-tabs ----------
   document.querySelectorAll('.tl-tab').forEach(function (t) {
@@ -3406,6 +3435,37 @@ Examinations- 2026-27- reg
     g('pl-status').textContent = added ? added + ' exam dates added — verify at cbse.gov.in.' : 'Exam dates are already in your planner.';
   });
 
+  // ---------- NOTES ----------
+  var notes = lsGet('classx_notes', []), editing = null;
+  function ntRender() {
+    var q = g('nt-search').value.trim().toLowerCase();
+    var list = notes.filter(function (n) { return !q || (n.title + ' ' + n.body).toLowerCase().indexOf(q) > -1; }).sort(function (a, b) { return b.ts - a.ts; });
+    g('nt-list').innerHTML = list.length ? list.map(function (n) {
+      var d = new Date(n.ts);
+      return '<div class="nt-item" data-id="' + n.id + '"><h5>' + esc(n.title || 'Untitled') + '</h5><div class="body">' + esc(n.body) + '</div>' +
+        '<div class="meta"><span>' + d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear() + ', ' + fmtTime(pad2(d.getHours()) + ':' + pad2(d.getMinutes())) + '</span>' +
+        '<span class="acts"><button class="pl-mini" data-act="edit">Edit</button><button class="pl-mini" data-act="del">✕</button></span></div></div>';
+    }).join('') : '<div class="pl-empty">' + (q ? 'No notes match.' : 'No notes yet. Write your first one above.') + '</div>';
+  }
+  function ntReset() { editing = null; g('nt-title').value = ''; g('nt-body').value = ''; g('nt-form-title').textContent = 'Write a note'; g('nt-cancel').style.display = 'none'; g('nt-save').textContent = '💾 Save note'; }
+  g('nt-save').addEventListener('click', function () {
+    var t = g('nt-title').value.trim(), b = g('nt-body').value.trim();
+    if (!t && !b) { g('nt-status').textContent = 'Write something first.'; return; }
+    if (editing) { var n = notes.filter(function (x) { return x.id === editing; })[0]; if (n) { n.title = t; n.body = b; n.ts = Date.now(); } }
+    else notes.push({ id: 'n' + Date.now() + Math.floor(Math.random() * 1000), title: t, body: b, ts: Date.now() });
+    lsSet('classx_notes', notes); ntReset(); ntRender();
+    g('nt-status').textContent = consent === 'yes' ? 'Saved on this device.' : (consent === 'no' ? 'Added (not stored — saving is off).' : 'Added.');
+  });
+  g('nt-cancel').addEventListener('click', ntReset);
+  g('nt-search').addEventListener('input', ntRender);
+  g('nt-list').addEventListener('click', function (e) {
+    var b = e.target.closest('.pl-mini'); if (!b) return;
+    var id = b.closest('.nt-item').dataset.id, n = notes.filter(function (x) { return x.id === id; })[0]; if (!n) return;
+    if (b.dataset.act === 'del') { if (!confirm('Delete this note?')) return; notes = notes.filter(function (x) { return x.id !== id; }); lsSet('classx_notes', notes); ntRender(); }
+    else { editing = id; g('nt-title').value = n.title; g('nt-body').value = n.body; g('nt-form-title').textContent = 'Edit note'; g('nt-cancel').style.display = ''; g('nt-save').textContent = '💾 Update note'; g('nt-body').focus(); }
+  });
+  ntRender(); storageLine();
+
   // ---------- alarm checker for planner ----------
   function checkAlarms() {
     var now = Date.now(), changed = false;
@@ -3435,8 +3495,20 @@ Examinations- 2026-27- reg
 // ===== Install-app popup: appears every time the app is opened in a browser (not once installed) =====
 (function () {
   var sheet = document.getElementById('install-sheet'); if (!sheet) return;
+  var fabInstall = document.getElementById('fab-install');
+  var isInstalled = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (isInstalled && fabInstall) fabInstall.style.display = 'none';
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   if (standalone) return;
+  if (fabInstall) fabInstall.addEventListener('click', function () {
+    if (deferred) { deferred.prompt(); deferred.userChoice.then(function () { deferred = null; hide(false); }).catch(function () {}); return; }
+    // no one-tap install available here: show manual steps, ignoring any earlier "Not now"
+    title.textContent = 'Install Class X Drive';
+    go.style.display = 'none';
+    msg.innerHTML = isIOS ? 'Tap the <b>Share</b> button in Safari, then <b>Add to Home Screen</b>.'
+      : 'Open your browser menu <b>⋮</b> and tap <b>Install app</b> / <b>Add to Home screen</b>.';
+    shown = true; sheet.classList.remove('hidden');
+  });
   try { if (sessionStorage.getItem('classx_install_dismissed') === '1') { /* dismissed this visit only */ } } catch (e) {}
   var deferred = null, shown = false;
   var title = document.getElementById('install-title'), msg = document.getElementById('install-msg'), go = document.getElementById('install-go');

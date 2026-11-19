@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#142645">
+<script>try{if(localStorage.getItem('classx_lang'))document.documentElement.classList.add('lang-saved');}catch(e){}</script>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -644,7 +645,7 @@
   .ring-bell{ font-size:44px; animation:ring-shake .5s infinite; display:inline-block; }
   @keyframes ring-shake{ 0%,100%{transform:rotate(-14deg)} 50%{transform:rotate(14deg)} }
   .install-sheet{
-    position:fixed; left:12px; right:12px; bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index:150;
+    position:fixed; left:12px; right:12px; bottom:calc(var(--nav-h) + 86px + env(safe-area-inset-bottom)); z-index:150;
     max-width:420px; margin:0 auto; background:var(--paper-card); border:1px solid var(--ink); border-top:4px solid var(--marigold);
     border-radius:var(--radius); padding:14px 14px 12px; box-shadow:0 14px 40px rgba(0,0,0,.45); animation:fade-in .3s ease;
   }
@@ -658,6 +659,22 @@
   .nt-item .acts{ display:flex; gap:6px; }
   .nt-area{ width:100%; min-height:110px; padding:10px; font-size:14px; font-family:'IBM Plex Sans',sans-serif; border:1px solid var(--line); border-radius:var(--radius); background:#fff; color:var(--ink); resize:vertical; }
   .fab-item.accent{ background:var(--marigold); color:var(--ink); }
+  .lang-saved #welcome-modal{ display:none !important; }
+  /* + button: always visible on the screen (it used to sit at the very end of the page) */
+  .fab{ width:58px; height:58px; border:3px solid #fff; animation:fab-pulse 2.4s ease-out infinite; }
+  .fab svg{ width:28px; height:28px; }
+  .fab.open{ animation:none; }
+  @keyframes fab-pulse{
+    0%{ box-shadow:0 8px 18px rgba(0,0,0,.35),0 0 0 0 rgba(233,160,35,.75); }
+    70%{ box-shadow:0 8px 18px rgba(0,0,0,.35),0 0 0 16px rgba(233,160,35,0); }
+    100%{ box-shadow:0 8px 18px rgba(0,0,0,.35),0 0 0 0 rgba(233,160,35,0); }
+  }
+  @media (max-width:519px){
+    .fab{ position:fixed; right:16px; bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); z-index:60; }
+    .fab-menu{ position:fixed; right:16px; bottom:calc(var(--nav-h) + 86px + env(safe-area-inset-bottom)); z-index:61; max-height:calc(100vh - var(--nav-h) - 150px); overflow-y:auto; padding:2px; }
+  }
+  .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(var(--nav-h) + 90px); z-index:320; max-width:90%; background:var(--ink); color:#fff; border:1px solid var(--marigold); padding:10px 16px; border-radius:22px; font-size:13px; box-shadow:0 8px 18px rgba(0,0,0,.4); text-align:center; }
+  .toast.hidden{ display:none; }
 </style>
 </head>
 <body>
@@ -1350,6 +1367,7 @@ Examinations- 2026-27- reg
   <div class="fab-menu" id="fab-menu" role="menu" aria-label="More options">
     <button type="button" class="fab-item" id="fab-lectures" role="menuitem">▶ Free video lectures</button>
     <button type="button" class="fab-item accent" id="fab-install" role="menuitem">⬇ Install app</button>
+    <button type="button" class="fab-item accent" id="fab-notify" role="menuitem">🔔 Turn on notifications</button>
     <button type="button" class="fab-item" id="fab-tools" role="menuitem">⏱ Study tools</button>
     <button type="button" class="fab-item" id="archive-link" role="menuitem" style="display:none;">🎉 Festival archive</button>
     <button type="button" class="fab-item" id="fab-feedback" role="menuitem">💬 Feedback &amp; suggestions</button>
@@ -1448,17 +1466,31 @@ Examinations- 2026-27- reg
     if (!isOnboarded()) {
       accountModal.classList.remove('hidden');
     } else {
-      // Already signed in and registered: count this OK click as their visit in the "Login log" sheet.
-      const returning = getUser();
-      if (returning && REGISTRY_URL) {
-        fetch(REGISTRY_URL, {
-          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, keepalive: true,
-          body: JSON.stringify({ action: 'visit', credential: lastCredential, email: returning.email }),
-        }).then(r => r.json()).then(d => { if (d && d.blocked) blockUserLocally(); }).catch(() => {});
-      }
-      requestPushPermission();
+      // Already signed in and registered: record the visit in the "Login log" sheet.
+      // (When the welcome popup is skipped automatically, the visit is recorded on the
+      // person's first tap instead — see the click listener at the end of the page.)
+      if (!window.__classxSilent) logVisit();
+      if (!window.__classxSilent || ('Notification' in window && Notification.permission === 'granted')) requestPushPermission();
     }
   });
+
+  // Records one "visit" (login time) for the signed-in person in the Login log sheet.
+  // At most once per 30 minutes per open session, so every tap doesn't create a row.
+  function logVisit() {
+    if (!isOnboarded()) return false;
+    const u = getUser();
+    if (!u || !REGISTRY_URL) return false;
+    try {
+      const last = +sessionStorage.getItem('classx_visit_at') || 0;
+      if (Date.now() - last < 30 * 60000) return false;
+      sessionStorage.setItem('classx_visit_at', String(Date.now()));
+    } catch (e) {}
+    fetch(REGISTRY_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, keepalive: true,
+      body: JSON.stringify({ action: 'visit', credential: lastCredential, email: u.email }),
+    }).then(r => r.json()).then(d => { if (d && d.blocked) blockUserLocally(); }).catch(() => {});
+    return true;
+  }
 
   // ---- student account popup: Google Sign-In (cosmetic only — decoded in the browser, ----
   // ---- never verified server-side, so it's for greeting/display only, not for security gates) ----
@@ -3111,6 +3143,20 @@ Examinations- 2026-27- reg
 })();
 </script>
 
+<!-- ===== Notification permission popup ===== -->
+<div class="modal-overlay hidden" id="notif-modal" style="z-index:280;">
+  <div class="modal-card">
+    <span class="tag">NOTIFICATIONS</span>
+    <h4>Turn on notifications?</h4>
+    <p>Get your study alarms on time and be told the moment a new circular or file is posted.</p>
+    <div class="modal-actions">
+      <button class="btn btn-solid" id="notif-allow" type="button">Allow notifications</button>
+      <button class="btn" id="notif-later" type="button">Later</button>
+    </div>
+  </div>
+</div>
+<div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+
 <!-- ===== Storage permission popup ===== -->
 <div class="modal-overlay hidden" id="store-modal" style="z-index:290;">
   <div class="modal-card">
@@ -3141,7 +3187,7 @@ Examinations- 2026-27- reg
 <!-- ===== Install-app sheet ===== -->
 <div class="install-sheet hidden" id="install-sheet" role="dialog" aria-label="Install app">
   <h4 id="install-title">Install Class X Drive</h4>
-  <p id="install-msg">Add the app to your home screen for quick access.</p>
+  <p id="install-msg">Add the app to your home screen for quick access. You will also be asked to allow notifications.</p>
   <div class="row">
     <button type="button" class="btn btn-solid" id="install-go">⬇ Install app</button>
     <button type="button" class="btn" id="install-later">Not now</button>
@@ -3563,10 +3609,80 @@ Examinations- 2026-27- reg
 ['tools-open-home','tools-open-more','fab-tools'].forEach(function(id){
   var b=document.getElementById(id); if(b) b.addEventListener('click',function(){ goToTab('tools'); });
 });
+// The first tap on any icon / button while the app is open counts as the person's login
+// (replaces the old "OK" button): signed-in people get a row in the Login log with the time.
+document.addEventListener('click', function (e) {
+  if (!e.target.closest || !e.target.closest('button, a, [role="button"], [role="menuitem"], .nav-btn, .fab, summary')) return;
+  try { if (typeof logVisit === 'function') logVisit(); } catch (err) {}
+}, true);
 // language already chosen on this device: skip the welcome popup automatically
 (function(){
   var saved=null; try{ saved=localStorage.getItem('classx_lang'); }catch(e){}
-  if(saved){ setTimeout(function(){ var ok=document.getElementById('welcome-ok-btn'); if(ok) ok.click(); },0); }
+  if(saved){ setTimeout(function(){ var ok=document.getElementById('welcome-ok-btn'); window.__classxSilent=true; if(ok) ok.click(); window.__classxSilent=false; document.documentElement.classList.remove('lang-saved'); },0); }
+})();
+</script>
+<script>
+// ===== Notifications: + menu item, ask after install, ask when the installed app opens =====
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+  var toastTimer = null;
+  function toast(m) { var t = $('toast'); t.textContent = m; t.classList.remove('hidden'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.add('hidden'); }, 4500); }
+  function supported() { return 'Notification' in window; }
+  function refreshLabel() {
+    var b = $('fab-notify'); if (!b) return;
+    if (!supported()) { b.textContent = '🔔 Notifications'; return; }
+    var p = Notification.permission;
+    b.textContent = p === 'granted' ? '🔔 Notifications on ✓' : (p === 'denied' ? '🔕 Notifications blocked' : '🔔 Turn on notifications');
+  }
+  async function enable() {
+    if (!supported()) { toast(isIOS ? 'On iPhone, first install the app (Share → Add to Home Screen), then turn on notifications.' : 'This browser does not support notifications.'); return; }
+    if (Notification.permission === 'denied') { toast('Notifications are blocked. Turn them on in your browser’s site settings.'); refreshLabel(); return; }
+    var p = Notification.permission;
+    if (p === 'default') { try { p = await Notification.requestPermission(); } catch (e) {} }
+    refreshLabel();
+    if (p !== 'granted') { toast('Notifications were not allowed.'); return; }
+    var signedIn = false; try { signedIn = !!localStorage.getItem('classx_user'); } catch (e) {}
+    if (signedIn && typeof requestPushPermission === 'function') {
+      var ok = await requestPushPermission();
+      toast(ok ? 'Notifications on ✓ — alarms and new updates.' : 'Alarms are on. Update alerts could not be set up right now.');
+    } else {
+      toast('Alarms are on ✓. Sign in to also get new-update alerts.');
+    }
+  }
+  $('fab-notify').addEventListener('click', enable);
+  refreshLabel();
+
+  // our own pre-prompt (so the browser's permission box is always opened by a real tap)
+  function modalOpen() { return !!document.querySelector('.modal-overlay:not(.hidden)'); }
+  function askOnce() {
+    if (!supported() || Notification.permission !== 'default') return;
+    try { if (sessionStorage.getItem('classx_notif_asked') === '1') return; } catch (e) {}
+    var wait = setInterval(function () {
+      if (modalOpen()) return;
+      clearInterval(wait);
+      try { sessionStorage.setItem('classx_notif_asked', '1'); } catch (e) {}
+      $('notif-modal').classList.remove('hidden');
+    }, 600);
+  }
+  $('notif-allow').addEventListener('click', function () { $('notif-modal').classList.add('hidden'); enable(); });
+  $('notif-later').addEventListener('click', function () { $('notif-modal').classList.add('hidden'); });
+
+  // after the install popup closes (installed or "Not now") → ask for notifications
+  var sheet = $('install-sheet');
+  if (sheet && 'MutationObserver' in window) {
+    var wasShown = false;
+    new MutationObserver(function () {
+      var hidden = sheet.classList.contains('hidden');
+      if (!hidden) wasShown = true;
+      else if (wasShown) { wasShown = false; askOnce(); }
+    }).observe(sheet, { attributes: true, attributeFilter: ['class'] });
+  }
+  window.addEventListener('appinstalled', function () { setTimeout(askOnce, 800); });
+
+  // installed app opened from the home screen → ask right away (no install popup there)
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (standalone) setTimeout(askOnce, 1500);
 })();
 </script>
 </body>

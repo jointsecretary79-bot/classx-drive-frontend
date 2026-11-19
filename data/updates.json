@@ -5,15 +5,14 @@
     "time": "10:36 am",
     "title": "New Features Added to Class X Drive",
     "note": "NEW OPTION",
-    "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1795064870251-0-Class_X_Drive_-_New_Features___App_Installation_Notice__1_.pdf",
-    "links": [],
-    "files": [
+    "url": "https://docs.google.com/document/d/1ItRL_inLWXOXf43dPyMmbWkxCBi2OhZI3CVyTpD21fE/edit?usp=drivesdk",
+    "links": [
       {
-        "name": "Class X Drive - New Features & App Installation Notice (1).pdf",
-        "label": "Class X Drive - New Features & App Installation Notice",
-        "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1795064870251-0-Class_X_Drive_-_New_Features___App_Installation_Notice__1_.pdf"
+        "text": "Notice",
+        "url": "https://docs.google.com/document/d/1ItRL_inLWXOXf43dPyMmbWkxCBi2OhZI3CVyTpD21fE/edit?usp=drivesdk"
       }
     ],
+    "files": [],
     "showInTicker": true,
     "showInList": true,
     "flash": true,

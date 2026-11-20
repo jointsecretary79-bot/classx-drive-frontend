@@ -1992,6 +1992,13 @@ Examinations- 2026-27- reg
     } else if (!localStorage.getItem('classx_user') && pushStatus) {
       pushStatus.textContent = 'Sign in above first, then enable notifications here.';
     }
+    // Already signed in and allowed notifications: quietly make sure the server has this device (no prompt shown).
+    try {
+      if (localStorage.getItem('classx_user') && Notification.permission === 'granted' && !sessionStorage.getItem('classx_resub')) {
+        sessionStorage.setItem('classx_resub', '1');
+        requestPushPermission();
+      }
+    } catch (e) {}
   }
 
   // Shared by the manual "Enable notifications" button in More, and by the
@@ -2006,23 +2013,33 @@ Examinations- 2026-27- reg
     if (BACKEND_URL.includes('YOUR-BACKEND-URL-HERE')) return false;
     try {
       const reg = await navigator.serviceWorker.ready.catch(() => navigator.serviceWorker.register('./service-worker.js'));
-      const already = await reg.pushManager.getSubscription();
-      if (already) return true; // already subscribed on this device — nothing to do
+      let sub = await reg.pushManager.getSubscription();
 
-      const permission = await Notification.requestPermission();
+      const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
       if (permission !== 'granted') return false;
 
+      if (pushStatus) pushStatus.textContent = 'Connecting to the server… (can take up to a minute if it was asleep)';
       const keyRes = await fetch(`${BACKEND_URL}/api/vapid-public-key`);
       const { publicKey } = await keyRes.json();
-      const subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
-      await fetch(`${BACKEND_URL}/api/subscribe`, {
+      const want = urlBase64ToUint8Array(publicKey);
+
+      // A subscription made with a different server key can never receive updates — replace it.
+      if (sub) {
+        const cur = sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+        const same = cur && cur.length === want.length && cur.every((v, i) => v === want[i]);
+        if (!same) { try { await sub.unsubscribe(); } catch (e) {} sub = null; }
+      }
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: want });
+
+      // ALWAYS tell the server about this device (it ignores duplicates). Before, devices that were
+      // already subscribed skipped this step, so the server's list could miss them and posted updates
+      // reached "0 devices".
+      const res = await fetch(`${BACKEND_URL}/api/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(subscription),
+        body: JSON.stringify(sub),
       });
+      if (!res.ok) throw new Error('server answered ' + res.status);
       if (pushBtn) pushBtn.textContent = 'Notifications enabled ✓';
       if (pushStatus) pushStatus.textContent = 'You will get an update the moment one is posted.';
       return true;
@@ -3715,7 +3732,7 @@ Examinations- 2026-27- reg
   }
   // ---- "Upcoming" notification kept in the phone's notification bar (silent, updates itself) ----
   var pinPref = null; try { var pv = JSON.parse(localStorage.getItem('classx_pin')); if (pv === true || pv === false) pinPref = pv; } catch (e) {}
-  function pinOn() { return pinPref !== null ? pinPref : isStandalone; }       // on by default for the installed app
+  function pinOn() { return pinPref !== null ? pinPref : false; }       // off unless the person switches it on
   function upcomingList() {
     var now = Date.now();
     return plans.filter(function (p) { return !p.done && when(p) > now; }).sort(sorter).slice(0, 5)

@@ -675,6 +675,21 @@
   }
   .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(var(--nav-h) + 90px); z-index:320; max-width:90%; background:var(--ink); color:#fff; border:1px solid var(--marigold); padding:10px 16px; border-radius:22px; font-size:13px; box-shadow:0 8px 18px rgba(0,0,0,.4); text-align:center; }
   .toast.hidden{ display:none; }
+  /* phone turned sideways: use the whole screen instead of the narrow "phone frame" */
+  @media (orientation:landscape) and (max-height:600px){
+    body{ padding:0 !important; }
+    .app-shell{ max-width:none !important; min-height:100vh !important; max-height:none !important; border-radius:0 !important; box-shadow:none !important; overflow:visible !important; }
+    .fab{ position:fixed; right:16px; bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index:60; }
+    .fab-menu{ position:fixed; right:16px; bottom:calc(var(--nav-h) + 80px + env(safe-area-inset-bottom)); z-index:61; max-height:calc(100vh - var(--nav-h) - 100px); overflow-y:auto; padding:2px; }
+    .install-sheet{ bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); max-width:520px; }
+    .tl-dial{ width:160px; height:160px; } .tl-readout{ font-size:26px; }
+  }
+  .rot-opts{ display:flex; flex-direction:column; gap:8px; margin:12px 0 6px; }
+  .rot-opts .btn{ justify-content:center; width:100%; } .rot-opts .btn.on{ background:var(--ink); color:#fff; }
+  .al-list{ list-style:none; margin:6px 0 12px; padding:0; }
+  .al-list li{ display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:13px; color:var(--text); }
+  .al-list .ic{ width:20px; text-align:center; flex:none; } .al-list .tx{ flex:1; }
+  .al-list .pl-mini{ flex:none; }
   .app-tip{ background:#eaf3ff; border-left:3px solid var(--ink); padding:12px 14px; margin:0 0 12px; font-size:13px; line-height:1.55; color:var(--text); }
   .app-tip b{ display:block; font-family:'Fraunces',serif; font-size:15px; color:var(--ink); margin-bottom:4px; }
   .app-tip p{ margin:0; }
@@ -1357,6 +1372,16 @@ Examinations- 2026-27- reg
 
         <!-- PLANNER -->
         <div class="tl-pane" id="pane-planner">
+          <div class="stub" id="al-card">
+            <span class="mono-label">Alarm check</span>
+            <h4 id="al-title">Checking…</h4>
+            <ul class="al-list" id="al-list"></ul>
+            <div class="tl-row">
+              <button type="button" class="btn" id="al-test">🔔 Test alarm now</button>
+              <button type="button" class="btn" id="al-test2">📴 Test with app closed</button>
+            </div>
+            <div class="status-line" id="al-msg"></div>
+          </div>
           <div class="stub">
             <span class="mono-label">Study calendar</span>
             <div class="cal-head">
@@ -1386,7 +1411,7 @@ Examinations- 2026-27- reg
             <label class="pl-field"><span>Note (optional)</span><input id="pl-note" placeholder="Chapter / topic" maxlength="80"></label>
             <label class="pl-check"><input type="checkbox" id="pl-alarm" checked> 🔔 Ring an alarm at this time</label>
             <button type="button" class="btn btn-solid" id="pl-add">＋ Add to planner</button>
-            <div class="status-line" id="pl-status">Alarms ring while the app is open (even in the background). Keep it open for guaranteed alerts.</div>
+            <div class="status-line" id="pl-status">Alarms ring while the app is open. With notifications on and signed in, you also get a notification at the alarm time when the app is closed.</div>
           </div>
 
           <div class="section-label"><span class="num">▸</span><h3 id="pl-list-title">Selected day</h3></div>
@@ -1414,6 +1439,7 @@ Examinations- 2026-27- reg
     <button type="button" class="fab-item" id="fab-lectures" role="menuitem">▶ Free video lectures</button>
     <button type="button" class="fab-item accent" id="fab-install" role="menuitem">⬇ Install app</button>
     <button type="button" class="fab-item accent" id="fab-notify" role="menuitem">🔔 Turn on notifications</button>
+    <button type="button" class="fab-item" id="fab-rotate" role="menuitem">🔄 Screen rotation</button>
     <button type="button" class="fab-item" id="fab-tools" role="menuitem">⏱ Study tools</button>
     <button type="button" class="fab-item" id="archive-link" role="menuitem" style="display:none;">🎉 Festival archive</button>
     <button type="button" class="fab-item" id="fab-feedback" role="menuitem">💬 Feedback &amp; suggestions</button>
@@ -3260,11 +3286,26 @@ Examinations- 2026-27- reg
   <div class="modal-card">
     <span class="tag">NOTIFICATIONS</span>
     <h4>Turn on notifications?</h4>
-    <p>Get your study alarms on time and be told the moment a new circular or file is posted.</p>
+    <p>Get your study alarms on time — even when the app is closed — and be told the moment a new circular or file is posted. To do this, your alarm times and titles are sent to our notification server.</p>
     <div class="modal-actions">
       <button class="btn btn-solid" id="notif-allow" type="button">Allow notifications</button>
       <button class="btn" id="notif-later" type="button">Later</button>
     </div>
+  </div>
+</div>
+<!-- ===== Screen rotation popup ===== -->
+<div class="modal-overlay hidden" id="rot-modal" style="z-index:270;">
+  <div class="modal-card">
+    <span class="tag">SCREEN</span>
+    <h4>Screen rotation</h4>
+    <p>Choose how the app turns when you rotate your phone.</p>
+    <div class="rot-opts">
+      <button type="button" class="btn" data-mode="auto">🔄 Auto-rotate (follow the phone)</button>
+      <button type="button" class="btn" data-mode="portrait">📱 Lock portrait (upright)</button>
+      <button type="button" class="btn" data-mode="landscape">📲 Lock landscape (sideways)</button>
+    </div>
+    <div class="status-line" id="rot-status"></div>
+    <div class="modal-actions"><button class="btn" id="rot-close" type="button">Close</button></div>
   </div>
 </div>
 <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
@@ -3367,7 +3408,7 @@ Examinations- 2026-27- reg
         var o = actx.createOscillator(), gn = actx.createGain();
         o.type = 'square'; o.frequency.value = 880;
         gn.gain.setValueAtTime(0.0001, actx.currentTime + d);
-        gn.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + d + 0.02);
+        gn.gain.exponentialRampToValueAtTime(0.5, actx.currentTime + d + 0.02);
         gn.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d + 0.18);
         o.connect(gn); gn.connect(actx.destination);
         o.start(actx.currentTime + d); o.stop(actx.currentTime + d + 0.2);
@@ -3422,7 +3463,7 @@ Examinations- 2026-27- reg
     g('tm-set').style.display = tm.state === 'idle' ? 'flex' : 'none';
     g('tm-chips').style.display = tm.state === 'idle' ? 'flex' : 'none';
   }
-  function tmSave() { lsSet('classx_timer', tm); }
+  function tmSave() { lsSet('classx_timer', tm); if (typeof syncAlarms === 'function') syncAlarms(); }
   function tmLoop() {
     clearInterval(tmTick);
     tmTick = setInterval(function () {
@@ -3498,7 +3539,7 @@ Examinations- 2026-27- reg
   var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var plans = lsGet('classx_planner', []);
-  function save() { lsSet('classx_planner', plans); }
+  function save() { lsSet('classx_planner', plans); syncAlarms(); }
   function ymd(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
   function parseYMD(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
   function when(p) { var t = p.time.split(':'); var d = parseYMD(p.date); d.setHours(+t[0], +t[1], 0, 0); return d.getTime(); }
@@ -3660,6 +3701,72 @@ Examinations- 2026-27- reg
     try { if (lead >= 0 && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
   });
 
+  // ---------- server-side alarms: the server sends a push at the alarm time, so it still
+  // arrives when the app is closed. Only used when notifications are on and the person is signed in. ----------
+  var syncTimer = null, testAt = 0;
+  function alarmItems() {
+    var now = Date.now(), out = [];
+    plans.forEach(function (p) {
+      if (!p.alarm || p.done || p.fired) return;
+      var at = when(p) - (p.lead || 0) * 60000;
+      if (at > now + 5000) out.push({ id: p.id, at: at, title: '⏰ ' + p.subject + ' — ' + p.kind, body: fmtTime(p.time) + (p.note ? ' · ' + p.note : '') });
+    });
+    if (tm.state === 'run' && tm.end > now + 2000) out.push({ id: 'timer', at: tm.end, title: '⏰ Timer finished', body: 'Your study timer has ended.' });
+    if (testAt > now + 2000) out.push({ id: 'test', at: testAt, title: '⏰ Test alarm', body: 'Your closed-app alarms are working ✓' });
+    return out;
+  }
+  function syncAlarms() {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(async function () {
+      try {
+        if (!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') return;
+        if (typeof BACKEND_URL === 'undefined' || !localStorage.getItem('classx_user')) return;
+        var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+        if (!sub) return;
+        await fetch(BACKEND_URL + '/api/alarms/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ subscription: sub.toJSON(), items: alarmItems() }) });
+      } catch (e) {}
+    }, 800);
+  }
+  window.classxSyncAlarms = syncAlarms;
+  setTimeout(syncAlarms, 3000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { syncAlarms(); alHealth(); } });
+  window.addEventListener('online', syncAlarms);
+
+  // ---------- alarm check card: shows what is missing and lets people test ----------
+  var isStandalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  async function alHealth() {
+    var rows = [], perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+    rows.push({ ok: perm === 'granted', t: perm === 'granted' ? 'Notifications allowed' : perm === 'denied' ? 'Notifications are blocked — allow them in the browser’s site settings' : perm === 'unsupported' ? 'This browser cannot show notifications' : 'Notifications not allowed yet', fix: perm === 'default' ? ['Allow', 'fab-notify'] : null });
+    rows.push({ ok: isStandalone, t: isStandalone ? 'Opened as an installed app' : 'Not installed — the installed app is more reliable', fix: isStandalone ? null : ['Install', 'fab-install'] });
+    var signed = false; try { signed = !!localStorage.getItem('classx_user'); } catch (e) {}
+    rows.push({ ok: signed, t: signed ? 'Signed in' : 'Not signed in — closed-app alarms need you to sign in', fix: null });
+    var sub = null;
+    try { if ('serviceWorker' in navigator && perm === 'granted') { var reg = await navigator.serviceWorker.ready; sub = await reg.pushManager.getSubscription(); } } catch (e) {}
+    rows.push({ ok: !!sub, t: sub ? 'Closed-app alarms connected' : 'Closed-app alarms not connected yet (needs notifications + sign-in)', fix: null });
+    var allOk = rows.every(function (r) { return r.ok; });
+    g('al-title').textContent = allOk ? 'Alarms ready ✓' : 'Needs attention';
+    g('al-list').innerHTML = rows.map(function (r) {
+      return '<li><span class="ic">' + (r.ok ? '✅' : '⚠️') + '</span><span class="tx">' + r.t + '</span>' + (r.fix ? '<button type="button" class="pl-mini" data-click="' + r.fix[1] + '">' + r.fix[0] + '</button>' : '') + '</li>';
+    }).join('') + '<li><span class="ic">ℹ️</span><span class="tx">Phone settings: set this app’s battery to <b>Unrestricted</b> and keep its notifications on <b>Alert / Sound</b>.</span></li>';
+  }
+  g('al-list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-click]'); if (!b) return;
+    var t = document.getElementById(b.dataset.click); if (t) t.click();
+    setTimeout(alHealth, 2000); setTimeout(alHealth, 6000);
+  });
+  g('al-test').addEventListener('click', function () { unlockAudio(); ring('⏰ Test alarm', 'If you can hear this, in-app alarms work.', null); });
+  g('al-test2').addEventListener('click', async function () {
+    var m = g('al-msg'), perm = ('Notification' in window) ? Notification.permission : 'unsupported', signed = false;
+    try { signed = !!localStorage.getItem('classx_user'); } catch (e) {}
+    if (perm !== 'granted') { m.textContent = 'First allow notifications (use the “Allow” button above or the + menu).'; return; }
+    if (!signed) { m.textContent = 'Please sign in first — closed-app alarms are linked to your account.'; return; }
+    var sub = null; try { var reg = await navigator.serviceWorker.ready; sub = await reg.pushManager.getSubscription(); } catch (e) {}
+    if (!sub) { m.textContent = 'Closed-app alarms are not connected yet. Turn notifications on from the + menu and try again.'; return; }
+    testAt = Date.now() + 20000; syncAlarms();
+    m.textContent = 'Test set. Now close the app or lock your phone — a notification should arrive in about 20–30 seconds.';
+  });
+  alHealth();
+
   // ---------- alarm checker for planner ----------
   function checkAlarms() {
     var now = Date.now(), changed = false;
@@ -3793,6 +3900,7 @@ document.addEventListener('click', function (e) {
     var signedIn = false; try { signedIn = !!localStorage.getItem('classx_user'); } catch (e) {}
     if (signedIn && typeof requestPushPermission === 'function') {
       var ok = await requestPushPermission();
+      try { if (window.classxSyncAlarms) window.classxSyncAlarms(); } catch (e) {}
       toast(ok ? 'Notifications on ✓ — alarms and new updates.' : 'Alarms are on. Update alerts could not be set up right now.');
     } else {
       toast('Alarms are on ✓. Sign in to also get new-update alerts.');
@@ -3831,6 +3939,53 @@ document.addEventListener('click', function (e) {
   // installed app opened from the home screen → ask right away (no install popup there)
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   if (standalone) setTimeout(askOnce, 1500); else setTimeout(askOnce, 6000);   // browser visit: ask too (after any install popup)
+})();
+</script>
+<script>
+// ===== Screen rotation: auto / lock portrait / lock landscape =====
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'classx_orient';
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  var canLock = !!(screen.orientation && typeof screen.orientation.lock === 'function');
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+  var NAMES = { auto: 'Auto', portrait: 'Portrait', landscape: 'Landscape' };
+  function saved() { try { var v = JSON.parse(localStorage.getItem(KEY)); return NAMES[v] ? v : 'auto'; } catch (e) { return 'auto'; } }
+  function paint(mode) {
+    document.querySelectorAll('#rot-modal [data-mode]').forEach(function (b) { b.classList.toggle('on', b.dataset.mode === mode); });
+    $('fab-rotate').textContent = '🔄 Screen rotation: ' + NAMES[mode];
+  }
+  async function apply(mode, gesture) {
+    if (mode === 'auto') {
+      try { if (canLock) screen.orientation.unlock(); } catch (e) {}
+      try { if (document.fullscreenElement && !standalone) await document.exitFullscreen(); } catch (e) {}
+      return true;
+    }
+    if (!canLock) return false;
+    try { await screen.orientation.lock(mode); return true; } catch (e) {}
+    if (gesture && !standalone && document.documentElement.requestFullscreen) {       // browsers only allow locking in full screen
+      try { await document.documentElement.requestFullscreen(); await screen.orientation.lock(mode); return true; } catch (e) {}
+    }
+    return false;
+  }
+  $('fab-rotate').addEventListener('click', function () {
+    paint(saved());
+    $('rot-status').textContent = canLock ? (standalone ? '' : 'In the browser, locking switches to full screen. The installed app locks without it.')
+      : (isIOS ? 'iPhone/iPad Safari cannot lock rotation from a website. Use the rotation lock in Control Centre.' : 'This browser cannot lock rotation. Use your phone’s Auto-rotate switch in quick settings.');
+    $('rot-modal').classList.remove('hidden');
+  });
+  $('rot-close').addEventListener('click', function () { $('rot-modal').classList.add('hidden'); });
+  document.querySelectorAll('#rot-modal [data-mode]').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      var mode = b.dataset.mode, ok = await apply(mode, true);
+      if (mode !== 'auto' && !ok) { $('rot-status').textContent = canLock ? 'Could not lock the screen here. Try the installed app, or use your phone’s rotation switch.' : $('rot-status').textContent; return; }
+      paint(mode);
+      try { if (window.classxStore) window.classxStore.set(KEY, mode); } catch (e) {}      // asks permission before saving
+      $('rot-status').textContent = mode === 'auto' ? 'The app now follows your phone’s rotation.' : 'Screen locked to ' + NAMES[mode].toLowerCase() + '.';
+    });
+  });
+  paint(saved());
+  if (standalone && saved() !== 'auto') apply(saved(), false);          // installed app: re-apply the saved lock on open
 })();
 </script>
 </body>

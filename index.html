@@ -1376,10 +1376,12 @@ Examinations- 2026-27- reg
             <span class="mono-label">Alarm check</span>
             <h4 id="al-title">Checking…</h4>
             <ul class="al-list" id="al-list"></ul>
+            <label class="pl-check"><input type="checkbox" id="al-pin"> 📌 Keep my upcoming tasks in a notification</label>
             <div class="tl-row">
               <button type="button" class="btn" id="al-test">🔔 Test alarm now</button>
               <button type="button" class="btn" id="al-test2">📴 Test with app closed</button>
             </div>
+            <div class="status-line" id="al-server">Alarm server: not checked yet</div>
             <div class="status-line" id="al-msg"></div>
           </div>
           <div class="stub">
@@ -3715,15 +3717,37 @@ Examinations- 2026-27- reg
     if (testAt > now + 2000) out.push({ id: 'test', at: testAt, title: '⏰ Test alarm', body: 'Your closed-app alarms are working ✓' });
     return out;
   }
+  // ---- "Upcoming" notification kept in the phone's notification bar (silent, updates itself) ----
+  var pinPref = null; try { var pv = JSON.parse(localStorage.getItem('classx_pin')); if (pv === true || pv === false) pinPref = pv; } catch (e) {}
+  function pinOn() { return pinPref !== null ? pinPref : isStandalone; }       // on by default for the installed app
+  function upcomingList() {
+    var now = Date.now();
+    return plans.filter(function (p) { return !p.done && when(p) > now; }).sort(sorter).slice(0, 5)
+      .map(function (p) { return { at: when(p), label: p.subject + ' · ' + p.kind }; });
+  }
+  function pushStatus() {
+    try {
+      if (!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') return;
+      var items = upcomingList().slice(0, 3), on = pinOn();
+      navigator.serviceWorker.ready.then(function (reg) { if (reg.active) reg.active.postMessage({ type: 'status', enabled: on, upcoming: items }); });
+    } catch (e) {}
+  }
+  setInterval(pushStatus, 60000);
+  // sends this device's alarms to the server; returns what the server answered (used by the test button too)
+  async function postSync() {
+    var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    if (!sub) return { skip: true };
+    var r = await fetch(BACKEND_URL + '/api/alarms/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ subscription: sub.toJSON(), items: alarmItems(), pin: pinOn(), upcoming: upcomingList() }) });
+    return { status: r.status, ok: r.ok };
+  }
   function syncAlarms() {
     clearTimeout(syncTimer);
     syncTimer = setTimeout(async function () {
+      pushStatus();
       try {
         if (!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') return;
         if (typeof BACKEND_URL === 'undefined' || !localStorage.getItem('classx_user')) return;
-        var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
-        if (!sub) return;
-        await fetch(BACKEND_URL + '/api/alarms/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ subscription: sub.toJSON(), items: alarmItems() }) });
+        await postSync();
       } catch (e) {}
     }, 800);
   }
@@ -3734,6 +3758,18 @@ Examinations- 2026-27- reg
 
   // ---------- alarm check card: shows what is missing and lets people test ----------
   var isStandalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  var srvAt = 0;
+  async function serverCheck() {
+    var el = g('al-server'); if (!el || typeof BACKEND_URL === 'undefined') return;
+    if (Date.now() - srvAt < 30000) return; srvAt = Date.now();
+    el.textContent = 'Alarm server: checking… (can take up to a minute if it was asleep)';
+    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 70000);
+    try {
+      var r = await fetch(BACKEND_URL + '/api/alarms/tick', { signal: ctl.signal });
+      el.textContent = r.ok ? 'Alarm server: ready ✓' : r.status === 404 ? 'Alarm server: alarm-routes.js is NOT installed (404) ✗' : 'Alarm server: error ' + r.status + ' ✗';
+    } catch (e) { el.textContent = 'Alarm server: not reachable ✗ (asleep, offline or blocked)'; srvAt = 0; }
+    clearTimeout(t);
+  }
   async function alHealth() {
     var rows = [], perm = ('Notification' in window) ? Notification.permission : 'unsupported';
     rows.push({ ok: perm === 'granted', t: perm === 'granted' ? 'Notifications allowed' : perm === 'denied' ? 'Notifications are blocked — allow them in the browser’s site settings' : perm === 'unsupported' ? 'This browser cannot show notifications' : 'Notifications not allowed yet', fix: perm === 'default' ? ['Allow', 'fab-notify'] : null });
@@ -3748,6 +3784,7 @@ Examinations- 2026-27- reg
     g('al-list').innerHTML = rows.map(function (r) {
       return '<li><span class="ic">' + (r.ok ? '✅' : '⚠️') + '</span><span class="tx">' + r.t + '</span>' + (r.fix ? '<button type="button" class="pl-mini" data-click="' + r.fix[1] + '">' + r.fix[0] + '</button>' : '') + '</li>';
     }).join('') + '<li><span class="ic">ℹ️</span><span class="tx">Phone settings: set this app’s battery to <b>Unrestricted</b> and keep its notifications on <b>Alert / Sound</b>.</span></li>';
+    serverCheck();
   }
   g('al-list').addEventListener('click', function (e) {
     var b = e.target.closest('[data-click]'); if (!b) return;
@@ -3762,8 +3799,20 @@ Examinations- 2026-27- reg
     if (!signed) { m.textContent = 'Please sign in first — closed-app alarms are linked to your account.'; return; }
     var sub = null; try { var reg = await navigator.serviceWorker.ready; sub = await reg.pushManager.getSubscription(); } catch (e) {}
     if (!sub) { m.textContent = 'Closed-app alarms are not connected yet. Turn notifications on from the + menu and try again.'; return; }
-    testAt = Date.now() + 20000; syncAlarms();
-    m.textContent = 'Test set. Now close the app or lock your phone — a notification should arrive in about 20–30 seconds.';
+    testAt = Date.now() + 20000;
+    m.textContent = 'Sending the test to the alarm server…';
+    var r; try { r = await postSync(); } catch (e) { r = { err: true }; }
+    if (r.err) m.textContent = 'Could not reach the alarm server (it may be asleep or offline). Wait a minute and try again.';
+    else if (r.status === 404) m.textContent = 'The server answered 404: alarm-routes.js is not installed on your backend yet. Add it and redeploy.';
+    else if (!r.ok) m.textContent = 'The server answered with error ' + r.status + '. Check the Render logs.';
+    else m.textContent = 'The server has the test ✓. Now close the app or lock your phone — a notification should arrive in about 20–30 seconds.';
+  });
+  g('al-pin').checked = pinOn();
+  g('al-pin').addEventListener('change', function () {
+    pinPref = g('al-pin').checked;
+    try { if (window.classxStore) window.classxStore.set('classx_pin', pinPref); } catch (e) {}      // asks permission before saving
+    pushStatus(); syncAlarms();
+    g('al-msg').textContent = pinPref ? 'The upcoming-tasks notification is on.' : 'The upcoming-tasks notification is off.';
   });
   alHealth();
 

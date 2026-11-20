@@ -25,7 +25,7 @@ function fmtWhen(at) {
   return d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + time;
 }
 
-async function showStatus(items, enabled) {
+async function showStatus(items, enabled, dedupe) {
   if (enabled === false) {                                   // person switched it off
     const open = await self.registration.getNotifications({ tag: STATUS_TAG });
     open.forEach((n) => n.close());
@@ -41,6 +41,10 @@ async function showStatus(items, enabled) {
     title = 'Next: ' + items[0].label + ' · ' + fmtWhen(items[0].at);
     body = items.slice(1).map((i) => i.label + ' · ' + fmtWhen(i.at)).join('\n') || 'Tap to open your planner';
   }
+  if (dedupe) {                                              // same text already showing → leave it alone (do not pop it up again)
+    const existing = await self.registration.getNotifications({ tag: STATUS_TAG });
+    if (existing.some((n) => n.title === title && n.body === body)) return;
+  }
   await self.registration.showNotification(title, {
     body,
     icon: ICON,
@@ -53,10 +57,35 @@ async function showStatus(items, enabled) {
   });
 }
 
-// the open app tells the worker what is coming up
+// ---------- running timer / stopwatch shown in the notification bar ----------
+// (a web notification cannot tick live seconds, so it shows the end time / start time)
+function clock(ms) { return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+function span(ms) {
+  const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  return (h ? h + 'h ' : '') + (h || m ? m + 'm ' : '') + x + 's';
+}
+async function closeByTag(tag) {
+  const open = await self.registration.getNotifications({ tag });
+  open.forEach((n) => n.close());
+}
+async function showTimerNote(d) {
+  if (d.kind === 'none') { await closeByTag(d.tag); return; }
+  if (Notification.permission !== 'granted') return;
+  let title, body;
+  if (d.kind === 'timer') { title = '⏱ Timer running'; body = 'Ends at ' + clock(d.endAt) + ' — you will be alerted.'; }
+  else if (d.kind === 'timer-paused') { title = '⏸ Timer paused'; body = span(d.left) + ' left'; }
+  else if (d.kind === 'stopwatch') { title = '⏱ Stopwatch running'; body = 'Started at ' + clock(d.startedAt) + ' · open the app to see the time'; }
+  else { title = '⏸ Stopwatch stopped'; body = 'Elapsed ' + span(d.elapsed); }
+  await self.registration.showNotification(title, {
+    body, icon: ICON, badge: ICON, tag: d.tag, renotify: false, silent: true, requireInteraction: true, data: { url: SCOPE },
+  });
+}
+
+// the open app tells the worker what is coming up / what is running
 self.addEventListener('message', (event) => {
   const d = event.data || {};
-  if (d.type === 'status') event.waitUntil(showStatus(d.upcoming, d.enabled));
+  if (d.type === 'status') event.waitUntil(showStatus(d.upcoming, d.enabled, true));
+  else if (d.type === 'timer') event.waitUntil(showTimerNote(d));
 });
 
 function resolveUrl(u) {
@@ -77,6 +106,7 @@ self.addEventListener('push', (event) => {
     if (data.type === 'status') { await showStatus(data.upcoming, true); return; }
 
     const isAlarm = data.type === 'alarm';
+    if (isAlarm && data.tag === 'alarm-timer') await closeByTag('classx-timer');   // timer finished → remove the "running" notification
 
     // The app is open and on screen → it already rings by itself, so skip the duplicate notification.
     if (isAlarm) {

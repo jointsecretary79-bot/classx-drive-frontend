@@ -19,24 +19,6 @@
     "theme": ""
   },
   {
-    "type": "video",
-    "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1795186625352-banner-EXHRHdm-xNLCG-jB.mp4",
-    "path": "uploads/1795186625352-banner-EXHRHdm-xNLCG-jB.mp4",
-    "poster": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1795186625352-banner-EXHRHdm-xNLCG-jB-cover.jpg",
-    "posterPath": "uploads/1795186625352-banner-EXHRHdm-xNLCG-jB-cover.jpg",
-    "autoplay": false,
-    "loop": false,
-    "muted": false,
-    "id": "1795186625352-bipomp",
-    "caption": "Best Advice to  Youth by  Dr. K. Sivan Sir, former Chairman of ISRO",
-    "link": "",
-    "links": [],
-    "ts": 1795186625352,
-    "duration": 5,
-    "startAt": 0,
-    "endAt": 0
-  },
-  {
     "type": "image",
     "url": "https://raw.githubusercontent.com/jointsecretary79-bot/classx-drive-frontend/main/uploads/1793976512747-banner-CBSE_Class10_Datesheet_2027.jpg",
     "path": "uploads/1793976512747-banner-CBSE_Class10_Datesheet_2027.jpg",

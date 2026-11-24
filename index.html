@@ -589,7 +589,7 @@
   .lang-btn{ border:1px solid var(--line); background:var(--paper-card); color:var(--ink); padding:10px 4px; font-size:13px; font-weight:600; cursor:pointer; border-radius:var(--radius); }
   .lang-btn.on{ background:var(--ink); color:#fff; border-color:var(--marigold); box-shadow:inset 0 -3px 0 var(--marigold); }
 
-  /* ---- floating menu (festival archive, feedback, WhatsApp) ---- */
+  /* ---- floating menu (festival archive, feedback, Arattai) ---- */
   .fab{ cursor:pointer; transition:transform .2s; }
   .fab.open{ transform:rotate(45deg); }
   .fab-menu{ position:absolute; right:16px; bottom:calc(var(--nav-h) + 78px); z-index:26; display:none; flex-direction:column; align-items:flex-end; gap:8px; }
@@ -908,18 +908,6 @@
   </div>
 </div>
 
-<!-- ===== Feedback form popup ===== -->
-<div class="modal-overlay hidden" id="feedback-modal">
-  <div class="modal-card" style="max-width:440px;">
-    <span class="tag">FEEDBACK</span>
-    <h4>Feedback &amp; suggestions</h4>
-    <iframe id="feedback-frame" title="Feedback form" style="width:100%;height:56vh;border:1px solid var(--line);border-radius:4px;background:#fff;" loading="lazy"></iframe>
-    <div class="modal-actions" style="flex-direction:row;margin-top:12px;">
-      <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSf3kynXCEu8R5F-TLlatMdrbtpUJ3UmPCTs8XXJFlK0wPMmSQ/viewform?usp=header" target="_blank" rel="noopener" style="text-decoration:none;">Open in new tab ↗</a>
-      <button class="btn btn-solid" id="feedback-close" type="button">Close</button>
-    </div>
-  </div>
-</div>
 
 <div class="app-shell">
 
@@ -1346,14 +1334,14 @@ Examinations- 2026-27- reg
           <span class="mono-label">Found a broken link?</span>
           <h4>Feedback &amp; suggestions</h4>
           <p>Screenshot the issue and file it — broken links get fixed fastest this way.</p>
-          <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSf3kynXCEu8R5F-TLlatMdrbtpUJ3UmPCTs8XXJFlK0wPMmSQ/viewform?usp=header" target="_blank" rel="noopener">Open the form →</a>
+          <a class="btn" href="https://forms.zohopublic.in/harshitsmitpawanizoho1/form/FeedbackForm/formperma/rrUZ-wf8wSQ6aPp-NCQjCIA_oCSVmRU5WQBbdkZSizE" target="_blank" rel="noopener noreferrer">Open the form →</a>
         </div>
 
         <div class="stub">
-          <span class="mono-label">Stay notified on WhatsApp too</span>
-          <h4>WhatsApp updates channel</h4>
+          <span class="mono-label">Stay connected on Arattai too</span>
+          <h4>Arattai updates channel</h4>
           <p>Notifications only — circulars, alerts and essential updates for Class X.</p>
-          <a class="btn btn-solid" href="https://whatsapp.com/channel/0029VbDKUk9BVJkx1zao703t" target="_blank" rel="noopener">Join the channel →</a>
+          <a class="btn btn-solid" href="https://aratt.ai/@Class_X_Drive" target="_blank" rel="noopener noreferrer">Join the channel →</a>
         </div>
 
         <div class="stub">
@@ -1550,7 +1538,7 @@ Examinations- 2026-27- reg
     <button type="button" class="fab-item" id="fab-tools" role="menuitem">⏱ Study tools</button>
     <button type="button" class="fab-item" id="archive-link" role="menuitem" style="display:none;">🎉 Festival archive</button>
     <button type="button" class="fab-item" id="values-link" role="menuitem" style="display:none;">❖ Values archive</button>
-    <button type="button" class="fab-item" id="fab-feedback" role="menuitem">💬 Feedback &amp; suggestions</button>
+    <a class="fab-item" id="fab-feedback" href="https://forms.zohopublic.in/harshitsmitpawanizoho1/form/FeedbackForm/formperma/rrUZ-wf8wSQ6aPp-NCQjCIA_oCSVmRU5WQBbdkZSizE" target="_blank" rel="noopener noreferrer" role="menuitem">💬 Feedback &amp; suggestions</a>
     <a class="fab-item" id="fab-channel" href="https://aratt.ai/@Class_X_Drive" target="_blank" rel="noopener noreferrer" role="menuitem">📢 Join our Arattai channel</a>
   </div>
   <button type="button" class="fab" id="fab-btn" aria-label="More options" aria-expanded="false" aria-controls="fab-menu">
@@ -3898,23 +3886,12 @@ Examinations- 2026-27- reg
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
   }
 
-  // feedback form popup (Google Form shown inside the app)
-  const fm = document.getElementById('feedback-modal'), frame = document.getElementById('feedback-frame');
-  const FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSf3kynXCEu8R5F-TLlatMdrbtpUJ3UmPCTs8XXJFlK0wPMmSQ/viewform?embedded=true';
-  const closeFb = () => fm.classList.add('hidden');
-  document.getElementById('fab-feedback').addEventListener('click', () => {
-    if (!frame.getAttribute('src')) frame.setAttribute('src', FORM);
-    fm.classList.remove('hidden');
-  });
-  document.getElementById('feedback-close').addEventListener('click', closeFb);
-  fm.addEventListener('click', (e) => { if (e.target === fm) closeFb(); });
-
   // documents sheet
   const ds = document.getElementById('doc-sheet');
   const closeDs = () => ds.classList.add('hidden');
   document.getElementById('doc-close').addEventListener('click', closeDs);
   ds.addEventListener('click', (e) => { if (e.target === ds) closeDs(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDs(); closeFb(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDs(); } });
 })();
 </script>
 

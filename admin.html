@@ -585,6 +585,11 @@
             <input id="bThumb" type="file" accept="image/*" />
             <p class="hint">The small picture for this item: it fills the home-screen slide and appears in the archives. A post without one uses its photo, or the first frame of its video file.</p>
           </div>
+          <div id="bShareWrap" hidden>
+            <label for="bShareText">Share message (optional)</label>
+            <textarea id="bShareText" rows="3" maxlength="280" placeholder="e.g. 📖 Honesty is the best policy — read this value story on Class X Drive:"></textarea>
+            <p class="hint">This is the text students send along with the link when they tap <b>Share</b> on this article or post — write it like a short promotion. Leave it empty to use the standard message. The link is added automatically.</p>
+          </div>
           <div id="bCoverWrap" hidden>
             <label for="bCover">Cover image (optional)</label>
             <input id="bCover" type="file" accept="image/*" />
@@ -2271,22 +2276,24 @@
         });
         box.appendChild(wrap);
       }
-      if (b.id) {                                               // share: a link back to this article on the app, with a short promotion line
+      if (b.id) {                                               // share: one Share button; the message can be written per article / post in the admin panel
         const url = articleLink(b);
         const label = b.title || plainText(isPost ? b.text : b.body).slice(0, 70) || 'Class X Drive';
-        const msg = '📖 ' + label + '\nRead it free on Class X Drive — notes, PYQs and sample papers for CBSE Class X:';
+        const custom = String(b.shareText || '').trim();
+        const msg = custom || ('📖 ' + label + '\nRead it free on Class X Drive — notes, PYQs and sample papers for CBSE Class X:');
         const row = document.createElement('div'); row.className = 'art-share';
         const lab = document.createElement('span'); lab.textContent = isPost ? 'Share this post' : 'Share this article'; row.appendChild(lab);
         const note = document.createElement('div'); note.className = 'art-share-note';
-        const mk = (txt, fn) => { const x = document.createElement('button'); x.type = 'button'; x.textContent = txt; x.addEventListener('click', fn); return x; };
-        if (navigator.share) row.appendChild(mk('📤 Share', async () => { try { await navigator.share({ title: label, text: msg, url }); } catch (e) {} }));
-        const wa = document.createElement('a'); wa.href = 'https://wa.me/?text=' + encodeURIComponent(msg + '\n' + url); wa.target = '_blank'; wa.rel = 'noopener noreferrer'; wa.textContent = 'WhatsApp';
-        row.appendChild(wa);
-        row.appendChild(mk('Copy link', async () => {
-          try { await navigator.clipboard.writeText(msg + '\n' + url); note.textContent = 'Link copied ✓ — paste it anywhere.'; }
-          catch (e) { window.prompt('Copy this link', url); }
-        }));
-        row.appendChild(note); box.appendChild(row);
+        const copyFallback = async () => {                      // browsers without a share menu (some computers): put the message + link on the clipboard
+          try { await navigator.clipboard.writeText(msg + '\n' + url); note.textContent = 'Message and link copied ✓ — paste it anywhere to share.'; }
+          catch (e) { window.prompt('Copy this to share', msg + '\n' + url); }
+        };
+        const share = document.createElement('button'); share.type = 'button'; share.textContent = '📤 Share';
+        share.addEventListener('click', async () => {
+          if (navigator.share) { try { await navigator.share({ title: label, text: msg, url }); } catch (e) { if (e && e.name !== 'AbortError') copyFallback(); } }
+          else copyFallback();
+        });
+        row.appendChild(share); row.appendChild(note); box.appendChild(row);
       }
       o.appendChild(box); document.body.appendChild(o);
       attachDictionary(body, o);
@@ -2849,18 +2856,20 @@
   let curDraft = null;                                           // the draft open in the form: { id, media }
   function draftMedia() { return (curDraft && curDraft.media) || {}; }
   const articleMediaPaths = (b) => [...new Set(String((b && b.html) || '').match(/uploads\/[A-Za-z0-9_.\-]+/g) || [])];
+  const shareEdit = (b) => `<label>Share message (optional — sent with the link when students tap Share)</label><textarea class="e-share" rows="3" maxlength="280">${escHtml(b.shareText)}</textarea>`;
   const thumbEdit = (b) => `<label>Replace thumbnail</label><input type="file" class="e-thumb" accept="image/*">${b.thumb ? '<label class="e-rm"><input type="checkbox" class="e-thumb-rm"> Remove the thumbnail</label>' : ''}`;
   function contentEditHtml(b) {
-    if (b.type === 'article') return `<label>Article title</label><input class="e-title" maxlength="120" value="${escHtml(b.title)}"><label>Article date</label><input type="date" class="e-date" value="${escHtml(b.date || '')}"><label>Article</label><div class="e-aed"></div>${thumbEdit(b)}`;
+    if (b.type === 'article') return `<label>Article title</label><input class="e-title" maxlength="120" value="${escHtml(b.title)}"><label>Article date</label><input type="date" class="e-date" value="${escHtml(b.date || '')}"><label>Article</label><div class="e-aed"></div>${thumbEdit(b)}${shareEdit(b)}`;
     if (b.type === 'post') return `<label>Title (optional)</label><input class="e-title" maxlength="120" value="${escHtml(b.title)}"><label>Post date</label><input type="date" class="e-date" value="${escHtml(b.date || '')}"><label>Text</label><textarea class="e-text" rows="6" maxlength="3000">${escHtml(b.text)}</textarea>` +
       (b.videoPath ? '<p class="hint">The video file was uploaded earlier. To change it, make a new post.</p>' : `<label>Video link (YouTube, Vimeo or a direct .mp4 link)</label><input class="e-vurl" value="${escHtml(b.videoUrl || '')}">`) +
-      `<label>Replace photo</label><input type="file" class="e-photo" accept="image/*">${b.photo ? '<label class="e-rm"><input type="checkbox" class="e-photo-rm"> Remove the photo</label>' : ''}` + thumbEdit(b);
+      `<label>Replace photo</label><input type="file" class="e-photo" accept="image/*">${b.photo ? '<label class="e-rm"><input type="checkbox" class="e-photo-rm"> Remove the photo</label>' : ''}` + thumbEdit(b) + shareEdit(b);
     return '';
   }
   async function applyContentEdit(div, target, creds, aed) {
     const q = (s) => div.querySelector(s);
     target.title = q('.e-title').value.trim();
     target.date = q('.e-date').value || target.date || todayISO();
+    target.shareText = q('.e-share').value.trim();
     if (target.type === 'article') {
       target.html = aed.getHtml(); target.body = aed.getText();
       if (!target.title || !(target.body || aed.hasMedia())) throw new Error('An article needs a title and text.');
@@ -2890,6 +2899,7 @@
     gh('bPostWrap').hidden = t !== 'post';
     gh('bThumbWrap').hidden = !(t === 'article' || t === 'post');
     gh('bSaveDraft').hidden = !(t === 'article' || t === 'post');
+    gh('bShareWrap').hidden = !(t === 'article' || t === 'post');
     gh('bCoverWrap').hidden = t === 'image' || t === 'html' || t === 'article' || t === 'post';
     gh('bPlayWrap').hidden = t === 'image' || t === 'html' || t === 'article' || t === 'post';
     { const d = gh('bDuration'), def = t === 'html' ? 60 : t === 'article' ? 20 : t === 'post' ? 10 : 5; if ([5, 10, 20, 60].includes(Number(d.value))) d.value = def; }
@@ -3155,6 +3165,7 @@
       item.caption = caption; item.link = link; item.links = bnList; item.ts = ts;
       item.duration = sched.duration; item.startAt = sched.startAt; item.endAt = sched.endAt;
 
+      if (item.type === 'article' || item.type === 'post') { const sm = gh('bShareText').value.trim(); if (sm) item.shareText = sm; }
       if (gh('bToValues').checked) {
         status.textContent = 'Saving to the Values archive…';
         const arch = await readArchive(owner, repo, branch, token, VALUES_PATH);
@@ -3176,7 +3187,7 @@
       }
       if (curDraft) { await finishDraft(); }
       ['bFile', 'bVideoFile', 'bCover', 'bHtmlFile', 'bPostPhoto', 'bPostVideoFile', 'bThumb'].forEach(id => { gh(id).value = ''; });
-      gh('bPostTitle').value = ''; gh('bPostText').value = ''; gh('bPostVideoUrl').value = ''; gh('bPostDate').value = todayISO();
+      gh('bPostTitle').value = ''; gh('bPostText').value = ''; gh('bPostVideoUrl').value = ''; gh('bPostDate').value = todayISO(); gh('bShareText').value = '';
       bHtmlText = '';
       gh('bArtTitle').value = ''; artEd.setHtml(''); gh('bArtDate').value = todayISO(); gh('bToValues').checked = false;
       gh('bVideoUrl').value = ''; gh('bCaption').value = ''; bnLinks.set([]);
@@ -3555,7 +3566,7 @@
     const bl = bnLinks.getLinks();
     const d = { id: curDraft ? curDraft.id : 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), type: t,
       caption: gh('bCaption').value.trim(), links: bl, link: bl[0] ? bl[0].url : '', duration: clampDur(gh('bDuration').value),
-      theme: gh('bTheme').value.trim(), toValues: gh('bToValues').checked };
+      theme: gh('bTheme').value.trim(), toValues: gh('bToValues').checked, shareText: gh('bShareText').value.trim() };
     const m = Object.assign({ photo: '', photoPath: '', thumb: '', thumbPath: '', videoUrl: '', videoPath: '' }, draftMedia());
     const pf = t === 'post' ? gh('bPostPhoto').files[0] : null, vf = t === 'post' ? gh('bPostVideoFile').files[0] : null, tf = gh('bThumb').files[0];
     let creds = null;
@@ -3610,7 +3621,7 @@
     ['bPostPhoto', 'bPostVideoFile', 'bThumb'].forEach(id => { gh(id).value = ''; });
     gh('bCaption').value = d.caption || ''; bnLinks.set(d.links || []);
     gh('bDuration').value = d.duration || (d.type === 'article' ? 20 : 10);
-    gh('bTheme').value = d.theme || ''; gh('bToValues').checked = !!d.toValues;
+    gh('bTheme').value = d.theme || ''; gh('bToValues').checked = !!d.toValues; gh('bShareText').value = d.shareText || '';
     if (d.type === 'article') {
       gh('bArtTitle').value = d.title || ''; gh('bArtDate').value = d.date || todayISO();
       artEd.setHtml(d.html || window.articleKit.plainToHtml(d.body));
